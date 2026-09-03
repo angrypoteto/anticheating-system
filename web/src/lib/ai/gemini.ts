@@ -114,7 +114,7 @@ export async function generateQuestions(
     }
 
     try {
-      const res = await fetch(
+      let res = await fetch(
         `${ENDPOINT}/${MODEL}:generateContent?key=${encodeURIComponent(secret)}`,
         {
           method: "POST",
@@ -124,13 +124,30 @@ export async function generateQuestions(
         },
       );
 
+      // 503 "model is currently experiencing high demand" is common on the free
+      // tier and clears on its own; a different key won't help because the model
+      // itself is busy, so back off briefly and retry the same one.
+      for (let attempt = 0; res.status >= 500 && attempt < 2; attempt++) {
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+        res = await fetch(
+          `${ENDPOINT}/${MODEL}:generateContent?key=${encodeURIComponent(secret)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(120_000),
+          },
+        );
+      }
+
       if (!res.ok) {
         const detail = await res.text();
         lastError = `${res.status}: ${detail.slice(0, 200)}`;
         await markKeyError(key.id, lastError);
-        // Quota/rate/auth problems are per-key — try the next one. Anything else
-        // is a request-level fault that retrying with another key won't fix.
-        if ([429, 401, 403].includes(res.status)) continue;
+        // Per-key problems (quota, rate limit, bad credential) and a still-busy
+        // model both justify trying the next key; anything else is a fault in the
+        // request itself that another key would hit identically.
+        if ([429, 401, 403].includes(res.status) || res.status >= 500) continue;
         return { ok: false, error: lastError };
       }
 

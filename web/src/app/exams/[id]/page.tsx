@@ -65,6 +65,12 @@ export default async function ExamEditorPage({
             </div>
             <div className="flex items-center gap-4">
               <Link
+                href={`/exams/${exam.id}/generate`}
+                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                Generate with AI
+              </Link>
+              <Link
                 href={`/exams/${exam.id}/monitor`}
                 className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >

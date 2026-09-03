@@ -2,24 +2,79 @@
 
 BSIT 4C, Group 2 — System Administration course project.
 
-- [AntiCheating_Project_Proposal.docx](AntiCheating_Project_Proposal.docx) — the proposal submitted to the instructor.
-- [web/](web/) — the Next.js application (TypeScript, App Router, Tailwind, Prisma).
-- [deploy/provision-vps.sh](deploy/provision-vps.sh) — VPS bootstrap script, kept as reference; current deploy target is Vercel (see below).
+A monitored online exam platform: instructors build exams (by hand or from their own
+lesson files via AI), students sit them under browser lockdown, and suspicious activity
+reaches the instructor's dashboard live.
 
 ## Stack
 
-Next.js + TypeScript, Prisma ORM, Supabase (Postgres, Auth, Storage, Realtime), deployed on Vercel.
+Next.js 16 (App Router, TypeScript, Tailwind) · Prisma 7 · Supabase (Postgres, Auth,
+Storage, Realtime, Vault) · Google Gemini · deployed on Vercel, scheduled jobs on
+GitHub Actions.
+
+## What works
+
+| Area | Where |
+|---|---|
+| Sign-in, three roles, per-role row-level security | `/login` |
+| Create accounts and sections, enable/disable users | `/admin` |
+| AI provider keys — encrypted in Vault, round-robin rotation | `/admin/keys` |
+| Health, audit trail, backup status | `/admin/health` |
+| Exam builder: questions, timers, lockdown settings, publish | `/exams` |
+| Generate questions from a lesson file, then review before adding | `/exams/[id]/generate` |
+| Live monitoring, flag review, force submit, results | `/exams/[id]/monitor` |
+| Sitting an exam under lockdown | `/exam/[id]` |
+
+## Security model
+
+The parts that actually hold are server-side, and each was verified against the live
+database rather than assumed:
+
+- **Row-level security on every table.** A student reads only their own rows, an
+  instructor only their own sections. Enforced on the Realtime stream too, not just on
+  queries — a second instructor subscribed to the same channel receives nothing.
+- **The answer key is a separate table.** RLS is row-level and students and instructors
+  share one Postgres role, so `correct_answer` could not be hidden while it sat on
+  `questions` — a student could read the whole key in one query. It now lives in
+  `question_answers`, which students have no policy on at all.
+- **Students cannot write their own grade.** `WITH CHECK` constrains which *rows* you
+  may write, not which *columns*, so a student could once set `score = 100`. Students
+  have no UPDATE on sessions; a trigger forces the opening state on INSERT so a session
+  cannot be created pre-scored or back-dated.
+- **Flags are write-only to students** — they cannot read, edit, or delete the evidence.
+- **API keys are encrypted in Supabase Vault.** Not the browser, not even a signed-in
+  admin session can decrypt one; only server code holding the service key.
+- **The audit log is append-only.** UPDATE and DELETE are revoked, so an administrator
+  can read it but cannot rewrite it.
+
+Lockdown mode itself — fullscreen, tab-switch detection, the honeypot — is browser-side
+and defeatable with devtools. That is a stated limitation, not a defect.
 
 ## Local setup
 
-```
+```bash
 cd web
 npm install
+cp .env.example .env.local     # fill in the Supabase values
 npm run dev
 ```
 
-Environment variables live in `web/.env.local` (never committed — see `.gitignore`). Copy `web/.env.example` once it exists and fill in the Supabase project's connection strings and API keys.
+`DATABASE_URL` and `DIRECT_URL` belong in `web/.env` (Prisma's CLI only auto-loads
+`.env`); the Supabase client keys belong in `web/.env.local`. Neither is committed.
 
-## Where things stand
+## Repository layout
 
-See the build plan (published as a Claude artifact during planning) for the phased roadmap, data model, and team task split.
+```
+web/                     the Next.js application
+  src/app/               routes (admin, exams, exam, login)
+  src/lib/               supabase clients, auth, grading, shuffle, AI
+  prisma/migrations/     every schema change, in order
+docs/RUNBOOK.md          restore, rotate, deploy, known issues
+.github/workflows/       nightly backup and health check
+deploy/                  VPS bootstrap script, kept for reference
+```
+
+## Operations
+
+See [docs/RUNBOOK.md](docs/RUNBOOK.md) for restoring a backup, rotating keys,
+deploying, and the current known issues.

@@ -1,0 +1,56 @@
+name: Health check
+
+# Vercel gives no host to watch, so uptime monitoring lives here instead.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the app
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::warning::APP_URL secret not set — skipping until the app is deployed."
+            exit 0
+          fi
+          # /login is the one page that must render without a session; anything
+          # else would just redirect and prove nothing.
+          CODE=$(curl -s -o /tmp/body -w "%{http_code}" --max-time 25 "$APP_URL/login")
+          MS=$(curl -s -o /dev/null -w "%{time_total}" --max-time 25 "$APP_URL/login")
+          echo "status=$CODE  time=${MS}s"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::App returned $CODE"
+            head -c 400 /tmp/body
+            exit 1
+          fi
+          if ! grep -qi "sign in" /tmp/body; then
+            echo "::error::Page returned 200 but did not render the login form"
+            exit 1
+          fi
+
+      - name: Check the database is reachable
+        env:
+          PROJECT_URL: ${{ secrets.SUPABASE_URL }}
+          ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$PROJECT_URL" ] || [ -z "$ANON_KEY" ]; then
+            echo "::warning::Supabase secrets not set — skipping."
+            exit 0
+          fi
+          # RLS should return an empty array to an anonymous caller, not an error.
+          CODE=$(curl -s -o /tmp/db -w "%{http_code}" --max-time 20 \
+            "$PROJECT_URL/rest/v1/exams?select=id&limit=1" \
+            -H "apikey: $ANON_KEY")
+          echo "postgrest status=$CODE body=$(head -c 120 /tmp/db)"
+          if [ "$CODE" != "200" ]; then
+            echo "::error::PostgREST returned $CODE"; exit 1
+          fi
+          if [ "$(cat /tmp/db)" != "[]" ]; then
+            echo "::error::Anonymous read returned data — RLS may be misconfigured!"
+            exit 1
+          fi

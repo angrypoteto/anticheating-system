@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { auditServerAction } from "@/lib/audit";
 
 export type ActionState = { error?: string; success?: string };
 
@@ -12,7 +13,7 @@ export async function createAccount(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole("ADMIN");
+  const actor = await requireRole("ADMIN");
 
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -50,6 +51,12 @@ export async function createAccount(
     }
   }
 
+  await auditServerAction(actor.id, "create_account", "users", data.user.id, {
+    email,
+    role,
+    section_id: sectionId || null,
+  });
+
   revalidatePath("/admin");
   return { success: `Created ${role.toLowerCase()} account for ${email}.` };
 }
@@ -80,6 +87,8 @@ export async function setAccountStatus(
     await admin.auth.admin.signOut(userId, "global").catch(() => {});
   }
 
+  await auditServerAction(actor.id, "set_account_status", "users", userId, { status });
+
   revalidatePath("/admin");
   return { success: `Account ${status.toLowerCase()}.` };
 }
@@ -88,7 +97,7 @@ export async function createSection(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireRole("ADMIN");
+  const actor = await requireRole("ADMIN");
 
   const name = String(formData.get("name") ?? "").trim();
   const instructorId = String(formData.get("instructorId") ?? "");
@@ -97,11 +106,17 @@ export async function createSection(
   if (!instructorId) return { error: "Pick an instructor." };
 
   const admin = createAdminClient();
-  const { error } = await admin.from("sections").insert({
+  const { data: created, error } = await admin
+    .from("sections")
+    .insert({ name, instructor_id: instructorId })
+    .select("id")
+    .single();
+  if (error) return { error: error.message };
+
+  await auditServerAction(actor.id, "create_section", "sections", created.id, {
     name,
     instructor_id: instructorId,
   });
-  if (error) return { error: error.message };
 
   revalidatePath("/admin");
   return { success: `Section "${name}" created.` };

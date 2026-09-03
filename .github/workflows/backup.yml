@@ -1,5 +1,8 @@
 name: Scheduled backup
 
+# GitHub Actions is the project's "server" for scheduled work: a real, if
+# short-lived, Linux runner that the group configures, since the app itself is on
+# Vercel and has no host to cron against.
 on:
   schedule:
     - cron: "0 18 * * *" # 02:00 Asia/Manila daily
@@ -9,9 +12,105 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Placeholder
-        run: echo "TODO (Phase 6) - pg_dump against SUPABASE_DB_URL, upload archive to a Storage bucket."
-    # Wire up once the Supabase project exists:
-    #   - Add SUPABASE_DB_URL (direct connection string) as a repo secret
-    #   - pg_dump "$SUPABASE_DB_URL" | gzip > backup-$(date +%F).sql.gz
-    #   - Upload via the Supabase Storage API or the AWS CLI (Storage is S3-compatible)
+      - name: Check required secrets
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PROJECT_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          missing=""
+          [ -z "$DB_URL" ]      && missing="$missing SUPABASE_DB_URL"
+          [ -z "$SERVICE_KEY" ] && missing="$missing SUPABASE_SECRET_KEY"
+          [ -z "$PROJECT_URL" ] && missing="$missing SUPABASE_URL"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            echo "Add them under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      # The runner's bundled client is older than the server, and pg_dump refuses
+      # to dump a newer server, so install a matching major version.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Dump database
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          echo "ARCHIVE=backup-$STAMP.sql.gz" >> "$GITHUB_ENV"
+          # Roles and tablespaces are managed by Supabase, not by us.
+          pg_dump "$DB_URL" \
+            --no-owner --no-privileges --clean --if-exists \
+            --schema=public \
+            | gzip -9 > "backup-$STAMP.sql.gz"
+          ls -lh "backup-$STAMP.sql.gz"
+
+      - name: Verify the dump is restorable-looking
+        run: |
+          # A dump that gzips cleanly but contains no schema is the failure mode
+          # that goes unnoticed until a restore is actually needed.
+          if ! gunzip -t "$ARCHIVE"; then
+            echo "::error::Archive is corrupt"; exit 1
+          fi
+          TABLES=$(gunzip -c "$ARCHIVE" | grep -c "^CREATE TABLE" || true)
+          echo "CREATE TABLE statements: $TABLES"
+          if [ "$TABLES" -lt 10 ]; then
+            echo "::error::Only $TABLES tables in the dump — expected at least 10"
+            exit 1
+          fi
+
+      - name: Upload to Supabase Storage
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PROJECT_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          # Bucket is created on first run if it doesn't exist.
+          curl -s -X POST "$PROJECT_URL/storage/v1/bucket" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"id":"backups","name":"backups","public":false}' > /dev/null || true
+
+          CODE=$(curl -s -o /tmp/upload.log -w "%{http_code}" \
+            -X POST "$PROJECT_URL/storage/v1/object/backups/$ARCHIVE" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/gzip" \
+            --data-binary "@$ARCHIVE")
+          echo "upload status: $CODE"
+          if [ "$CODE" -ge 300 ]; then cat /tmp/upload.log; exit 1; fi
+
+      - name: Record the run
+        if: always()
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          PROJECT_URL: ${{ secrets.SUPABASE_URL }}
+          RESULT: ${{ job.status }}
+        run: |
+          STATUS=$([ "$RESULT" = "success" ] && echo SUCCEEDED || echo FAILED)
+          curl -s -X POST "$PROJECT_URL/rest/v1/backup_runs" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"$STATUS\",\"finished_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"storage_path\":\"backups/${ARCHIVE:-unknown}\"}" \
+            > /dev/null
+          echo "recorded $STATUS"
+
+      # Keeps a copy outside Supabase, so a project-level problem doesn't take the
+      # backups with it.
+      - name: Keep a copy on the run
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.STAMP }}
+          path: ${{ env.ARCHIVE }}
+          retention-days: 30

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { gradeAndClose } from "@/lib/grade-session";
+import { auditServerAction } from "@/lib/audit";
 
 export type MonitorState = { error?: string; success?: string };
 
@@ -34,7 +35,7 @@ export async function forceSubmit(
   _prev: MonitorState,
   formData: FormData,
 ): Promise<MonitorState> {
-  await requireRole("INSTRUCTOR", "ADMIN");
+  const actor = await requireRole("INSTRUCTOR", "ADMIN");
   const sessionId = String(formData.get("sessionId") ?? "");
   const examId = String(formData.get("examId") ?? "");
 
@@ -51,6 +52,11 @@ export async function forceSubmit(
 
   const result = await gradeAndClose(sessionId, "instructor");
   if (!result.ok) return { error: result.error };
+
+  // Grading runs as service role, so the trigger cannot see who did it.
+  await auditServerAction(actor.id, "force_submit_session", "exam_sessions", sessionId, {
+    score: result.score,
+  });
 
   revalidatePath(`/exams/${examId}/monitor`);
   return { success: `Submitted — scored ${result.score}%.` };

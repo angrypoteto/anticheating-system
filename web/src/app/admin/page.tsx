@@ -36,6 +36,12 @@ export default async function AdminPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              href="/admin/health"
+              className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              Health
+            </Link>
+            <Link
               href="/admin/keys"
               className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             >

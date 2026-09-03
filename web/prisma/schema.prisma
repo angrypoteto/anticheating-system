@@ -238,7 +238,8 @@ model AiProviderKey {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider     String    @default("gemini")
   label        String
-  encryptedKey String    @map("encrypted_key")
+  vaultSecretId String?  @map("vault_secret_id") @db.Uuid
+  keyHint      String    @default("") @map("key_hint")
   status       KeyStatus @default(ACTIVE)
   addedById    String    @map("added_by_id") @db.Uuid
   addedBy      User      @relation("KeyAdder", fields: [addedById], references: [id])

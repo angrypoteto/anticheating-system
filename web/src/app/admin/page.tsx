@@ -34,12 +34,20 @@ export default async function AdminPage() {
               Signed in as {admin.email}
             </p>
           </div>
-          <Link
-            href="/"
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            Back
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/keys"
+              className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              AI provider keys
+            </Link>
+            <Link
+              href="/"
+              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              Back
+            </Link>
+          </div>
         </header>
 
         <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">

@@ -79,9 +79,9 @@ export default async function Home() {
           </form>
         </header>
 
-        <section className="mt-8 rounded-lg border border-dashed border-gray-300 p-8 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400">
+        <section className="mt-8 rounded-lg border border-gray-200 bg-white p-8 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
           <p className="font-medium text-gray-900 dark:text-gray-100">
-            Phase 1 complete — accounts, roles, and row-level security are live.
+            {role === "STUDENT" ? "Your exams" : "Getting started"}
           </p>
           {role === "ADMIN" ? (
             <p className="mt-2">

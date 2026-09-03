@@ -230,8 +230,13 @@ function StudentRow({
   const active = flags.filter((f) => f.resolution == null);
   const live = session.status === "IN_PROGRESS";
 
+  // started_at is stamped by Postgres, submitted_at by the app server — two clocks,
+  // so a fast submission can come back very slightly negative. Never show that.
   const elapsed = session.submitted_at
-    ? new Date(session.submitted_at).getTime() - new Date(session.started_at).getTime()
+    ? Math.max(
+        0,
+        new Date(session.submitted_at).getTime() - new Date(session.started_at).getTime(),
+      )
     : null;
 
   return (

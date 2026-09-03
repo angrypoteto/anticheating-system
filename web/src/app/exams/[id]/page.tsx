@@ -63,7 +63,15 @@ export default async function ExamEditorPage({
                 {questions?.length === 1 ? "" : "s"}
               </p>
             </div>
-            <StatusControls examId={exam.id} status={exam.status} />
+            <div className="flex items-center gap-4">
+              <Link
+                href={`/exams/${exam.id}/monitor`}
+                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                Monitor &amp; results
+              </Link>
+              <StatusControls examId={exam.id} status={exam.status} />
+            </div>
           </div>
         </header>
 

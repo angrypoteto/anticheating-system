@@ -43,14 +43,30 @@ export default async function Home() {
               >
                 admin console
               </Link>
+              , or build exams in the{" "}
+              <Link
+                href="/exams"
+                className="font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
+              >
+                exam builder
+              </Link>
+              .
+            </p>
+          ) : role === "INSTRUCTOR" ? (
+            <p className="mt-2">
+              Build and publish exams in the{" "}
+              <Link
+                href="/exams"
+                className="font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
+              >
+                exam builder
+              </Link>
               .
             </p>
           ) : (
             <p className="mt-2">
-              Next up:{" "}
-              {role === "INSTRUCTOR"
-                ? "the exam builder (Phase 2)."
-                : "your assigned exams will appear here once an instructor publishes one."}
+              Your assigned exams will appear here once an instructor publishes
+              one.
             </p>
           )}
         </section>

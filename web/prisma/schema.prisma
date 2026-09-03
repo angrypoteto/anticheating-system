@@ -102,15 +102,24 @@ model Question {
   type          QuestionType
   prompt        String
   choices       Json?
-  correctAnswer Json           @map("correct_answer")
   source        QuestionSource @default(MANUAL)
   reviewStatus  ReviewStatus   @default(APPROVED) @map("review_status")
   order         Int            @default(0)
   createdAt     DateTime       @default(now()) @map("created_at")
 
   answers Answer[]
+  answerKey QuestionAnswer?
 
   @@map("questions")
+}
+
+model QuestionAnswer {
+  questionId    String   @id @map("question_id") @db.Uuid
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  correctAnswer Json     @map("correct_answer")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("question_answers")
 }
 
 model LessonFile {

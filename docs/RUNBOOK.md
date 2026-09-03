@@ -160,17 +160,26 @@ npx prisma migrate status                                       # should read cl
 
 ## Known issues
 
-### GitHub Actions runs fail instantly with `startup_failure`
+### GitHub Actions jobs do not start — account locked
 
-Every workflow, including a three-line one, ends in about a second with no logs and no
-annotations. This is **not** a workflow problem — it was reproduced with a minimal file
-— and not a minutes problem (0 of 3,000 used). The cause is account-level: usually an
-unverified email, a spending limit of $0, or Actions disabled under the account's
-Settings → Actions. The reason is printed as a banner on the run page in the browser,
-which the API does not expose.
+Runs end almost immediately with:
 
-Until it is resolved, backups and health checks do not run on a schedule. The backup
-can be taken by hand with the `pg_dump` line above.
+> The job was not started because your account is locked due to a billing issue.
+
+This is **not** a workflow problem and **not** a minutes problem (0 of 3,000 used). It
+was narrowed by elimination: a three-line workflow failed identically, and making the
+repository public moved the runs from an instant `startup_failure` to reaching job
+scheduling — proving the workflow files are valid — but the lock still blocks the job
+itself.
+
+**Fix:** resolve the billing problem on the GitHub account at
+<https://github.com/settings/billing> — typically a past-due invoice or an expired card
+on some other paid product on the same account. Actions minutes are free for public
+repositories, but a billing lock blocks them regardless.
+
+Until then, backups and health checks do not run on a schedule. Take a backup by hand
+with the `pg_dump` command above, and note that `backup_runs` will stay empty, so the
+Health page will keep reporting the backup as stale — correctly.
 
 ### Leaked-password protection is off
 

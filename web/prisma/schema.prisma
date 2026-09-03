@@ -1,0 +1,241 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+// id matches auth.users.id (Supabase Auth) — kept in sync by a Phase 1 trigger, not a cross-schema FK.
+model User {
+  id             String    @id @db.Uuid
+  email          String    @unique
+  role           Role
+  status         UserStatus @default(ACTIVE)
+  sectionId      String?   @map("section_id") @db.Uuid
+  section        Section?  @relation("StudentSection", fields: [sectionId], references: [id])
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  taughtSections Section[]       @relation("InstructorSections")
+  examsCreated   Exam[]          @relation("ExamCreator")
+  lessonUploads  LessonFile[]    @relation("LessonUploader")
+  examSessions   ExamSession[]
+  resolvedFlags  Flag[]          @relation("FlagResolver")
+  auditLogs      AuditLog[]      @relation("AuditActor")
+  addedKeys      AiProviderKey[] @relation("KeyAdder")
+
+  @@map("users")
+}
+
+model Section {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  instructorId String   @map("instructor_id") @db.Uuid
+  instructor   User     @relation("InstructorSections", fields: [instructorId], references: [id])
+  students     User[]   @relation("StudentSection")
+  exams        Exam[]
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("sections")
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Exam {
+  id             String   @id @default(uuid()) @db.Uuid
+  title          String
+  sectionId      String   @map("section_id") @db.Uuid
+  section        Section  @relation(fields: [sectionId], references: [id])
+  createdById    String   @map("created_by_id") @db.Uuid
+  createdBy      User     @relation("ExamCreator", fields: [createdById], references: [id])
+  status         ExamStatus @default(DRAFT)
+  timerConfig    Json     @map("timer_config")
+  lockdownConfig Json     @map("lockdown_config")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  questions   Question[]
+  lessonFiles LessonFile[]
+  sessions    ExamSession[]
+
+  @@map("exams")
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  IDENTIFICATION
+}
+
+enum QuestionSource {
+  MANUAL
+  AI_DRAFT
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+}
+
+model Question {
+  id            String         @id @default(uuid()) @db.Uuid
+  examId        String         @map("exam_id") @db.Uuid
+  exam          Exam           @relation(fields: [examId], references: [id])
+  type          QuestionType
+  prompt        String
+  choices       Json?
+  correctAnswer Json           @map("correct_answer")
+  source        QuestionSource @default(MANUAL)
+  reviewStatus  ReviewStatus   @default(APPROVED) @map("review_status")
+  order         Int            @default(0)
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  answers Answer[]
+
+  @@map("questions")
+}
+
+model LessonFile {
+  id           String   @id @default(uuid()) @db.Uuid
+  examId       String   @map("exam_id") @db.Uuid
+  exam         Exam     @relation(fields: [examId], references: [id])
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User     @relation("LessonUploader", fields: [uploadedById], references: [id])
+  storagePath  String   @map("storage_path")
+  parsedText   String?  @map("parsed_text")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("lesson_files")
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+
+model ExamSession {
+  id          String        @id @default(uuid()) @db.Uuid
+  examId      String        @map("exam_id") @db.Uuid
+  exam        Exam          @relation(fields: [examId], references: [id])
+  studentId   String        @map("student_id") @db.Uuid
+  student     User          @relation(fields: [studentId], references: [id])
+  status      SessionStatus @default(IN_PROGRESS)
+  startedAt   DateTime      @default(now()) @map("started_at")
+  submittedAt DateTime?     @map("submitted_at")
+  score       Float?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  answers Answer[]
+  flags   Flag[]
+
+  @@unique([examId, studentId])
+  @@map("exam_sessions")
+}
+
+model Answer {
+  id         String      @id @default(uuid()) @db.Uuid
+  sessionId  String      @map("session_id") @db.Uuid
+  session    ExamSession @relation(fields: [sessionId], references: [id])
+  questionId String      @map("question_id") @db.Uuid
+  question   Question    @relation(fields: [questionId], references: [id])
+  response   Json
+  answeredAt DateTime    @updatedAt @map("answered_at")
+
+  @@unique([sessionId, questionId])
+  @@map("answers")
+}
+
+enum FlagType {
+  TAB_SWITCH
+  FULLSCREEN_EXIT
+  WINDOW_BLUR
+  HONEYPOT
+}
+
+enum FlagResolution {
+  VOIDED
+  FORCE_SUBMITTED
+}
+
+model Flag {
+  id           String          @id @default(uuid()) @db.Uuid
+  sessionId    String          @map("session_id") @db.Uuid
+  session      ExamSession     @relation(fields: [sessionId], references: [id])
+  type         FlagType
+  strikeNumber Int             @map("strike_number")
+  questionId   String?         @map("question_id") @db.Uuid
+  occurredAt   DateTime        @default(now()) @map("occurred_at")
+  resolvedById String?         @map("resolved_by_id") @db.Uuid
+  resolvedBy   User?           @relation("FlagResolver", fields: [resolvedById], references: [id])
+  resolution   FlagResolution?
+
+  @@map("flags")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @map("actor_id") @db.Uuid
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id])
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id") @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_log")
+}
+
+enum BackupStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model BackupRun {
+  id          String       @id @default(uuid()) @db.Uuid
+  startedAt   DateTime     @default(now()) @map("started_at")
+  finishedAt  DateTime?    @map("finished_at")
+  status      BackupStatus @default(RUNNING)
+  storagePath String?      @map("storage_path")
+
+  @@map("backup_runs")
+}
+
+enum KeyStatus {
+  ACTIVE
+  DISABLED
+}
+
+model AiProviderKey {
+  id           String    @id @default(uuid()) @db.Uuid
+  provider     String    @default("gemini")
+  label        String
+  encryptedKey String    @map("encrypted_key")
+  status       KeyStatus @default(ACTIVE)
+  addedById    String    @map("added_by_id") @db.Uuid
+  addedBy      User      @relation("KeyAdder", fields: [addedById], references: [id])
+  lastUsedAt   DateTime? @map("last_used_at")
+  lastError    String?   @map("last_error")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("ai_provider_keys")
+}

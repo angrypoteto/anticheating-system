@@ -1,0 +1,17 @@
+name: Scheduled backup
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # 02:00 Asia/Manila daily
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "TODO (Phase 6) - pg_dump against SUPABASE_DB_URL, upload archive to a Storage bucket."
+    # Wire up once the Supabase project exists:
+    #   - Add SUPABASE_DB_URL (direct connection string) as a repo secret
+    #   - pg_dump "$SUPABASE_DB_URL" | gzip > backup-$(date +%F).sql.gz
+    #   - Upload via the Supabase Storage API or the AWS CLI (Storage is S3-compatible)

@@ -1,6 +1,55 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+async function StudentExams() {
+  const supabase = await createClient();
+  // RLS returns only PUBLISHED exams for this student's section.
+  const [{ data: exams }, { data: sessions }] = await Promise.all([
+    supabase.from("exams").select("id, title").order("updated_at", { ascending: false }),
+    supabase.from("exam_sessions").select("exam_id, status, score"),
+  ]);
+
+  const byExam = new Map((sessions ?? []).map((s) => [s.exam_id, s]));
+
+  if (!exams?.length) {
+    return (
+      <p className="mt-2">
+        Your assigned exams will appear here once an instructor publishes one.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="mt-4 space-y-2">
+      {exams.map((e) => {
+        const session = byExam.get(e.id);
+        const finished = session && session.status !== "IN_PROGRESS";
+        return (
+          <li
+            key={e.id}
+            className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700"
+          >
+            <span className="text-gray-900 dark:text-gray-100">{e.title}</span>
+            {finished ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                submitted{session.score != null ? ` · ${session.score}%` : ""}
+              </span>
+            ) : (
+              <Link
+                href={`/exam/${e.id}`}
+                className="text-sm font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
+              >
+                {session ? "Resume" : "Start"}
+              </Link>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export default async function Home() {
   const profile = await getCurrentUser();
@@ -64,10 +113,7 @@ export default async function Home() {
               .
             </p>
           ) : (
-            <p className="mt-2">
-              Your assigned exams will appear here once an instructor publishes
-              one.
-            </p>
+            <StudentExams />
           )}
         </section>
       </div>

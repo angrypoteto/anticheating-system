@@ -29,7 +29,7 @@ model User {
   status         UserStatus @default(ACTIVE)
   sectionId      String?   @map("section_id") @db.Uuid
   section        Section?  @relation("StudentSection", fields: [sectionId], references: [id])
-  createdAt      DateTime  @default(now()) @map("created_at")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   taughtSections Section[]       @relation("InstructorSections")
   examsCreated   Exam[]          @relation("ExamCreator")
@@ -49,7 +49,7 @@ model Section {
   instructor   User     @relation("InstructorSections", fields: [instructorId], references: [id])
   students     User[]   @relation("StudentSection")
   exams        Exam[]
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("sections")
 }
@@ -70,8 +70,8 @@ model Exam {
   status         ExamStatus @default(DRAFT)
   timerConfig    Json     @map("timer_config")
   lockdownConfig Json     @map("lockdown_config")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   questions   Question[]
   lessonFiles LessonFile[]
@@ -105,7 +105,7 @@ model Question {
   source        QuestionSource @default(MANUAL)
   reviewStatus  ReviewStatus   @default(APPROVED) @map("review_status")
   order         Int            @default(0)
-  createdAt     DateTime       @default(now()) @map("created_at")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
   answers Answer[]
   answerKey QuestionAnswer?
@@ -117,7 +117,7 @@ model QuestionAnswer {
   questionId    String   @id @map("question_id") @db.Uuid
   question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   correctAnswer Json     @map("correct_answer")
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("question_answers")
 }
@@ -130,7 +130,7 @@ model LessonFile {
   uploadedBy   User     @relation("LessonUploader", fields: [uploadedById], references: [id])
   storagePath  String   @map("storage_path")
   parsedText   String?  @map("parsed_text")
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("lesson_files")
 }
@@ -148,10 +148,10 @@ model ExamSession {
   studentId   String        @map("student_id") @db.Uuid
   student     User          @relation(fields: [studentId], references: [id])
   status      SessionStatus @default(IN_PROGRESS)
-  startedAt   DateTime      @default(now()) @map("started_at")
-  submittedAt DateTime?     @map("submitted_at")
+  startedAt   DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
+  submittedAt DateTime?     @map("submitted_at") @db.Timestamptz(3)
   score       Float?
-  createdAt   DateTime      @default(now()) @map("created_at")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   answers Answer[]
   flags   Flag[]
@@ -167,7 +167,7 @@ model Answer {
   questionId String      @map("question_id") @db.Uuid
   question   Question    @relation(fields: [questionId], references: [id])
   response   Json
-  answeredAt DateTime    @default(now()) @updatedAt @map("answered_at")
+  answeredAt DateTime    @default(now()) @updatedAt @map("answered_at") @db.Timestamptz(3)
 
   @@unique([sessionId, questionId])
   @@map("answers")
@@ -192,7 +192,7 @@ model Flag {
   type         FlagType
   strikeNumber Int             @map("strike_number")
   questionId   String?         @map("question_id") @db.Uuid
-  occurredAt   DateTime        @default(now()) @map("occurred_at")
+  occurredAt   DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(3)
   resolvedById String?         @map("resolved_by_id") @db.Uuid
   resolvedBy   User?           @relation("FlagResolver", fields: [resolvedById], references: [id])
   resolution   FlagResolution?
@@ -208,7 +208,7 @@ model AuditLog {
   targetType String   @map("target_type")
   targetId   String   @map("target_id") @db.Uuid
   metadata   Json?
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("audit_log")
 }
@@ -221,8 +221,8 @@ enum BackupStatus {
 
 model BackupRun {
   id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  startedAt   DateTime     @default(now()) @map("started_at")
-  finishedAt  DateTime?    @map("finished_at")
+  startedAt   DateTime     @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt  DateTime?    @map("finished_at") @db.Timestamptz(3)
   status      BackupStatus @default(RUNNING)
   storagePath String?      @map("storage_path")
 
@@ -242,9 +242,9 @@ model AiProviderKey {
   status       KeyStatus @default(ACTIVE)
   addedById    String    @map("added_by_id") @db.Uuid
   addedBy      User      @relation("KeyAdder", fields: [addedById], references: [id])
-  lastUsedAt   DateTime? @map("last_used_at")
+  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(3)
   lastError    String?   @map("last_error")
-  createdAt    DateTime  @default(now()) @map("created_at")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("ai_provider_keys")
 }

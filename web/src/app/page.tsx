@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -33,13 +34,25 @@ export default async function Home() {
           <p className="font-medium text-gray-900 dark:text-gray-100">
             Phase 1 complete — accounts, roles, and row-level security are live.
           </p>
-          <p className="mt-2">
-            Next up: {role === "ADMIN"
-              ? "the admin console for creating instructor and student accounts."
-              : role === "INSTRUCTOR"
+          {role === "ADMIN" ? (
+            <p className="mt-2">
+              Manage accounts and sections in the{" "}
+              <Link
+                href="/admin"
+                className="font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
+              >
+                admin console
+              </Link>
+              .
+            </p>
+          ) : (
+            <p className="mt-2">
+              Next up:{" "}
+              {role === "INSTRUCTOR"
                 ? "the exam builder (Phase 2)."
                 : "your assigned exams will appear here once an instructor publishes one."}
-          </p>
+            </p>
+          )}
         </section>
       </div>
     </main>

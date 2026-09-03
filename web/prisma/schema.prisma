@@ -43,7 +43,7 @@ model User {
 }
 
 model Section {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
   instructorId String   @map("instructor_id") @db.Uuid
   instructor   User     @relation("InstructorSections", fields: [instructorId], references: [id])
@@ -61,7 +61,7 @@ enum ExamStatus {
 }
 
 model Exam {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String
   sectionId      String   @map("section_id") @db.Uuid
   section        Section  @relation(fields: [sectionId], references: [id])
@@ -71,7 +71,7 @@ model Exam {
   timerConfig    Json     @map("timer_config")
   lockdownConfig Json     @map("lockdown_config")
   createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
 
   questions   Question[]
   lessonFiles LessonFile[]
@@ -96,7 +96,7 @@ enum ReviewStatus {
 }
 
 model Question {
-  id            String         @id @default(uuid()) @db.Uuid
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examId        String         @map("exam_id") @db.Uuid
   exam          Exam           @relation(fields: [examId], references: [id])
   type          QuestionType
@@ -114,7 +114,7 @@ model Question {
 }
 
 model LessonFile {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examId       String   @map("exam_id") @db.Uuid
   exam         Exam     @relation(fields: [examId], references: [id])
   uploadedById String   @map("uploaded_by_id") @db.Uuid
@@ -133,7 +133,7 @@ enum SessionStatus {
 }
 
 model ExamSession {
-  id          String        @id @default(uuid()) @db.Uuid
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examId      String        @map("exam_id") @db.Uuid
   exam        Exam          @relation(fields: [examId], references: [id])
   studentId   String        @map("student_id") @db.Uuid
@@ -152,13 +152,13 @@ model ExamSession {
 }
 
 model Answer {
-  id         String      @id @default(uuid()) @db.Uuid
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId  String      @map("session_id") @db.Uuid
   session    ExamSession @relation(fields: [sessionId], references: [id])
   questionId String      @map("question_id") @db.Uuid
   question   Question    @relation(fields: [questionId], references: [id])
   response   Json
-  answeredAt DateTime    @updatedAt @map("answered_at")
+  answeredAt DateTime    @default(now()) @updatedAt @map("answered_at")
 
   @@unique([sessionId, questionId])
   @@map("answers")
@@ -177,7 +177,7 @@ enum FlagResolution {
 }
 
 model Flag {
-  id           String          @id @default(uuid()) @db.Uuid
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId    String          @map("session_id") @db.Uuid
   session      ExamSession     @relation(fields: [sessionId], references: [id])
   type         FlagType
@@ -192,7 +192,7 @@ model Flag {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   actorId    String   @map("actor_id") @db.Uuid
   actor      User     @relation("AuditActor", fields: [actorId], references: [id])
   action     String
@@ -211,7 +211,7 @@ enum BackupStatus {
 }
 
 model BackupRun {
-  id          String       @id @default(uuid()) @db.Uuid
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   startedAt   DateTime     @default(now()) @map("started_at")
   finishedAt  DateTime?    @map("finished_at")
   status      BackupStatus @default(RUNNING)
@@ -226,7 +226,7 @@ enum KeyStatus {
 }
 
 model AiProviderKey {
-  id           String    @id @default(uuid()) @db.Uuid
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider     String    @default("gemini")
   label        String
   encryptedKey String    @map("encrypted_key")

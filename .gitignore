@@ -5,3 +5,4 @@ key.md
 node_modules/
 .next/
 supabase/.temp/
+backups/

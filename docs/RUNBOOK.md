@@ -77,36 +77,88 @@ first and moves on when one is rate-limited, which is the whole point on a free 
 
 ## Backups and restore
 
-### What is backed up
-
-The nightly workflow runs `pg_dump` over the `public` schema, gzips it, uploads it to
-the private `backups` bucket in Supabase Storage, and keeps a copy as a GitHub Actions
-artifact for 30 days. Each run writes a row to `backup_runs`, which
-**Admin console → Health** surfaces with a warning if the last one is over 48 hours old.
-
-Supabase's own daily backups exist too, but this dump is the copy the group controls
-and can restore without the dashboard.
-
-### Restoring
+### Taking a backup right now (no GitHub Actions needed)
 
 ```bash
-# 1. Fetch the archive (from Storage, or the Actions artifact)
-gunzip backup-YYYYMMDDTHHMMSSZ.sql.gz
+cd web
+npm run backup
+```
 
-# 2. Restore into the target database
-psql "$SUPABASE_DB_URL" -f backup-YYYYMMDDTHHMMSSZ.sql
+This works today — it needs neither the database password nor a working Actions
+account. It picks a mode automatically:
+
+| Mode | When | Contains |
+|---|---|---|
+| **full** | `DIRECT_URL` is set *and* Docker is running | `pg_dump` of the whole public schema |
+| **data** | otherwise | every table exported as JSON |
+
+A data-only export is still a complete restore path, because every schema change is
+committed under `web/prisma/migrations` — replay the migrations, then import the rows.
+Either way the archive is gzipped, written to `backups/`, uploaded to the private
+`backups` bucket, and recorded in `backup_runs` so **Admin console → Health** reflects
+it. A failed run is recorded too, so silence never looks like success.
+
+Full mode needs no local Postgres install: it runs `pg_dump` from the `postgres:17`
+Docker image.
+
+### Running it on a schedule without Actions
+
+Windows Task Scheduler, which is real scheduled-job administration and costs nothing:
+
+1. Task Scheduler → **Create Basic Task** → name it "Anticheat nightly backup".
+2. Trigger: **Daily**, 02:00.
+3. Action: **Start a program**
+   - Program: `node`
+   - Arguments: `scripts/backup.mjs`
+   - Start in: the full path to the `web` folder
+4. Tick **Run whether user is logged on or not**, then verify with **Run** and check
+   `backup_runs` on the Health page.
+
+### What the nightly workflow does when Actions works
+
+The same thing, plus a 30-day artifact copy. See
+[backup.yml](../.github/workflows/backup.yml). Supabase's own daily backups exist as
+well, but these are the copy the group controls and can restore without the dashboard.
+
+### Restoring a data-only backup (`.json.gz`)
+
+```bash
+cd web
+npm run restore -- ../backups/backup-<stamp>.json.gz --dry-run   # see the plan first
+npm run restore -- ../backups/backup-<stamp>.json.gz
+```
+
+Run the migrations against the target database first so the schema exists, then this
+replays the rows. It handles the `users` ↔ `sections` foreign-key cycle by inserting
+users without a section, then sections, then relinking.
+
+> A dry run only prints the plan; it never touches the database and so cannot catch a
+> write-level problem. Restoring over the current data is idempotent, so it is safe to
+> exercise the real path as a rehearsal — do that occasionally rather than trusting a
+> dry run. That is how a bug that silently skipped the entire answer key was found.
+
+### Restoring a full dump (`.sql.gz`)
+
+```bash
+gunzip backup-<stamp>.sql.gz
+psql "$DIRECT_URL" -f backup-<stamp>.sql
+# or, without a local psql:
+docker run --rm -i postgres:17 psql "$DIRECT_URL" < backup-<stamp>.sql
 ```
 
 The dump uses `--clean --if-exists`, so it drops and recreates the public schema's
 objects. **This overwrites current data.** Restore into a fresh project first if you
 are unsure, and only then decide whether to point the app at it.
 
-What the dump does *not* contain, because `pg_dump --schema=public` excludes them:
+### What no backup here contains
 
-- `auth.users` — accounts live in Supabase Auth. Restoring the public schema without
-  them leaves `public.users` rows whose logins no longer exist.
-- Vault secrets — the AI provider keys must be re-added afterwards.
-- Storage objects — lesson files are separate; copy the bucket if they matter.
+Both modes cover the `public` schema only:
+
+- `auth.users` — accounts live in Supabase Auth. `public.users` rows will come back,
+  but nobody can log in until the accounts are recreated.
+- **Vault secrets** — `ai_provider_keys` rows restore with a dangling pointer; the API
+  keys themselves must be re-added in the admin console.
+- **Storage objects** — lesson uploads live in the bucket; copy it separately.
 
 ### The backup never ran
 

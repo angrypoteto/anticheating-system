@@ -2,21 +2,9 @@
 
 import { useActionState } from "react";
 import { setExamWindow } from "../actions";
+import { DateTimePicker } from "@/components/datetime-picker";
+import { isoToInput } from "@/lib/wallclock";
 import type { ActionState } from "../actions";
-
-/** The value a datetime-local input wants, from an ISO string, in Manila time. */
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  // en-CA gives YYYY-MM-DD; the time part is forced to 24-hour.
-  const date = d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
-  const time = d.toLocaleTimeString("en-GB", {
-    timeZone: "Asia/Manila",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `${date}T${time}`;
-}
 
 const shown = (iso: string | null) =>
   iso
@@ -91,8 +79,6 @@ export function ExamWindow({
     muted: "bg-gray-100 text-gray-700 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700",
   }[status.tone];
 
-  const field =
-    "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
   const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 
   return (
@@ -129,33 +115,25 @@ export function ExamWindow({
         <input type="hidden" name="mode" value="schedule" />
 
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Or set the window in advance. Times are Philippine time; leave either
-          side blank to leave it unbounded.
+          Or set the window in advance. Pick a date and time from the calendar —
+          leave either side unset to leave it unbounded.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="opensAt" className={label}>
-              Opens
-            </label>
-            <input
-              id="opensAt"
+            <span className={label}>Opens</span>
+            <DateTimePicker
               name="opensAt"
-              type="datetime-local"
-              defaultValue={toLocalInput(opensAt)}
-              className={field}
+              label="When the exam opens"
+              defaultValue={isoToInput(opensAt)}
             />
           </div>
           <div>
-            <label htmlFor="closesAt" className={label}>
-              Closes
-            </label>
-            <input
-              id="closesAt"
+            <span className={label}>Closes</span>
+            <DateTimePicker
               name="closesAt"
-              type="datetime-local"
-              defaultValue={toLocalInput(closesAt)}
-              className={field}
+              label="When the exam closes"
+              defaultValue={isoToInput(closesAt)}
             />
           </div>
         </div>

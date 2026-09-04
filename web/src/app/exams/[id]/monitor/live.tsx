@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { forceSubmit, voidFlag, type MonitorState } from "./actions";
+import { forceSubmit, voidAllFlags, voidFlag, type MonitorState } from "./actions";
 
 export type SessionRow = {
   id: string;
@@ -168,6 +168,8 @@ export function LiveMonitor({
         />
         <Stat label="Average" value={average != null ? `${average}%` : "—"} />
       </div>
+
+      <ClearAllFlags examId={examId} open={flags.filter((f) => f.resolution == null).length} />
 
       <p className="text-xs text-gray-500 dark:text-gray-400">
         {connected ? "● Live — updates stream in as they happen" : "○ Connecting…"}
@@ -352,5 +354,38 @@ function FlagLine({
         </form>
       )}
     </li>
+  );
+}
+
+
+/**
+ * One button for the case where a whole class gets flagged at once — a
+ * projector flicker, or everyone told to open a reference sheet. Clearing forty
+ * of those one at a time is how a teacher learns to ignore flags entirely.
+ */
+function ClearAllFlags({ examId, open }: { examId: string; open: number }) {
+  const [state, action, pending] = useActionState<MonitorState, FormData>(
+    voidAllFlags,
+    {},
+  );
+  if (!open) return null;
+
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-3">
+      <input type="hidden" name="examId" value={examId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+      >
+        {pending ? "Clearing…" : `Void all ${open} open flag${open === 1 ? "" : "s"}`}
+      </button>
+      {state.error ? (
+        <span role="alert" className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
+      ) : null}
+      {state.success ? (
+        <span role="status" className="text-sm text-green-700 dark:text-green-400">{state.success}</span>
+      ) : null}
+    </form>
   );
 }

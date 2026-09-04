@@ -121,6 +121,15 @@ export default async function TeacherStudentsPage() {
         subtitle="Who is on track, who is drifting, and who still owes you an exam. Rule-based, from scores and attendance — not a prediction model."
       />
 
+      <div className="flex flex-wrap gap-3">
+        <a
+          href="/teacher/students/export"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        >
+          Download CSV
+        </a>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Your students"

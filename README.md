@@ -20,6 +20,9 @@ GitHub Actions.
 | Create accounts and classes (one subject per section), enable/disable users | `/admin` |
 | Teacher console — own exams, own students, own classes | `/teacher` |
 | Open, close, or schedule when an exam can be sat | `/exams/<id>` → "Availability" |
+| Assign who an exam is for, and see who has not sat it | `/exams/<id>` → "Who it is for" |
+| See which questions the class got wrong | `/exams/<id>/monitor` |
+| Export your own students' report | `/teacher/students` → Download CSV |
 | Turn classes off entirely — exams then reach only who you send the link to | `/admin/settings` |
 | Share an exam by link, the way a Google Form is shared | `/exams/<id>` → "Send this to your students" |
 | Students sign up with email or a Google account | `/signup` (see the runbook for the one-time Google setup) |

@@ -8,6 +8,7 @@ import { ExamPreview } from "./preview";
 import { ClassTargets, PublishControls } from "./publish";
 import { ShareLink } from "./share";
 import { ExamWindow } from "./window";
+import { Roster, type RosterPerson } from "./roster";
 import { siteUrl } from "@/lib/site-url";
 import { classesEnabled } from "@/lib/settings";
 
@@ -63,6 +64,24 @@ export default async function ExamEditorPage({
     (!exam.closes_at || new Date(exam.closes_at).getTime() > nowMs);
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
   const useClasses = await classesEnabled();
+
+  // Who the paper is for, and who has actually sat it. Without the roster the
+  // only students the system knows about are those who already turned up.
+  const [{ data: roster }, { data: sat }, { data: everyone }] = await Promise.all([
+    supabase.from("exam_access").select("student_id").eq("exam_id", exam.id),
+    supabase.from("exam_sessions").select("student_id").eq("exam_id", exam.id),
+    supabase.from("users").select("id, email, full_name").eq("role", "STUDENT"),
+  ]);
+  const onRoster = new Set((roster ?? []).map((r) => r.student_id));
+  const hasSat = new Set((sat ?? []).map((r) => r.student_id));
+  const people: RosterPerson[] = (everyone ?? [])
+    .map((u) => ({
+      id: u.id,
+      name: u.full_name || u.email,
+      sat: hasSat.has(u.id),
+      onRoster: onRoster.has(u.id),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const qs = questions ?? [];
 
   return (
@@ -117,6 +136,8 @@ export default async function ExamEditorPage({
         ) : null}
 
         <ShareLink url={shareUrl} live={published} linkOnly={!useClasses} />
+
+        <Roster examId={exam.id} people={people} linkOnly={!useClasses} />
 
         <ExamWindow
           examId={exam.id}

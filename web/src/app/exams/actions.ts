@@ -427,3 +427,48 @@ export async function setExamWindow(
           : "Schedule saved.",
   };
 }
+
+
+/**
+ * Put a student on an exam's roster, or take them off.
+ *
+ * The roster is exam_access — the same table a share link writes to. That is
+ * deliberate: "I sent this to Ana" and "Ana opened the link" should be one fact,
+ * not two that can disagree. Adding someone here is how a teacher records who
+ * the paper is *for*, which is what makes an absentee visible; without it the
+ * only people the system knows about are those who already turned up.
+ */
+export async function setExamRoster(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("INSTRUCTOR", "ADMIN");
+
+  const examId = String(formData.get("examId") ?? "");
+  const studentId = String(formData.get("studentId") ?? "");
+  const add = String(formData.get("add") ?? "") === "1";
+  if (!examId || !studentId) return { error: "Which exam, and which student?" };
+
+  const supabase = await createClient();
+
+  if (add) {
+    const { error } = await supabase
+      .from("exam_access")
+      .upsert({ exam_id: examId, student_id: studentId }, { onConflict: "exam_id,student_id" });
+    if (error) return { error: error.message };
+  } else {
+    // Someone who has already sat it keeps their result either way; this only
+    // removes them from the roster and stops them starting.
+    const { error } = await supabase
+      .from("exam_access")
+      .delete()
+      .eq("exam_id", examId)
+      .eq("student_id", studentId);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath(`/exams/${examId}`);
+  revalidatePath("/teacher/students");
+  revalidatePath("/admin/students");
+  return { success: add ? "Added to the roster." : "Removed from the roster." };
+}

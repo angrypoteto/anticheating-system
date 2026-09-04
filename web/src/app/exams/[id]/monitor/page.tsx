@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LiveMonitor, type FlagRow, type SessionRow } from "./live";
+import { PerQuestion } from "./per-question";
 
 export default async function MonitorPage({
   params,
@@ -92,6 +93,19 @@ export default async function MonitorPage({
           studentNames={studentNames}
           questionLabels={questionLabels}
         />
+
+        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+              How each question went
+            </h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Hardest first, by the share of people who answered it correctly. A
+              question nobody got is usually the question, not the class.
+            </p>
+          </div>
+          <PerQuestion examId={exam.id} />
+        </section>
       </div>
     </main>
   );

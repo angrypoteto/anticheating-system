@@ -439,3 +439,19 @@ exactly, students cannot see each other's sittings, answers or flags, the
 answer key stays unreadable, a second sitting is refused, answers are refused
 after submission, and no student can delete their own flags. Teacher pages
 render in under a second with 61 students and 40 sittings.
+
+
+## Who an exam is for
+
+The exam page has a **Who it is for** panel. Adding a student there is how a
+teacher records the roster; opening the share link adds one automatically.
+
+Both write to the same table, `exam_access`, on purpose: "I set this for Ana"
+and "Ana opened the link" should be one fact rather than two that can disagree.
+The consequence is the useful one — a student assigned but not yet arrived shows
+as missing, which is the thing a teacher most wants to know mid-exam. Without
+assigning anybody the system only ever knows about the people who already turned
+up, and can never report an absentee.
+
+Removing someone from the roster stops them starting; it does not delete a
+result they have already earned.

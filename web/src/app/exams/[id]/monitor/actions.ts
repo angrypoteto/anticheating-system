@@ -61,3 +61,57 @@ export async function forceSubmit(
   revalidatePath(`/exams/${examId}/monitor`);
   return { success: `Submitted — scored ${result.score}%.` };
 }
+
+
+/**
+ * Void every unresolved flag on this exam, or on one sitting.
+ *
+ * A wobbly projector or a class told to alt-tab to a reference sheet can raise
+ * a flag against everybody at once, and clearing forty of those one at a time
+ * is how a teacher learns to ignore flags altogether. RLS still limits this to
+ * the owning instructor, and it never touches a flag already resolved.
+ */
+export async function voidAllFlags(
+  _prev: MonitorState,
+  formData: FormData,
+): Promise<MonitorState> {
+  const user = await requireRole("INSTRUCTOR", "ADMIN");
+  const examId = String(formData.get("examId") ?? "");
+  const sessionId = String(formData.get("sessionId") ?? "");
+  if (!examId) return { error: "Which exam?" };
+
+  const supabase = await createClient();
+
+  // Scope to this exam's sittings; a teacher may own several exams and this
+  // button means "these flags", not "all my flags everywhere".
+  const { data: sittings } = await supabase
+    .from("exam_sessions")
+    .select("id")
+    .eq("exam_id", examId);
+
+  const ids = (sittings ?? [])
+    .map((s) => s.id)
+    .filter((id) => !sessionId || id === sessionId);
+  if (!ids.length) return { error: "Nothing to clear." };
+
+  const { data, error } = await supabase
+    .from("flags")
+    .update({ resolution: "VOIDED", resolved_by_id: user.id })
+    .in("session_id", ids)
+    .is("resolution", null)
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  await auditServerAction(user.id, "void_flags_bulk", "exams", examId, {
+    session_id: sessionId || null,
+    voided: data?.length ?? 0,
+  });
+
+  revalidatePath(`/exams/${examId}/monitor`);
+  return {
+    success: data?.length
+      ? `${data.length} flag${data.length === 1 ? "" : "s"} voided.`
+      : "There was nothing left to void.",
+  };
+}

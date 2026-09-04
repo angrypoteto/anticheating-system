@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
@@ -58,6 +59,10 @@ export default async function Home() {
 
   const role = profile.role as string;
 
+  // An admin's home is the console — landing on a page whose only content is a
+  // link to the console is a hop for nothing.
+  if (role === "ADMIN") redirect("/admin");
+
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
       <div className="mx-auto max-w-3xl">
@@ -84,25 +89,7 @@ export default async function Home() {
           <p className="font-medium text-gray-900 dark:text-gray-100">
             {role === "STUDENT" ? "Your exams" : "Getting started"}
           </p>
-          {role === "ADMIN" ? (
-            <p className="mt-2">
-              Manage accounts and sections in the{" "}
-              <Link
-                href="/admin"
-                className="font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
-              >
-                admin console
-              </Link>
-              , or build exams in the{" "}
-              <Link
-                href="/exams"
-                className="font-medium text-gray-900 underline underline-offset-4 dark:text-gray-100"
-              >
-                exam builder
-              </Link>
-              .
-            </p>
-          ) : role === "INSTRUCTOR" ? (
+          {role === "INSTRUCTOR" ? (
             <p className="mt-2">
               Build and publish exams in the{" "}
               <Link

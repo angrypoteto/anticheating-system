@@ -10,7 +10,10 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function ExamsPage() {
-  await requireRole("INSTRUCTOR", "ADMIN");
+  const me = await requireRole("INSTRUCTOR", "ADMIN");
+  // Admins live in the console, so send them back there rather than bouncing
+  // them through "/" only to be redirected again.
+  const backHref = me.role === "ADMIN" ? "/admin" : "/";
   const supabase = await createClient();
 
   const [{ data: exams }, { data: sections }] = await Promise.all([
@@ -31,7 +34,7 @@ export default async function ExamsPage() {
             Exams
           </h1>
           <Link
-            href="/"
+            href={backHref}
             className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             Back

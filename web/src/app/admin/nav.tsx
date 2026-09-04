@@ -6,6 +6,7 @@ import { ShieldMark } from "@/components/auth-shell";
 
 const LINKS = [
   { href: "/admin", label: "Overview", exact: true },
+  { href: "/exams", label: "Exam builder" },
   { href: "/admin/students", label: "Students & risk" },
   { href: "/admin/accounts", label: "Accounts & classes" },
   { href: "/admin/health", label: "System health" },

@@ -13,9 +13,18 @@ export async function ExamBuilder() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();
 
+  // The subject list is school-wide, so it is worth having whether or not
+  // classes are switched on.
+  const { data: subjects } = await supabase
+    .from("subjects")
+    .select("id, name")
+    .order("name");
+
   // With classes switched off an exam belongs to nobody in particular: it
   // reaches every student, so there is nothing to pick.
-  if (!(await classesEnabled())) return <CreateExamForm sections={[]} classless />;
+  if (!(await classesEnabled())) {
+    return <CreateExamForm sections={[]} subjects={subjects ?? []} classless />;
+  }
 
   // Admins can build into any class; an instructor only into their own.
   const { data: sections } =
@@ -23,7 +32,9 @@ export async function ExamBuilder() {
       ? await supabase.from("sections").select("id, name, subject").order("subject").order("name")
       : await supabase.from("sections").select("id, name, subject").eq("instructor_id", me.id).order("subject").order("name");
 
-  if (sections?.length) return <CreateExamForm sections={sections} />;
+  if (sections?.length) {
+    return <CreateExamForm sections={sections} subjects={subjects ?? []} />;
+  }
 
   return (
     <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -42,5 +53,7 @@ export async function ExamBuilder() {
   );
 }
 
+// Deliberately says nothing about classes: they can be switched off, and this
+// same line is shown either way.
 export const BUILDER_BLURB =
-  "Name it and pick a class to start. On the next screen you can write questions yourself or have the AI draft them from your lesson file, then set the timer and lockdown rules.";
+  "Name it and give it a subject to start. On the next screen you can write the questions yourself or have the AI draft them from a lesson file, then set the timer, the lockdown rules and when it opens.";

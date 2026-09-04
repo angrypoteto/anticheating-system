@@ -21,6 +21,7 @@ GitHub Actions.
 | Teacher console — own exams, own students, own classes | `/teacher` |
 | Open, close, or schedule when an exam can be sat | `/exams/<id>` → "Availability" |
 | Assign who an exam is for, and see who has not sat it | `/exams/<id>` → "Who it is for" |
+| Tag an exam with a subject, picked from a shared list | exam builder, or `/exams/<id>` → Settings |
 | See which questions the class got wrong | `/exams/<id>/monitor` |
 | Export your own students' report | `/teacher/students` → Download CSV |
 | Turn classes off entirely — exams then reach only who you send the link to | `/admin/settings` |

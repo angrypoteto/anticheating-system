@@ -19,6 +19,37 @@ type QuestionType = (typeof QUESTION_TYPES)[number];
 
 // Writes go through the instructor's own session, so RLS decides whether they own
 // the section/exam. No service-role shortcuts here.
+/**
+ * Turn the subject picker's fields into a subject id, adding the subject to the
+ * list if it is new. Matching is case-insensitive, so a second "mathematics"
+ * finds the existing row rather than creating a rival spelling of it.
+ */
+async function resolveSubject(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  formData: FormData,
+): Promise<{ id: string | null } | { error: string }> {
+  const picked = String(formData.get("subjectId") ?? "");
+  const named = String(formData.get("newSubject") ?? "").trim();
+
+  if (picked !== "__new") return { id: picked || null };
+  if (!named) return { error: "Name the new subject, or pick one from the list." };
+
+  const { data: existing } = await supabase
+    .from("subjects")
+    .select("id")
+    .ilike("name", named)
+    .maybeSingle();
+  if (existing) return { id: existing.id };
+
+  const { data: created, error } = await supabase
+    .from("subjects")
+    .insert({ name: named })
+    .select("id")
+    .single();
+  if (error) return { error: `Could not add that subject: ${error.message}` };
+  return { id: created.id };
+}
+
 export async function createExam(
   _prev: ActionState,
   formData: FormData,
@@ -35,6 +66,10 @@ export async function createExam(
   if (useClasses && !sectionId) return { error: "Pick a class." };
 
   const supabase = await createClient();
+
+  const subject = await resolveSubject(supabase, formData);
+  if ("error" in subject) return { error: subject.error };
+  const subjectId = subject.id;
 
   // New exams start from the system-wide defaults an admin set in Settings,
   // falling back to the built-in ones if the row is somehow missing.
@@ -67,6 +102,7 @@ export async function createExam(
     .insert({
       title,
       section_id: useClasses ? sectionId : null,
+      subject_id: subjectId,
       created_by_id: user.id,
       status: "DRAFT",
       timer_config: timer,
@@ -105,9 +141,18 @@ export async function updateExamSettings(
   };
 
   const supabase = await createClient();
+
+  const subject = await resolveSubject(supabase, formData);
+  if ("error" in subject) return { error: subject.error };
+
   const { error } = await supabase
     .from("exams")
-    .update({ title, timer_config: timer, lockdown_config: lockdown })
+    .update({
+      title,
+      timer_config: timer,
+      lockdown_config: lockdown,
+      subject_id: subject.id,
+    })
     .eq("id", examId);
 
   if (error) return { error: error.message };

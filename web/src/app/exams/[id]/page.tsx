@@ -31,7 +31,7 @@ export default async function ExamEditorPage({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, status, section_id, timer_config, lockdown_config, share_token, opens_at, closes_at")
+    .select("id, title, status, section_id, timer_config, lockdown_config, share_token, opens_at, closes_at, subject_id, subjects(name)")
     .eq("id", id)
     .maybeSingle();
 
@@ -64,6 +64,12 @@ export default async function ExamEditorPage({
     (!exam.closes_at || new Date(exam.closes_at).getTime() > nowMs);
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
   const useClasses = await classesEnabled();
+  const { data: subjects } = await supabase.from("subjects").select("id, name").order("name");
+
+  // PostgREST types a to-one embed as an array; accept either.
+  const subjectEmbed = exam.subjects as { name: string } | { name: string }[] | null;
+  const subjectName =
+    (Array.isArray(subjectEmbed) ? subjectEmbed[0] : subjectEmbed)?.name ?? null;
 
   // Who the paper is for, and who has actually sat it. Without the roster the
   // only students the system knows about are those who already turned up.
@@ -96,6 +102,11 @@ export default async function ExamEditorPage({
           </Link>
           <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
             <div>
+              {subjectName ? (
+                <p className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                  {subjectName}
+                </p>
+              ) : null}
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
                 {exam.title}
               </h1>
@@ -191,6 +202,8 @@ export default async function ExamEditorPage({
               <SettingsForm
                 examId={exam.id}
                 title={exam.title}
+                subjects={subjects ?? []}
+                subjectId={exam.subject_id}
                 timer={timer}
                 lockdown={lockdown}
               />

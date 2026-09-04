@@ -1,6 +1,7 @@
 "use client";
 
 import { classLabel } from "@/lib/classes";
+import { SubjectPicker, type SubjectOption } from "@/components/subject-picker";
 
 import { useActionState } from "react";
 import { createExam, type ActionState } from "./actions";
@@ -14,10 +15,12 @@ const button =
 export function CreateExamForm({
   sections,
   classless,
+  subjects,
 }: {
   sections: { id: string; name: string; subject?: string | null }[];
   /** Classes are switched off system-wide: publish to everyone, ask nothing. */
   classless?: boolean;
+  subjects: SubjectOption[];
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     createExam,
@@ -39,6 +42,8 @@ export function CreateExamForm({
             className={field}
           />
         </div>
+        <SubjectPicker subjects={subjects} />
+
         {classless ? null : (
           <div>
             <label htmlFor="sectionId" className={label}>

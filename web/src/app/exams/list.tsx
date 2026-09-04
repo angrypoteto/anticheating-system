@@ -54,7 +54,7 @@ export async function ExamList() {
     supabase
       .from("exams")
       .select(
-        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, share_token, opens_at, closes_at, exam_sections(section_id)",
+        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, share_token, opens_at, closes_at, subjects(name), exam_sections(section_id)",
       )
       .order("created_at", { ascending: false }),
     supabase.from("sections").select("id, name, subject"),
@@ -91,6 +91,9 @@ export async function ExamList() {
         const nowMs = Date.now();
         const notYet = e.opens_at && new Date(e.opens_at).getTime() > nowMs;
         const over = e.closes_at && new Date(e.closes_at).getTime() <= nowMs;
+        // PostgREST types a to-one embed as an array; accept either.
+        const subjectEmbed = e.subjects as { name: string } | { name: string }[] | null;
+        const subject = (Array.isArray(subjectEmbed) ? subjectEmbed[0] : subjectEmbed)?.name ?? null;
         const availability =
           e.status !== "PUBLISHED"
             ? null
@@ -110,6 +113,11 @@ export async function ExamList() {
                   <p className="truncate font-medium text-gray-900 dark:text-gray-100">
                     {e.title}
                   </p>
+                  {subject ? (
+                    <p className="mt-0.5 truncate text-xs text-teal-700 dark:text-teal-400">
+                      {subject}
+                    </p>
+                  ) : null}
                   {useClasses ? (
                     <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
                       {classes.length ? classes.join(", ") : "No class assigned"}
@@ -131,6 +139,8 @@ export async function ExamList() {
 
               <div className="border-t border-gray-100 bg-gray-50/60 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/40">
                 <dl className="grid gap-4 sm:grid-cols-2">
+                  {subject ? <Detail label="Subject">{subject}</Detail> : null}
+
                   {useClasses ? (
                   <Detail label="Given to">
                     {classes.length ? (

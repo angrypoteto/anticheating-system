@@ -1,5 +1,7 @@
 "use client";
 
+import { SubjectPicker, type SubjectOption } from "@/components/subject-picker";
+
 import { useActionState, useState } from "react";
 import {
   deleteQuestion,
@@ -38,11 +40,15 @@ export function SettingsForm({
   title,
   timer,
   lockdown,
+  subjects,
+  subjectId,
 }: {
   examId: string;
   title: string;
   timer: TimerConfig;
   lockdown: LockdownConfig;
+  subjects: SubjectOption[];
+  subjectId: string | null;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     updateExamSettings,
@@ -53,6 +59,8 @@ export function SettingsForm({
   return (
     <form action={action} className="space-y-5">
       <input type="hidden" name="examId" value={examId} />
+
+      <SubjectPicker subjects={subjects} defaultId={subjectId} />
 
       <div>
         <label htmlFor="title" className={label}>

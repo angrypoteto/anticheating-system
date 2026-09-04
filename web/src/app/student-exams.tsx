@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 type Row = {
   exam_id: string;
   title: string;
+  subject: string | null;
   teacher: string;
   total_minutes: number;
   question_count: number;
@@ -166,8 +167,15 @@ export async function StudentExams() {
                 <li key={r.exam_id} className={rowClass}>
                   <details>
                     <summary className={summaryClass}>
-                      <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100">
-                        {r.title}
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
+                          {r.title}
+                        </span>
+                        {r.subject ? (
+                          <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
+                            {r.subject}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="flex items-center gap-2">
                         <Chip>
@@ -185,6 +193,7 @@ export async function StudentExams() {
 
                     <div className={panelClass}>
                       <dl className="grid gap-4 sm:grid-cols-3">
+                        {r.subject ? <Detail label="Subject">{r.subject}</Detail> : null}
                         <Detail label="Set by">{r.teacher}</Detail>
                         <Detail label="Questions">{r.question_count}</Detail>
                         <Detail label="Time allowed">{duration(r.total_minutes)}</Detail>
@@ -228,8 +237,15 @@ export async function StudentExams() {
               <li key={r.exam_id} className={rowClass}>
                 <details>
                   <summary className={summaryClass}>
-                    <span className="min-w-0 truncate font-medium text-gray-900 dark:text-gray-100">
-                      {r.title}
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
+                        {r.title}
+                      </span>
+                      {r.subject ? (
+                        <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
+                          {r.subject}
+                        </span>
+                      ) : null}
                     </span>
                     <span className="flex items-center gap-2">
                       {r.score != null ? (
@@ -244,6 +260,7 @@ export async function StudentExams() {
 
                   <div className={`${panelClass} space-y-4`}>
                     <dl className="grid gap-4 sm:grid-cols-2">
+                      {r.subject ? <Detail label="Subject">{r.subject}</Detail> : null}
                       <Detail label="Set by">{r.teacher}</Detail>
                       <Detail label="Taken">
                         {when(r.submitted_at) ?? when(r.started_at) ?? "—"}

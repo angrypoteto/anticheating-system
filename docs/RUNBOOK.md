@@ -473,3 +473,23 @@ empty.
 existed, or from a generation that died early — and names the exam each file
 belongs to. It removes nothing without `--yes`, because these are files a
 teacher uploaded and the extracted text is not a substitute for the original.
+
+
+## Subjects
+
+An exam carries a subject, picked from a list rather than typed each time. The
+first person to need "System Administration" types it; everyone after that picks
+it. Matching is case-insensitive in the database, so a second "system
+administration" resolves to the same row instead of becoming a rival spelling.
+
+The list is school-wide, not per teacher: two teachers of the same subject
+should not end up with two versions of it, and a subject name is not private.
+Any teacher or admin can add one; renaming and deleting stay with admins,
+because those reach across everybody else's exams. Deleting a subject clears the
+reference on the exams that used it rather than taking them with it.
+
+Classes already carried a subject, but a class is optional and can be switched
+off entirely, which left an exam with no subject at all. The list is seeded from
+the subjects already in use on classes, and existing exams are pointed at the
+subject of the class they were built for, so nothing starts empty on a system
+that has been running with classes on.

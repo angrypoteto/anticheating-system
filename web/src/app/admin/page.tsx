@@ -1,169 +1,166 @@
 import Link from "next/link";
-import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
-import { CreateAccountForm, CreateSectionForm, StatusToggle } from "./forms";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { assessStudent } from "@/lib/risk";
+import { Card, Empty, PageHeader, Pill, Stat } from "./ui";
 
-export default async function AdminPage() {
-  const admin = await requireRole("ADMIN");
+export const dynamic = "force-dynamic";
 
-  // Read through the admin's own session so the page reflects RLS rather than
-  // bypassing it; the service role is used only for writes that need it.
-  const supabase = await createClient();
+const since = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
 
-  const [{ data: users }, { data: sections }] = await Promise.all([
-    supabase
-      .from("users")
-      .select("id, email, role, status, section_id")
-      .order("role")
-      .order("email"),
-    supabase.from("sections").select("id, name, instructor_id, join_code").order("name"),
+export default async function AdminOverview() {
+  const admin = createAdminClient();
+  const day = since(24);
+
+  const [
+    { data: settings },
+    { data: users },
+    { data: sections },
+    { data: exams },
+    { data: sessions },
+    { data: openFlags },
+    { data: recent },
+    { data: keys },
+    { data: backups },
+  ] = await Promise.all([
+    admin.from("system_settings").select("pass_threshold, institution_name").eq("id", true).maybeSingle(),
+    admin.from("users").select("id, email, role, status, section_id"),
+    admin.from("sections").select("id, name"),
+    admin.from("exams").select("id, section_id, status"),
+    admin.from("exam_sessions").select("id, exam_id, student_id, status, score, submitted_at"),
+    admin.from("flags").select("id, session_id").is("resolution", null),
+    admin.from("audit_log").select("action, actor_id, created_at").order("created_at", { ascending: false }).limit(6),
+    admin.from("ai_provider_keys").select("status, last_error"),
+    admin.from("backup_runs").select("started_at, status").order("started_at", { ascending: false }).limit(1),
   ]);
 
-  const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
-  const instructors = (users ?? []).filter((u) => u.role === "INSTRUCTOR");
+  const passThreshold = Number(settings?.pass_threshold ?? 75);
+  const students = (users ?? []).filter((u) => u.role === "STUDENT");
+  const published = (exams ?? []).filter((e) => e.status === "PUBLISHED");
+  const live = (sessions ?? []).filter((s) => s.status === "IN_PROGRESS");
+  const submittedToday = (sessions ?? []).filter(
+    (s) => s.status !== "IN_PROGRESS" && s.submitted_at && s.submitted_at >= day,
+  );
+
+  // Reuse the same indicator the students page shows, so the two never disagree.
+  const atRisk = students.filter((s) => {
+    const own = (sessions ?? []).filter((x) => x.student_id === s.id);
+    const available = published.filter((e) => e.section_id === s.section_id).length;
+    const r = assessStudent(
+      own.map((o) => ({ score: o.score, status: o.status, flags: 0 })),
+      available,
+      passThreshold,
+    );
+    return r.band === "at-risk";
+  }).length;
+
+  const notExamined = students.filter(
+    (s) => !(sessions ?? []).some((x) => x.student_id === s.id),
+  ).length;
+
+  const actorEmail = new Map((users ?? []).map((u) => [u.id, u.email]));
+  const activeKeys = (keys ?? []).filter((k) => k.status === "ACTIVE").length;
+  const lastBackup = backups?.[0];
+  const backupStale =
+    !lastBackup || Date.now() - new Date(lastBackup.started_at).getTime() > 48 * 3600_000;
+
+  const alerts: { text: string; href: string }[] = [];
+  if (!activeKeys) alerts.push({ text: "No active AI provider key — question generation will fail.", href: "/admin/keys" });
+  if (backupStale) alerts.push({ text: "No backup in the last 48 hours.", href: "/admin/health" });
+  if (atRisk > 0) alerts.push({ text: `${atRisk} student${atRisk === 1 ? "" : "s"} currently at risk of failing.`, href: "/admin/students" });
+  if (notExamined > 0) alerts.push({ text: `${notExamined} student${notExamined === 1 ? " has" : "s have"} not sat any exam.`, href: "/admin/students" });
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-      <div className="mx-auto max-w-4xl space-y-10">
-        <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-              Admin console
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Signed in as {admin.email}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/admin/health"
-              className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              Health
-            </Link>
-            <Link
-              href="/admin/keys"
-              className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              AI provider keys
-            </Link>
-            <Link
-              href="/"
-              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              Back
-            </Link>
-          </div>
-        </header>
+    <div className="space-y-8">
+      <PageHeader
+        title="Overview"
+        subtitle={`${settings?.institution_name ?? "Proctorly"} — everything at a glance.`}
+      />
 
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-            Create account
-          </h2>
-          <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
-            The account is confirmed immediately — share the temporary password
-            directly with the person.
-          </p>
-          <CreateAccountForm sections={sections ?? []} />
-        </section>
-
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-            Create section
-          </h2>
-          <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
-            A section belongs to one instructor; students are assigned to it.
-          </p>
-          <CreateSectionForm instructors={instructors} />
-        </section>
-
-        {sections?.length ? (
-          <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-              Class codes
-            </h2>
-            <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
-              Give a class its code and students can register themselves into it
-              at /signup — they always land as students, never anything higher.
-            </p>
-            <ul className="space-y-2">
-              {sections.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2.5 dark:border-gray-700"
-                >
-                  <span className="text-sm text-gray-900 dark:text-gray-100">{s.name}</span>
-                  <code className="font-mono text-sm tracking-widest text-teal-700 dark:text-teal-400">
-                    {s.join_code}
-                  </code>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-              Accounts
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {users?.length ?? 0} total
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
-                <tr>
-                  <th className="px-6 py-3 font-medium">Email</th>
-                  <th className="px-6 py-3 font-medium">Role</th>
-                  <th className="px-6 py-3 font-medium">Section</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(users ?? []).map((u) => (
-                  <tr
-                    key={u.id}
-                    className="border-b border-gray-100 last:border-0 dark:border-gray-800"
-                  >
-                    <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
-                      {u.email}
-                    </td>
-                    <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
-                      {u.role.toLowerCase()}
-                    </td>
-                    <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
-                      {u.section_id ? (sectionName.get(u.section_id) ?? "—") : "—"}
-                    </td>
-                    <td className="px-6 py-3">
-                      <span
-                        className={
-                          u.status === "ACTIVE"
-                            ? "text-green-700 dark:text-green-400"
-                            : "text-gray-400 dark:text-gray-500"
-                        }
-                      >
-                        {u.status.toLowerCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3">
-                      {u.id === admin.id ? (
-                        <span className="text-xs text-gray-400 dark:text-gray-600">
-                          you
-                        </span>
-                      ) : (
-                        <StatusToggle userId={u.id} status={u.status} />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Students" value={String(students.length)} note={`${sections?.length ?? 0} class${sections?.length === 1 ? "" : "es"}`} />
+        <Stat label="Sitting now" value={String(live.length)} tone={live.length ? "warn" : "plain"} />
+        <Stat label="Submitted (24h)" value={String(submittedToday.length)} />
+        <Stat label="Open flags" value={String((openFlags ?? []).length)} tone={(openFlags ?? []).length ? "warn" : "good"} />
       </div>
-    </main>
+
+      {alerts.length ? (
+        <Card title="Needs attention" flush>
+          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            {alerts.map((a) => (
+              <li key={a.text} className="flex items-center justify-between gap-4 px-6 py-3">
+                <span className="text-sm text-gray-700 dark:text-gray-300">{a.text}</span>
+                <Link
+                  href={a.href}
+                  className="shrink-0 text-sm text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                >
+                  Look
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : (
+        <Card title="Needs attention">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Nothing needs your attention right now.
+          </p>
+        </Card>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title="Exams" hint={`${published.length} published, ${(exams ?? []).length - published.length} draft`}>
+          <div className="space-y-2 text-sm">
+            <Row k="Published" v={String(published.length)} />
+            <Row k="In progress now" v={String(live.length)} />
+            <Row k="At risk of failing" v={String(atRisk)} tone={atRisk ? "bad" : "good"} />
+            <Row k="Never examined" v={String(notExamined)} tone={notExamined ? "warn" : "good"} />
+          </div>
+        </Card>
+
+        <Card title="Platform">
+          <div className="space-y-2 text-sm">
+            <Row k="Active AI keys" v={String(activeKeys)} tone={activeKeys ? "good" : "bad"} />
+            <Row
+              k="Last backup"
+              v={lastBackup ? new Date(lastBackup.started_at).toLocaleDateString() : "never"}
+              tone={backupStale ? "warn" : "good"}
+            />
+            <Row k="Instructors" v={String((users ?? []).filter((u) => u.role === "INSTRUCTOR").length)} />
+            <Row k="Disabled accounts" v={String((users ?? []).filter((u) => u.status !== "ACTIVE").length)} />
+          </div>
+        </Card>
+      </div>
+
+      <Card title="Recent activity" hint="Append-only audit log." flush>
+        {recent?.length ? (
+          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            {recent.map((a, i) => (
+              <li key={i} className="flex items-baseline justify-between gap-4 px-6 py-3 text-sm">
+                <span className="text-gray-700 dark:text-gray-300">
+                  <span className="font-mono text-xs">{a.action}</span>
+                  <span className="ml-2 text-gray-500 dark:text-gray-400">
+                    {actorEmail.get(a.actor_id) ?? "unknown"}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                  {new Date(a.created_at).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>Nothing recorded yet.</Empty>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function Row({ k, v, tone }: { k: string; v: string; tone?: "good" | "warn" | "bad" }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-gray-600 dark:text-gray-400">{k}</span>
+      {tone ? <Pill tone={tone}>{v}</Pill> : <span className="text-gray-900 dark:text-gray-100">{v}</span>}
+    </div>
   );
 }

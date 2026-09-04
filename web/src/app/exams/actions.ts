@@ -30,6 +30,33 @@ export async function createExam(
   if (!sectionId) return { error: "Pick a section." };
 
   const supabase = await createClient();
+
+  // New exams start from the system-wide defaults an admin set in Settings,
+  // falling back to the built-in ones if the row is somehow missing.
+  const { data: settings } = await supabase
+    .from("system_settings")
+    .select(
+      "default_total_minutes, default_per_question_seconds, default_max_strikes, default_fullscreen, default_block_copy_paste, default_honeypot",
+    )
+    .eq("id", true)
+    .maybeSingle();
+
+  const timer: TimerConfig = settings
+    ? {
+        totalMinutes: settings.default_total_minutes,
+        perQuestionSeconds: settings.default_per_question_seconds,
+      }
+    : DEFAULT_TIMER;
+
+  const lockdown: LockdownConfig = settings
+    ? {
+        fullscreenRequired: settings.default_fullscreen,
+        blockCopyPaste: settings.default_block_copy_paste,
+        maxStrikes: settings.default_max_strikes,
+        honeypot: settings.default_honeypot,
+      }
+    : DEFAULT_LOCKDOWN;
+
   const { data, error } = await supabase
     .from("exams")
     .insert({
@@ -37,8 +64,8 @@ export async function createExam(
       section_id: sectionId,
       created_by_id: user.id,
       status: "DRAFT",
-      timer_config: DEFAULT_TIMER,
-      lockdown_config: DEFAULT_LOCKDOWN,
+      timer_config: timer,
+      lockdown_config: lockdown,
     })
     .select("id")
     .single();

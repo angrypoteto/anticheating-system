@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PageHeader } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -53,22 +53,11 @@ export default async function HealthPage() {
     Date.now() - new Date(lastBackup.started_at).getTime() > 48 * 3600_000;
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-      <div className="mx-auto max-w-4xl space-y-8">
-        <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
-          <Link
-            href="/admin"
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            ← Admin console
-          </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
-            System health
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Snapshot at {new Date().toLocaleString()}
-          </p>
-        </header>
+    <div className="space-y-8">
+      <PageHeader
+        title="System health"
+        subtitle={`Snapshot at ${new Date().toLocaleString()}`}
+      />
 
         <div className="grid gap-4 sm:grid-cols-4">
           <Stat label="Live exams" value={String(liveSessions.count ?? 0)} />
@@ -155,8 +144,7 @@ export default async function HealthPage() {
             </p>
           )}
         </section>
-      </div>
-    </main>
+    </div>
   );
 }
 

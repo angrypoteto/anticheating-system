@@ -17,11 +17,21 @@ export default async function TakeExamPage({
   // RLS limits this to PUBLISHED exams in the student's own section.
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, status, timer_config, lockdown_config")
+    .select("id, title, status, timer_config, lockdown_config, opens_at, closes_at")
     .eq("id", id)
     .maybeSingle();
 
   if (!exam) notFound();
+
+  const nowMs = Date.now();
+  const notYet = exam.opens_at && new Date(exam.opens_at).getTime() > nowMs;
+  const over = exam.closes_at && new Date(exam.closes_at).getTime() <= nowMs;
+  const when = (iso: string) =>
+    new Date(iso).toLocaleString("en-PH", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Manila",
+    });
 
   const { data: existing } = await supabase
     .from("exam_sessions")
@@ -29,6 +39,31 @@ export default async function TakeExamPage({
     .eq("exam_id", id)
     .eq("student_id", user.id)
     .maybeSingle();
+
+  // The window is enforced by row-level security; this is so a student sees a
+  // sentence instead of a failed insert.
+  if ((notYet || over) && !existing) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
+        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+            {exam.title}
+          </h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            {notYet
+              ? `This exam opens ${when(exam.opens_at!)}. Come back then — the link will still work.`
+              : `This exam closed ${when(exam.closes_at!)} and can no longer be taken.`}
+          </p>
+          <a
+            href="/"
+            className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
+          >
+            Back to home
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   if (existing && existing.status !== "IN_PROGRESS") {
     return (

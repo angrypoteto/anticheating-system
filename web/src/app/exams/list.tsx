@@ -54,7 +54,7 @@ export async function ExamList() {
     supabase
       .from("exams")
       .select(
-        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, share_token, exam_sections(section_id)",
+        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, share_token, opens_at, closes_at, exam_sections(section_id)",
       )
       .order("created_at", { ascending: false }),
     supabase.from("sections").select("id, name, subject"),
@@ -88,6 +88,19 @@ export async function ExamList() {
         const classes = [...ids].map((id) => sectionName.get(id) ?? "unknown class");
         const timer = parseTimer(e.timer_config);
         const published = when(e.published_at);
+        const nowMs = Date.now();
+        const notYet = e.opens_at && new Date(e.opens_at).getTime() > nowMs;
+        const over = e.closes_at && new Date(e.closes_at).getTime() <= nowMs;
+        const availability =
+          e.status !== "PUBLISHED"
+            ? null
+            : over
+              ? `Closed ${when(e.closes_at)}`
+              : notYet
+                ? `Opens ${when(e.opens_at)}`
+                : e.closes_at
+                  ? `Open until ${when(e.closes_at)}`
+                  : "Open";
 
         return (
           <li key={e.id}>
@@ -149,6 +162,10 @@ export async function ExamList() {
                       </span>
                     ) : null}
                   </Detail>
+
+                  {availability ? (
+                    <Detail label="Availability">{availability}</Detail>
+                  ) : null}
 
                   <Detail label="Student link">
                     {e.status === "PUBLISHED" ? (

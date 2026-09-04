@@ -335,3 +335,95 @@ export async function setExamClasses(
   revalidatePath(`/exams/${examId}`);
   return { success: `Delivered to ${wanted.length} class${wanted.length === 1 ? "" : "es"}.` };
 }
+
+
+/**
+ * Set, clear, or override an exam's availability window.
+ *
+ * Opening and closing by hand is the same operation as scheduling — "close now"
+ * is a close time of this instant — so there is only one piece of state and no
+ * way for a manual override to disagree with a schedule.
+ */
+export async function setExamWindow(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("INSTRUCTOR", "ADMIN");
+
+  const examId = String(formData.get("examId") ?? "");
+  if (!examId) return { error: "Which exam?" };
+
+  const mode = String(formData.get("mode") ?? "schedule");
+  const supabase = await createClient();
+
+  // The browser sends wall-clock text with no zone. Read it in Manila time,
+  // where these exams are sat, rather than in whatever zone the server runs in.
+  const toIso = (v: string) => {
+    const t = v.trim();
+    if (!t) return null;
+    const d = new Date(`${t}:00+08:00`);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  };
+
+  // Opening and closing on the spot go through the database, so the clock that
+  // stamps the time is the clock that enforces it. Doing this from here looked
+  // right and was not: a couple of seconds of skew left a "closed" exam still
+  // startable.
+  if (mode === "close" || mode === "open") {
+    const { error } = await supabase.rpc(
+      mode === "close" ? "close_exam" : "open_exam",
+      { exam_uuid: examId },
+    );
+    if (error) return { error: error.message };
+
+    revalidatePath(`/exams/${examId}`);
+    revalidatePath("/exams");
+    revalidatePath("/admin/exams");
+    revalidatePath("/teacher/exams");
+    return {
+      success:
+        mode === "close"
+          ? "Closed. Nobody can start or submit it now."
+          : "Open. Students can sit it now.",
+    };
+  }
+
+  let patch: { opens_at?: string | null; closes_at?: string | null };
+
+  {
+    const opensRaw = String(formData.get("opensAt") ?? "");
+    const closesRaw = String(formData.get("closesAt") ?? "");
+    const opens = toIso(opensRaw);
+    const closes = toIso(closesRaw);
+
+    if (opensRaw.trim() && !opens) return { error: "That opening time is not a date." };
+    if (closesRaw.trim() && !closes) return { error: "That closing time is not a date." };
+    if (opens && closes && new Date(closes) <= new Date(opens)) {
+      return { error: "It has to close after it opens." };
+    }
+    patch = { opens_at: opens, closes_at: closes };
+  }
+
+  const { error } = await supabase.from("exams").update(patch).eq("id", examId);
+  if (error) {
+    return {
+      error: /exams_window_order/.test(error.message)
+        ? "It has to close after it opens."
+        : error.message,
+    };
+  }
+
+  revalidatePath(`/exams/${examId}`);
+  revalidatePath("/exams");
+  revalidatePath("/admin/exams");
+  revalidatePath("/teacher/exams");
+
+  return {
+    success:
+      mode === "close"
+        ? "Closed. Nobody can start or submit it now."
+        : mode === "open"
+          ? "Open. Students can sit it now."
+          : "Schedule saved.",
+  };
+}

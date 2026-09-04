@@ -368,3 +368,31 @@ a policy cannot be bypassed by forgetting one.
 That means the teacher console needs no scoping logic of its own, and it is
 worth keeping it that way. If a page there ever needs `createAdminClient()`,
 that is the moment to stop and ask what it is really trying to show.
+
+
+## Opening, closing and scheduling an exam
+
+An exam carries a window: `opens_at` (null means "from the moment it is
+published") and `closes_at` (null means "until it is archived"). The teacher
+sets both on the exam page under **Availability**, and **Close now** and **Open
+now** are the same thing — a close time of this instant, and clearing it.
+Keeping it to one piece of state means a manual override can never contradict
+a schedule.
+
+The window governs **sitting** the exam, never **seeing** it. A student still
+reads their own score after the paper closes, and the teacher can still open a
+closed exam's monitor. It is enforced by `private.exam_is_open()` in three
+policies — starting a session, inserting an answer, updating an answer — so
+closing an exam stops the people already inside it, not only new arrivals.
+
+Two things this got wrong first time, both worth remembering:
+
+- **Close now must be stamped by the database.** Setting `closes_at` from the
+  app server looked right and was not: `exam_is_open()` compares against
+  Postgres's `NOW()`, and a couple of seconds of clock skew left a "closed"
+  exam still startable. `close_exam()` and `open_exam()` are SECURITY DEFINER
+  functions so the clock that enforces the rule is the clock that sets it.
+- **Closing an exam scheduled for later gives a zero-length window.** Opens and
+  closes land on the same instant, which is precisely correct — it was never
+  open — so the ordering constraint allows equal, and rejects only a close
+  *before* an open.

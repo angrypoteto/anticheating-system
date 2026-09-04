@@ -114,6 +114,11 @@ model Exam {
   // Stamped on the first publish — updated_at moves on every edit, so it
   // cannot answer "when was this given".
   publishedAt    DateTime?  @map("published_at") @db.Timestamptz(3)
+  /// When the exam may be sat. Null opens_at means "from publication", null
+  /// closes_at means "until archived". Governs sitting, never seeing: a student
+  /// still reads their own result after it closes.
+  opensAt        DateTime?  @map("opens_at") @db.Timestamptz(3)
+  closesAt       DateTime?  @map("closes_at") @db.Timestamptz(3)
   /// Unguessable token behind the /e/<token> link handed to students.
   shareToken     String     @unique @default(dbgenerated("translate(encode(gen_random_bytes(12), 'base64'::text), '+/='::text, '-_'::text)")) @map("share_token")
   timerConfig    Json     @map("timer_config")

@@ -7,6 +7,7 @@ import { QuestionForm, QuestionRow, SettingsForm } from "./editor";
 import { ExamPreview } from "./preview";
 import { ClassTargets, PublishControls } from "./publish";
 import { ShareLink } from "./share";
+import { ExamWindow } from "./window";
 import { siteUrl } from "@/lib/site-url";
 import { classesEnabled } from "@/lib/settings";
 
@@ -29,7 +30,7 @@ export default async function ExamEditorPage({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, status, section_id, timer_config, lockdown_config, share_token")
+    .select("id, title, status, section_id, timer_config, lockdown_config, share_token, opens_at, closes_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -52,6 +53,14 @@ export default async function ExamEditorPage({
   const lockdown = parseLockdown(exam.lockdown_config);
   const published = exam.status === "PUBLISHED";
   const shareUrl = `${await siteUrl()}/e/${exam.share_token}`;
+
+  // The same rule the database enforces, so the badge cannot claim the exam is
+  // open while a student is being turned away.
+  const nowMs = Date.now();
+  const examIsOpen =
+    published &&
+    (!exam.opens_at || new Date(exam.opens_at).getTime() <= nowMs) &&
+    (!exam.closes_at || new Date(exam.closes_at).getTime() > nowMs);
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
   const useClasses = await classesEnabled();
   const qs = questions ?? [];
@@ -108,6 +117,14 @@ export default async function ExamEditorPage({
         ) : null}
 
         <ShareLink url={shareUrl} live={published} linkOnly={!useClasses} />
+
+        <ExamWindow
+          examId={exam.id}
+          opensAt={exam.opens_at}
+          closesAt={exam.closes_at}
+          isOpen={examIsOpen}
+          published={published}
+        />
 
         {/* Editor on the left, the student's view on the right. */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">

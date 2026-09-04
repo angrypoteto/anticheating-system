@@ -13,6 +13,9 @@ type Row = {
   score: number | null;
   pass_mark: number;
   passed: boolean | null;
+  opens_at: string | null;
+  closes_at: string | null;
+  is_open: boolean;
 };
 
 /** Manila time, since that is where these exams are sat. */
@@ -157,6 +160,8 @@ export async function StudentExams() {
           <ul className="mt-2 space-y-2">
             {todo.map((r) => {
               const started = r.session_status === "IN_PROGRESS";
+              const notYet = r.opens_at && new Date(r.opens_at).getTime() > Date.now();
+              const over = r.closes_at && new Date(r.closes_at).getTime() <= Date.now();
               return (
                 <li key={r.exam_id} className={rowClass}>
                   <details>
@@ -165,7 +170,15 @@ export async function StudentExams() {
                         {r.title}
                       </span>
                       <span className="flex items-center gap-2">
-                        <Chip>{started ? "In progress" : "Not started"}</Chip>
+                        <Chip>
+                          {over
+                            ? "Closed"
+                            : notYet
+                              ? "Opens later"
+                              : started
+                                ? "In progress"
+                                : "Not started"}
+                        </Chip>
                         <Chevron />
                       </span>
                     </summary>
@@ -175,13 +188,27 @@ export async function StudentExams() {
                         <Detail label="Set by">{r.teacher}</Detail>
                         <Detail label="Questions">{r.question_count}</Detail>
                         <Detail label="Time allowed">{duration(r.total_minutes)}</Detail>
+                        {r.opens_at ? (
+                          <Detail label="Opens">{when(r.opens_at)}</Detail>
+                        ) : null}
+                        {r.closes_at ? (
+                          <Detail label="Closes">{when(r.closes_at)}</Detail>
+                        ) : null}
                       </dl>
-                      <Link
-                        href={`/exam/${r.exam_id}`}
-                        className="mt-4 inline-block rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
-                      >
-                        {started ? "Resume exam" : "Start exam"}
-                      </Link>
+                      {r.is_open ? (
+                        <Link
+                          href={`/exam/${r.exam_id}`}
+                          className="mt-4 inline-block rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+                        >
+                          {started ? "Resume exam" : "Start exam"}
+                        </Link>
+                      ) : (
+                        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                          {over
+                            ? "This exam has closed."
+                            : `You can start it from ${when(r.opens_at)}.`}
+                        </p>
+                      )}
                     </div>
                   </details>
                 </li>

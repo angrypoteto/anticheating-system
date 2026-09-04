@@ -38,7 +38,7 @@ export async function gradeAndClose(
       .select("id, type, question_answers(correct_answer)")
       .eq("exam_id", session.exam_id),
     admin.from("answers").select("question_id, response").eq("session_id", sessionId),
-    admin.from("exams").select("timer_config").eq("id", session.exam_id).single(),
+    admin.from("exams").select("timer_config, closes_at").eq("id", session.exam_id).single(),
   ]);
 
   const responses = new Map((answers ?? []).map((a) => [a.question_id, a.response]));
@@ -55,10 +55,13 @@ export async function gradeAndClose(
 
   const score = scorePercentage(correct, (questions ?? []).length);
 
-  // The server clock decides whether time ran out, not the client's.
+  // The server clock decides whether time ran out, not the client's. Two things
+  // can end a sitting: the student's own timer, and the exam closing under them.
   const timer = parseTimer(exam?.timer_config);
   const elapsedMinutes = (Date.now() - new Date(session.started_at).getTime()) / 60000;
-  const ranOver = timer.totalMinutes > 0 && elapsedMinutes > timer.totalMinutes;
+  const pastTimer = timer.totalMinutes > 0 && elapsedMinutes > timer.totalMinutes;
+  const pastClose = Boolean(exam?.closes_at) && Date.now() > new Date(exam!.closes_at).getTime();
+  const ranOver = pastTimer || pastClose;
 
   const status =
     reason === "manual" && !ranOver ? "SUBMITTED" : "AUTO_SUBMITTED";

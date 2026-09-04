@@ -30,7 +30,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     label: "Groq",
     apiStyle: "openai",
     baseUrl: "https://api.groq.com/openai/v1",
-    defaultModel: "llama-3.3-70b-versatile",
+    // Groq has retired the Llama line; llama-3.3-70b-versatile 404s. Checked
+    // against their live /models list rather than taken from memory.
+    defaultModel: "openai/gpt-oss-120b",
     hint: "Very fast, generous free tier.",
   },
   {

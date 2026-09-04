@@ -103,6 +103,40 @@ async function dataDump() {
   return { name: `backup-${stamp}.json.gz`, body: gzipSync(JSON.stringify(out, null, 1)), kind: "data" };
 }
 
+/**
+ * Lesson files live in Storage, not the database, so a table dump alone would
+ * lose them — and the proposal lists them as something backups must cover.
+ * Each object is copied into the backups bucket under this run's stamp.
+ */
+async function backupLessonFiles() {
+  const copied = [];
+  const { data: examFolders, error } = await admin.storage.from("lesson-files").list("", { limit: 1000 });
+  if (error) {
+    console.log(`  (lesson files: ${error.message})`);
+    return copied;
+  }
+
+  for (const folder of examFolders ?? []) {
+    if (folder.id) continue; // a file at the root, not an exam folder
+    const { data: files } = await admin.storage.from("lesson-files").list(folder.name, { limit: 1000 });
+    for (const f of files ?? []) {
+      const from = `${folder.name}/${f.name}`;
+      const { data: blob, error: dlErr } = await admin.storage.from("lesson-files").download(from);
+      if (dlErr || !blob) {
+        console.log(`  lesson file FAILED ${from}: ${dlErr?.message}`);
+        continue;
+      }
+      const to = `lesson-files/${stamp}/${from}`;
+      const { error: upErr } = await admin.storage
+        .from("backups")
+        .upload(to, Buffer.from(await blob.arrayBuffer()), { upsert: true });
+      if (upErr) console.log(`  lesson file FAILED ${from}: ${upErr.message}`);
+      else copied.push(to);
+    }
+  }
+  return copied;
+}
+
 let status = "FAILED";
 let storagePath = null;
 
@@ -128,6 +162,9 @@ try {
     if (error) throw new Error(`upload failed: ${error.message}`);
     storagePath = `backups/${archive.name}`;
     console.log(`uploaded to ${storagePath}`);
+
+    const lessons = await backupLessonFiles();
+    console.log(`lesson files copied: ${lessons.length}`);
   }
 
   status = "SUCCEEDED";

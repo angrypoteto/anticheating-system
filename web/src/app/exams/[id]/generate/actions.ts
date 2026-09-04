@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
-import { generateQuestions, type DraftQuestion } from "@/lib/ai/gemini";
+import { describeMix, generateQuestions, type DraftQuestion } from "@/lib/ai/gemini";
 
 export type GenerateState = {
   error?: string;
@@ -31,10 +31,16 @@ export async function generateFromFile(
   const examId = String(formData.get("examId") ?? "");
   const storagePath = String(formData.get("storagePath") ?? "");
   const filename = String(formData.get("filename") ?? "");
-  const count = Math.min(MAX_QUESTIONS, Math.max(1, Number(formData.get("count") ?? 5)));
-  const mix = String(formData.get("mix") ?? "a mix of multiple choice and identification");
+
+  // Composition is specified per type, the way the proposal frames it:
+  // "ten multiple-choice items and five identification items".
+  const mcCount = Math.max(0, Number(formData.get("mcCount") ?? 0));
+  const identCount = Math.max(0, Number(formData.get("identCount") ?? 0));
+  const count = Math.min(MAX_QUESTIONS, mcCount + identCount);
+  const mix = describeMix(mcCount, identCount);
 
   if (!storagePath) return { error: "Upload a lesson file first." };
+  if (count < 1) return { error: "Ask for at least one question." };
 
   // Confirm the caller owns this exam under RLS before the service role touches
   // anything on their behalf.
@@ -74,6 +80,63 @@ export async function generateFromFile(
       `${result.questions.length} draft${result.questions.length === 1 ? "" : "s"} from ` +
       `${extracted.chars.toLocaleString()} characters, using key “${result.keyLabel}”.`,
   };
+}
+
+/**
+ * Regenerates a single draft, leaving the others alone. Uses the text already
+ * extracted from the uploaded file, so it costs one model call and no re-upload.
+ */
+export async function regenerateDraft(
+  _prev: GenerateState,
+  formData: FormData,
+): Promise<GenerateState> {
+  await requireRole("INSTRUCTOR", "ADMIN");
+
+  const examId = String(formData.get("examId") ?? "");
+  const index = Number(formData.get("index") ?? -1);
+  const wantType = String(formData.get("type") ?? "MULTIPLE_CHOICE");
+  const payload = String(formData.get("drafts") ?? "[]");
+
+  let drafts: DraftQuestion[];
+  try {
+    drafts = JSON.parse(payload);
+  } catch {
+    return { error: "Could not read the current drafts." };
+  }
+  if (index < 0 || index >= drafts.length) return { error: "That item is gone." };
+
+  const supabase = await createClient();
+  const { data: exam } = await supabase
+    .from("exams")
+    .select("id")
+    .eq("id", examId)
+    .maybeSingle();
+  if (!exam) return { error: "Exam not found, or not yours." };
+
+  const admin = createAdminClient();
+  const { data: lesson } = await admin
+    .from("lesson_files")
+    .select("parsed_text")
+    .eq("exam_id", examId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lesson?.parsed_text) {
+    return { error: "No lesson text on file for this exam — upload the file again." };
+  }
+
+  const mix =
+    wantType === "IDENTIFICATION" ? describeMix(0, 1) : describeMix(1, 0);
+  const result = await generateQuestions(lesson.parsed_text, 1, mix);
+  if (!result.ok) return { error: result.error };
+
+  const replacement = result.questions[0];
+  if (!replacement) return { error: "The model returned nothing usable — try again." };
+
+  const next = [...drafts];
+  next[index] = replacement;
+  return { drafts: next, notice: `Item ${index + 1} regenerated.` };
 }
 
 /** Writes approved drafts into the exam as real questions. */

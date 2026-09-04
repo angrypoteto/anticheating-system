@@ -29,6 +29,14 @@ const RESPONSE_SCHEMA = {
   },
 };
 
+/** Describes the requested composition the way the proposal frames it. */
+export function describeMix(mc: number, ident: number): string {
+  const parts: string[] = [];
+  if (mc > 0) parts.push(`${mc} multiple-choice`);
+  if (ident > 0) parts.push(`${ident} identification`);
+  return parts.join(" and ") || "questions";
+}
+
 function buildPrompt(text: string, count: number, mix: string) {
   return [
     "You are helping a teacher write an exam from their own lesson material.",

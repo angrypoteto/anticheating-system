@@ -152,13 +152,16 @@ are unsure, and only then decide whether to point the app at it.
 
 ### What no backup here contains
 
-Both modes cover the `public` schema only:
+Uploaded lesson files **are** included: every object in the `lesson-files` bucket is
+copied to `backups/lesson-files/<stamp>/…` on each run. Restore them by copying that
+folder back into `lesson-files`.
+
+Still outside both modes, because they live outside the `public` schema:
 
 - `auth.users` — accounts live in Supabase Auth. `public.users` rows will come back,
   but nobody can log in until the accounts are recreated.
 - **Vault secrets** — `ai_provider_keys` rows restore with a dangling pointer; the API
   keys themselves must be re-added in the admin console.
-- **Storage objects** — lesson uploads live in the bucket; copy it separately.
 
 ### The backup never ran
 

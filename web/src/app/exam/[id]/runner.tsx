@@ -44,6 +44,7 @@ export function ExamRunner({
   const [warning, setWarning] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [questionRemaining, setQuestionRemaining] = useState<number | null>(null);
 
   const [submitState, submit, submitting] = useActionState<SubmitState, FormData>(
     submitExam,
@@ -70,6 +71,21 @@ export function ExamRunner({
     [],
   );
 
+  // Listeners and interval callbacks capture their first render's values, so the
+  // live index, answers and current question are mirrored into refs they can read.
+  const currentQuestionRef = useRef<string | null>(null);
+  const indexRef = useRef(0);
+  const answersRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    indexRef.current = index;
+    currentQuestionRef.current = questions[index]?.id ?? null;
+  }, [index, questions]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
   const recordFlag = useCallback(
     async (type: FlagType, questionId?: string) => {
       if (endedRef.current || !started) return;
@@ -83,7 +99,7 @@ export function ExamRunner({
         session_id: sessionId,
         type,
         strike_number: next,
-        question_id: questionId ?? null,
+        question_id: questionId ?? currentQuestionRef.current,
       });
 
       if (next >= lockdown.maxStrikes) {
@@ -168,6 +184,38 @@ export function ExamRunner({
     saveTimer.current = setTimeout(() => persist(questionId, value), AUTOSAVE_MS);
   };
 
+  // Shared by the Next button and the per-question timer, so a question that runs
+  // out of time is saved and left behind exactly as if the student had moved on.
+  const advance = useCallback(async () => {
+    const q = questions[indexRef.current];
+    if (!q) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    const pending = answersRef.current[q.id];
+    if (pending != null) await persist(q.id, pending);
+
+    if (indexRef.current >= questions.length - 1) {
+      finish("manual");
+    } else {
+      setIndex((i) => i + 1);
+    }
+  }, [questions, persist, finish]);
+
+  // --- per-question countdown ---
+  useEffect(() => {
+    if (!started || done || !timer.perQuestionSeconds) return;
+    const limit = timer.perQuestionSeconds * 1000;
+    const startedThisQuestion = Date.now();
+
+    const tick = () => {
+      const left = Math.max(0, limit - (Date.now() - startedThisQuestion));
+      setQuestionRemaining(left);
+      if (left <= 0) void advance();
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [started, done, index, timer.perQuestionSeconds, advance]);
+
   const startExam = async () => {
     if (lockdown.fullscreenRequired) {
       try {
@@ -216,6 +264,12 @@ export function ExamRunner({
           {timer.totalMinutes > 0 ? (
             <li>· Time limit: {timer.totalMinutes} minutes.</li>
           ) : null}
+          {timer.perQuestionSeconds ? (
+            <li>
+              · {timer.perQuestionSeconds} seconds per question — it moves on by
+              itself when the time is up.
+            </li>
+          ) : null}
           {lockdown.fullscreenRequired ? <li>· Fullscreen is required.</li> : null}
           <li>
             · Leaving the exam window is recorded. {lockdown.maxStrikes} warnings
@@ -254,6 +308,18 @@ export function ExamRunner({
               {strikes}/{lockdown.maxStrikes} warnings
             </span>
           ) : null}
+          {questionRemaining != null ? (
+            <span
+              className={
+                questionRemaining < 10000
+                  ? "font-medium text-red-600 dark:text-red-400"
+                  : "text-gray-600 dark:text-gray-400"
+              }
+              title="Time left on this question"
+            >
+              Q {Math.ceil(questionRemaining / 1000)}s
+            </span>
+          ) : null}
           {remaining != null ? (
             <span
               className={
@@ -261,6 +327,7 @@ export function ExamRunner({
                   ? "font-medium text-red-600 dark:text-red-400"
                   : "text-gray-600 dark:text-gray-400"
               }
+              title="Time left on the whole exam"
             >
               {formatTime(remaining)}
             </span>
@@ -324,12 +391,7 @@ export function ExamRunner({
             ) : (
               <button
                 type="button"
-                onClick={async () => {
-                  if (saveTimer.current) clearTimeout(saveTimer.current);
-                  const v = answers[question.id];
-                  if (v != null) await persist(question.id, v);
-                  setIndex((i) => i + 1);
-                }}
+                onClick={() => void advance()}
                 className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900"
               >
                 Next question

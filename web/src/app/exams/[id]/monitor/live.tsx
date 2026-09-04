@@ -20,6 +20,7 @@ export type FlagRow = {
   strike_number: number;
   occurred_at: string;
   resolution: string | null;
+  question_id: string | null;
 };
 
 const FLAG_LABELS: Record<string, string> = {
@@ -34,11 +35,13 @@ export function LiveMonitor({
   initialSessions,
   initialFlags,
   studentNames,
+  questionLabels,
 }: {
   examId: string;
   initialSessions: SessionRow[];
   initialFlags: FlagRow[];
   studentNames: Record<string, string>;
+  questionLabels: Record<string, string>;
 }) {
   const [sessions, setSessions] = useState(initialSessions);
   const [flags, setFlags] = useState(initialFlags);
@@ -114,7 +117,7 @@ export function LiveMonitor({
 
       const { data: freshFlags } = await client
         .from("flags")
-        .select("id, session_id, type, strike_number, occurred_at, resolution")
+        .select("id, session_id, type, strike_number, occurred_at, resolution, question_id")
         .in("session_id", ids)
         .order("occurred_at", { ascending: false });
       if (freshFlags) setFlags(freshFlags as FlagRow[]);
@@ -185,6 +188,7 @@ export function LiveMonitor({
                 session={s}
                 name={studentNames[s.student_id] ?? s.student_id}
                 flags={flagsBySession.get(s.id) ?? []}
+                questionLabels={questionLabels}
               />
             ))}
           </ul>
@@ -216,11 +220,13 @@ function StudentRow({
   session,
   name,
   flags,
+  questionLabels,
 }: {
   examId: string;
   session: SessionRow;
   name: string;
   flags: FlagRow[];
+  questionLabels: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
   const [state, submit, pending] = useActionState<MonitorState, FormData>(
@@ -294,7 +300,7 @@ function StudentRow({
       {open && flags.length ? (
         <ul className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-800 dark:bg-gray-950">
           {flags.map((f) => (
-            <FlagLine key={f.id} flag={f} examId={examId} />
+            <FlagLine key={f.id} flag={f} examId={examId} questionLabels={questionLabels} />
           ))}
         </ul>
       ) : null}
@@ -302,7 +308,15 @@ function StudentRow({
   );
 }
 
-function FlagLine({ flag, examId }: { flag: FlagRow; examId: string }) {
+function FlagLine({
+  flag,
+  examId,
+  questionLabels,
+}: {
+  flag: FlagRow;
+  examId: string;
+  questionLabels: Record<string, string>;
+}) {
   const [state, submit, pending] = useActionState<MonitorState, FormData>(
     voidFlag,
     {},
@@ -316,6 +330,11 @@ function FlagLine({ flag, examId }: { flag: FlagRow; examId: string }) {
         <span className="ml-2 text-xs text-gray-400 dark:text-gray-600">
           {new Date(flag.occurred_at).toLocaleTimeString()}
         </span>
+        {flag.question_id ? (
+          <span className="ml-2 block text-xs text-gray-500 dark:text-gray-500">
+            on {questionLabels[flag.question_id] ?? "a question"}
+          </span>
+        ) : null}
       </span>
       {voided ? (
         <span className="text-xs text-gray-400 dark:text-gray-600">voided</span>

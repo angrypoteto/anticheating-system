@@ -29,19 +29,29 @@ export default async function MonitorPage({
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
 
-  const [{ data: flags }, { data: students }] = await Promise.all([
+  const [{ data: flags }, { data: students }, { data: questions }] = await Promise.all([
     sessionIds.length
       ? supabase
           .from("flags")
-          .select("id, session_id, type, strike_number, occurred_at, resolution")
+          .select("id, session_id, type, strike_number, occurred_at, resolution, question_id")
           .in("session_id", sessionIds)
           .order("occurred_at", { ascending: false })
       : Promise.resolve({ data: [] as FlagRow[] }),
     supabase.from("users").select("id, email"),
+    supabase.from("questions").select("id, prompt").eq("exam_id", id).order("order"),
   ]);
 
   const studentNames = Object.fromEntries(
     (students ?? []).map((u) => [u.id, u.email]),
+  );
+
+  // Numbering follows the instructor's authored order, not the student's
+  // shuffled one — otherwise "Q3" would mean a different question per student.
+  const questionLabels = Object.fromEntries(
+    (questions ?? []).map((q, i) => [
+      q.id,
+      `Q${i + 1}: ${q.prompt.length > 55 ? q.prompt.slice(0, 55) + "…" : q.prompt}`,
+    ]),
   );
 
   return (
@@ -67,6 +77,7 @@ export default async function MonitorPage({
           initialSessions={(sessions ?? []) as SessionRow[]}
           initialFlags={(flags ?? []) as FlagRow[]}
           studentNames={studentNames}
+          questionLabels={questionLabels}
         />
       </div>
     </main>

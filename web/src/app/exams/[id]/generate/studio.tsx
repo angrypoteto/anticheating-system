@@ -2,7 +2,12 @@
 
 import { useActionState, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { acceptDrafts, generateFromFile, type GenerateState } from "./actions";
+import {
+  acceptDrafts,
+  generateFromFile,
+  regenerateDraft,
+  type GenerateState,
+} from "./actions";
 import type { DraftQuestion } from "@/lib/ai/gemini";
 
 const field =
@@ -27,15 +32,30 @@ export function GenerateStudio({ examId }: { examId: string }) {
     acceptDrafts,
     {},
   );
+  const [regenState, regenerate, regenerating] = useActionState<GenerateState, FormData>(
+    regenerateDraft,
+    {},
+  );
+  const [dragging, setDragging] = useState(false);
 
   // Local copy so the instructor can edit and drop drafts before committing them.
   const [drafts, setDrafts] = useState<DraftQuestion[] | null>(null);
   const shown = drafts ?? genState.drafts ?? null;
   if (genState.drafts && drafts === null) setDrafts(genState.drafts);
 
+  // A regenerate returns the whole edited list back with one item swapped.
+  const regenSeen = useRef<GenerateState | null>(null);
+  if (regenState.drafts && regenState !== regenSeen.current) {
+    regenSeen.current = regenState;
+    setDrafts(regenState.drafts);
+  }
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) await uploadFile(file);
+  }
+
+  async function uploadFile(file: File) {
     setUploadError(null);
     setUploading(true);
     setDrafts(null);
@@ -75,13 +95,32 @@ export function GenerateStudio({ examId }: { examId: string }) {
           and won&apos;t work without OCR.
         </p>
 
-        <input
-          type="file"
-          accept={ACCEPT}
-          onChange={onFile}
-          disabled={uploading}
-          className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-700 dark:text-gray-400 dark:file:bg-gray-100 dark:file:text-gray-900"
-        />
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) void uploadFile(file);
+          }}
+          className={`rounded-lg border-2 border-dashed p-6 text-center transition ${
+            dragging
+              ? "border-gray-900 bg-gray-50 dark:border-gray-300 dark:bg-gray-800"
+              : "border-gray-300 dark:border-gray-700"
+          }`}
+        >
+          <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+            Drag a lesson file here, or choose one:
+          </p>
+          <input
+            type="file"
+            accept={ACCEPT}
+            onChange={onFile}
+            disabled={uploading}
+            className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-700 dark:text-gray-400 dark:file:bg-gray-100 dark:file:text-gray-900"
+          />
+        </div>
 
         {uploading ? (
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Uploading…</p>
@@ -109,24 +148,32 @@ export function GenerateStudio({ examId }: { examId: string }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="count" className={label}>How many questions</label>
+              <label htmlFor="mcCount" className={label}>
+                Multiple-choice items
+              </label>
               <input
-                id="count"
-                name="count"
+                id="mcCount"
+                name="mcCount"
                 type="number"
-                min={1}
+                min={0}
                 max={20}
                 defaultValue={5}
                 className={field}
               />
             </div>
             <div>
-              <label htmlFor="mix" className={label}>Type mix</label>
-              <select id="mix" name="mix" className={field} defaultValue="a mix of multiple choice and identification">
-                <option value="a mix of multiple choice and identification">Mixed</option>
-                <option value="all multiple choice">Multiple choice only</option>
-                <option value="all identification">Identification only</option>
-              </select>
+              <label htmlFor="identCount" className={label}>
+                Identification items
+              </label>
+              <input
+                id="identCount"
+                name="identCount"
+                type="number"
+                min={0}
+                max={20}
+                defaultValue={2}
+                className={field}
+              />
             </div>
           </div>
 
@@ -155,8 +202,13 @@ export function GenerateStudio({ examId }: { examId: string }) {
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Nothing is added to the exam until you accept it. Edit anything that
-              reads badly, and drop anything wrong.
+              reads badly, regenerate a weak item, or drop it entirely.
             </p>
+            {regenState.error ? (
+              <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
+                {regenState.error}
+              </p>
+            ) : null}
           </div>
 
           <ul>
@@ -166,13 +218,28 @@ export function GenerateStudio({ examId }: { examId: string }) {
                   <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
                     {d.type.replace("_", " ").toLowerCase()}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setDrafts((p) => (p ?? []).filter((_, j) => j !== i))}
-                    className="text-sm text-gray-500 underline underline-offset-4 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-                  >
-                    Drop
-                  </button>
+                  <span className="flex shrink-0 gap-4">
+                    <form action={regenerate}>
+                      <input type="hidden" name="examId" value={examId} />
+                      <input type="hidden" name="index" value={i} />
+                      <input type="hidden" name="type" value={d.type} />
+                      <input type="hidden" name="drafts" value={JSON.stringify(shown)} />
+                      <button
+                        type="submit"
+                        disabled={regenerating}
+                        className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                      >
+                        {regenerating ? "…" : "Regenerate"}
+                      </button>
+                    </form>
+                    <button
+                      type="button"
+                      onClick={() => setDrafts((p) => (p ?? []).filter((_, j) => j !== i))}
+                      className="text-sm text-gray-500 underline underline-offset-4 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                    >
+                      Drop
+                    </button>
+                  </span>
                 </div>
 
                 <textarea

@@ -33,7 +33,10 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic = path === "/login" || path.startsWith("/auth");
+  // "/" serves the public landing page to visitors and the dashboard once signed
+  // in, so it is reachable either way; the page itself decides what to render.
+  const isPublic =
+    path === "/" || path === "/login" || path === "/signup" || path.startsWith("/auth");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
@@ -41,7 +44,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && path === "/login") {
+  if (user && (path === "/login" || path === "/signup")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
 
 async function StudentExams() {
@@ -53,7 +53,8 @@ async function StudentExams() {
 
 export default async function Home() {
   const profile = await getCurrentUser();
-  if (!profile) redirect("/login");
+  // Visitors get the landing page; signed-in users get their dashboard.
+  if (!profile) return <Landing />;
 
   const role = profile.role as string;
 

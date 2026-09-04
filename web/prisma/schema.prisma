@@ -45,6 +45,7 @@ model User {
 model Section {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
+  joinCode     String   @unique @default(dbgenerated("upper(substr(replace((gen_random_uuid())::text, '-'::text, ''::text), 1, 6))")) @map("join_code")
   instructorId String   @map("instructor_id") @db.Uuid
   instructor   User     @relation("InstructorSections", fields: [instructorId], references: [id])
   students     User[]   @relation("StudentSection")

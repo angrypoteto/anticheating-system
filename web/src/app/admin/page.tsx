@@ -16,7 +16,7 @@ export default async function AdminPage() {
       .select("id, email, role, status, section_id")
       .order("role")
       .order("email"),
-    supabase.from("sections").select("id, name, instructor_id").order("name"),
+    supabase.from("sections").select("id, name, instructor_id, join_code").order("name"),
   ]);
 
   const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
@@ -76,6 +76,31 @@ export default async function AdminPage() {
           </p>
           <CreateSectionForm instructors={instructors} />
         </section>
+
+        {sections?.length ? (
+          <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+              Class codes
+            </h2>
+            <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+              Give a class its code and students can register themselves into it
+              at /signup — they always land as students, never anything higher.
+            </p>
+            <ul className="space-y-2">
+              {sections.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-2.5 dark:border-gray-700"
+                >
+                  <span className="text-sm text-gray-900 dark:text-gray-100">{s.name}</span>
+                  <code className="font-mono text-sm tracking-widest text-teal-700 dark:text-teal-400">
+                    {s.join_code}
+                  </code>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
           <div className="border-b border-gray-200 p-6 dark:border-gray-800">

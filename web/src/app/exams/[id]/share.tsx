@@ -9,7 +9,16 @@ import { useState } from "react";
  * and selectable, because the clipboard API is blocked in plenty of contexts
  * and a link you cannot read is useless.
  */
-export function ShareLink({ url, live }: { url: string; live: boolean }) {
+export function ShareLink({
+  url,
+  live,
+  linkOnly,
+}: {
+  url: string;
+  live: boolean;
+  /** Classes are off, so this link is the only way anyone gets in. */
+  linkOnly?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -38,7 +47,9 @@ export function ShareLink({ url, live }: { url: string; live: boolean }) {
       </h2>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
         {live
-          ? "Anyone who opens this link and signs in can sit this exam — they do not need to be in the class."
+          ? linkOnly
+            ? "This link is the only way in: a student who opens it and signs in can sit this exam, and nobody else sees it at all."
+            : "Anyone who opens this link and signs in can sit this exam — they do not need to be in the class."
           : "This link works as soon as you publish. Until then it tells students the exam is not open yet."}
       </p>
 

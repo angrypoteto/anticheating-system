@@ -142,12 +142,13 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           <span>
             Organise exams by class and subject
             <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-              On, a class is one subject for one section with its own join code,
-              and an exam only reaches the classes it is set for. Off, all of
-              that disappears for teachers and students: an exam simply reaches
-              every student, and teachers just publish, watch it live and read
-              the results. Nothing is deleted — your classes and enrolments come
-              back if you switch it on again.
+              On, a class is one subject for one section with its own join
+              code, and an exam reaches the classes it is set for plus anyone
+              holding its link. Off, all of that disappears for teachers and
+              students, and an exam reaches exactly the people you send its link
+              to — publish, send the link, watch it live, read the results.
+              Nothing is deleted; your classes and enrolments come back if you
+              switch it on again.
             </span>
           </span>
         </label>

@@ -18,7 +18,7 @@ GitHub Actions.
 |---|---|
 | Sign-in, three roles, per-role row-level security | `/login` |
 | Create accounts and classes (one subject per section), enable/disable users | `/admin` |
-| Turn classes off entirely — exams then reach every student | `/admin/settings` |
+| Turn classes off entirely — exams then reach only who you send the link to | `/admin/settings` |
 | Share an exam by link, the way a Google Form is shared | `/exams/<id>` → "Send this to your students" |
 | Students sign up with email or a Google account | `/signup` (see the runbook for the one-time Google setup) |
 | Decide whether students join classes by code, or an admin enrols them | `/admin/settings` |

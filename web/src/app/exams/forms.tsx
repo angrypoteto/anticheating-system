@@ -66,7 +66,8 @@ export function CreateExamForm({
 
       {classless ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Every student sees this once you publish it.
+          Classes are off, so this reaches whoever you send the link to — you
+          get the link once it is published.
         </p>
       ) : null}
 

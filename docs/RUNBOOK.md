@@ -261,10 +261,11 @@ join code; an exam reaches only the classes it is set for, and a teacher sees
 only the students they teach.
 
 **Off**, classes, subjects, join codes and enrolment disappear from every
-teacher and student screen. Each published exam reaches every student, and a
-teacher can read every student's account — they have to, to show results, and
-there is no longer a class to say whose results are whose. That widening is the
-price of the setting, and it is the only thing the switch gives away.
+teacher and student screen, and an exam reaches exactly the people you send its
+link to — nobody else sees it at all. A teacher can read every student's
+account, though: they have to, to show results, and there is no longer a class
+to say whose results are whose. That widening is the price of the setting, and
+it is the only thing the switch gives away.
 
 Nothing is deleted either way. Classes, enrolments and join codes sit untouched
 while it is off and come back exactly as they were when it is switched on.

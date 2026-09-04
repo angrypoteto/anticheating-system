@@ -107,7 +107,7 @@ export default async function ExamEditorPage({
           </div>
         ) : null}
 
-        <ShareLink url={shareUrl} live={published} />
+        <ShareLink url={shareUrl} live={published} linkOnly={!useClasses} />
 
         {/* Editor on the left, the student's view on the right. */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">

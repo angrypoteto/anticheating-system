@@ -28,27 +28,29 @@ export async function createAccount(
 
   const admin = createAdminClient();
 
-  // The on_auth_user_created trigger mirrors this into public.users,
-  // reading the role out of user_metadata.
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { role },
   });
 
   if (error) {
     return { error: error.message };
   }
 
-  if (sectionId) {
-    const { error: sectionError } = await admin
-      .from("users")
-      .update({ section_id: sectionId })
-      .eq("id", data.user.id);
-    if (sectionError) {
-      return { error: `Account created, but section assignment failed: ${sectionError.message}` };
-    }
+  // The trigger always creates a STUDENT, whatever the caller supplied — signup
+  // metadata is browser-controlled and a stranger could otherwise self-declare
+  // ADMIN. Any role above student is granted here instead, by trusted server
+  // code, after the account exists.
+  const { error: roleError } = await admin
+    .from("users")
+    .update({ role, ...(sectionId ? { section_id: sectionId } : {}) })
+    .eq("id", data.user.id);
+
+  if (roleError) {
+    // Don't leave a half-provisioned account behind.
+    await admin.auth.admin.deleteUser(data.user.id).catch(() => {});
+    return { error: `Could not set the account's role: ${roleError.message}` };
   }
 
   await auditServerAction(actor.id, "create_account", "users", data.user.id, {

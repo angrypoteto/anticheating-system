@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "../ui";
+import { ReportActions } from "./report-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,7 @@ export default async function StudentsPage() {
       <PageHeader
         title="Students & risk"
         subtitle={`Performance across published exams, with a pass mark of ${passThreshold}%. Change it in Settings.`}
+        action={<ReportActions />}
       />
 
       <div className="grid gap-4 sm:grid-cols-4">

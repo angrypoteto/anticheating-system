@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assessStudent } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "./ui";
+import { ClassProgressChart, ExamsByInstructorChart } from "./charts";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function AdminOverview() {
     admin.from("system_settings").select("pass_threshold, institution_name").eq("id", true).maybeSingle(),
     admin.from("users").select("id, email, role, status, section_id"),
     admin.from("sections").select("id, name"),
-    admin.from("exams").select("id, section_id, status"),
+    admin.from("exams").select("id, section_id, status, created_by_id"),
     admin.from("exam_sessions").select("id, exam_id, student_id, status, score, submitted_at"),
     admin.from("flags").select("id, session_id").is("resolution", null),
     admin.from("audit_log").select("action, actor_id, created_at").order("created_at", { ascending: false }).limit(6),
@@ -56,6 +57,44 @@ export default async function AdminOverview() {
   const notExamined = students.filter(
     (s) => !(sessions ?? []).some((x) => x.student_id === s.id),
   ).length;
+
+  // --- chart data: student progress per class, exams per instructor ---
+  const sessionsByStudent = new Map<string, { status: string }[]>();
+  for (const x of sessions ?? []) {
+    const list = sessionsByStudent.get(x.student_id) ?? [];
+    list.push({ status: x.status });
+    sessionsByStudent.set(x.student_id, list);
+  }
+
+  const classRows = (sections ?? []).map((sec) => {
+    const inClass = students.filter((s) => s.section_id === sec.id);
+    let done = 0, taking = 0, notStarted = 0;
+    for (const st of inClass) {
+      const own = sessionsByStudent.get(st.id) ?? [];
+      if (own.some((o) => o.status === "IN_PROGRESS")) taking++;
+      else if (own.length > 0) done++;
+      else notStarted++;
+    }
+    return { name: sec.name, done, taking, notStarted };
+  });
+
+  const unassigned = students.filter((s) => !s.section_id).length;
+  if (unassigned > 0) {
+    classRows.push({ name: "No class assigned", done: 0, taking: 0, notStarted: unassigned });
+  }
+
+  const instructorRows = (users ?? [])
+    .filter((u) => u.role === "INSTRUCTOR" || u.role === "ADMIN")
+    .map((u) => {
+      const own = (exams ?? []).filter((e) => e.created_by_id === u.id);
+      return {
+        name: u.email,
+        published: own.filter((e) => e.status === "PUBLISHED").length,
+        drafts: own.filter((e) => e.status !== "PUBLISHED").length,
+      };
+    })
+    .filter((r) => r.published + r.drafts > 0)
+    .sort((a, b) => b.published + b.drafts - (a.published + a.drafts));
 
   const actorEmail = new Map((users ?? []).map((u) => [u.id, u.email]));
   const activeKeys = (keys ?? []).filter((k) => k.status === "ACTIVE").length;
@@ -106,6 +145,19 @@ export default async function AdminOverview() {
           </p>
         </Card>
       )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card
+          title="Where each class stands"
+          hint="Every student in a class, split by whether they have finished, are sitting an exam now, or have not started."
+        >
+          <ClassProgressChart rows={classRows} />
+        </Card>
+
+        <Card title="Exams created" hint="By the instructor who made them.">
+          <ExamsByInstructorChart rows={instructorRows} />
+        </Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title="Exams" hint={`${published.length} published, ${(exams ?? []).length - published.length} draft`}>

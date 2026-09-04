@@ -24,3 +24,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Printing a report should produce the report, not the whole console. */
+@media print {
+  aside { display: none !important; }
+  body { background: #fff !important; }
+  .print\:hidden { display: none !important; }
+  section, div { box-shadow: none !important; }
+}

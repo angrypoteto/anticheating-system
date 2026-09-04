@@ -143,7 +143,7 @@ export function SettingsForm({
   );
 }
 
-export function StatusControls({
+export function UnusedStatusControls({
   examId,
   status,
 }: {
@@ -304,10 +304,13 @@ export function QuestionRow({
   examId,
   question,
   index,
+  locked,
 }: {
   examId: string;
   question: Question;
   index: number;
+  /** Published exams are frozen in the database; hide the controls to match. */
+  locked?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState<ActionState, FormData>(
@@ -344,6 +347,9 @@ export function QuestionRow({
           </p>
         ) : null}
       </div>
+      {locked ? (
+        <span className="shrink-0 text-xs text-gray-400 dark:text-gray-600">locked</span>
+      ) : (
       <div className="flex shrink-0 gap-3 text-sm">
         <button
           type="button"
@@ -364,6 +370,7 @@ export function QuestionRow({
           </button>
         </form>
       </div>
+      )}
     </li>
   );
 }

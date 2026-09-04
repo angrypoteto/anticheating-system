@@ -277,3 +277,45 @@ export async function deleteQuestion(
   revalidatePath(`/exams/${examId}`);
   return { success: "Question deleted." };
 }
+
+/** Which classes an exam is delivered to. A teacher may hold several. */
+export async function setExamClasses(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  await requireRole("INSTRUCTOR", "ADMIN");
+
+  const examId = String(formData.get("examId") ?? "");
+  const wanted = formData.getAll("sectionIds").map(String).filter(Boolean);
+  if (!wanted.length) return { error: "Pick at least one class." };
+
+  const supabase = await createClient();
+
+  const { data: current } = await supabase
+    .from("exam_sections")
+    .select("section_id")
+    .eq("exam_id", examId);
+
+  const have = new Set((current ?? []).map((r) => r.section_id));
+  const add = wanted.filter((id) => !have.has(id));
+  const remove = [...have].filter((id) => !wanted.includes(id));
+
+  if (add.length) {
+    const { error } = await supabase
+      .from("exam_sections")
+      .insert(add.map((section_id) => ({ exam_id: examId, section_id })));
+    if (error) return { error: error.message };
+  }
+
+  if (remove.length) {
+    const { error } = await supabase
+      .from("exam_sections")
+      .delete()
+      .eq("exam_id", examId)
+      .in("section_id", remove);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath(`/exams/${examId}`);
+  return { success: `Delivered to ${wanted.length} class${wanted.length === 1 ? "" : "es"}.` };
+}

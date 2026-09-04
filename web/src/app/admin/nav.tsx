@@ -19,7 +19,9 @@ export function AdminNav({ email }: { email: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-full shrink-0 flex-col border-b border-gray-200 bg-white lg:h-screen lg:w-64 lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-gray-900">
+    // Pinned on desktop so it stays put while the page scrolls; it scrolls
+    // internally only if the nav itself outgrows the viewport.
+    <aside className="flex w-full shrink-0 flex-col border-b border-gray-200 bg-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r dark:border-gray-800 dark:bg-gray-900">
       <div className="flex items-center gap-2.5 px-6 py-5">
         <ShieldMark className="h-7 w-7" />
         <span className="font-semibold text-gray-900 dark:text-gray-50">Proctorly</span>

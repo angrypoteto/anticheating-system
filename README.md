@@ -19,6 +19,7 @@ GitHub Actions.
 | Sign-in, three roles, per-role row-level security | `/login` |
 | Create accounts and classes (one subject per section), enable/disable users | `/admin` |
 | Turn classes off entirely — exams then reach every student | `/admin/settings` |
+| Share an exam by link, the way a Google Form is shared | `/exams/<id>` → "Send this to your students" |
 | AI provider keys — encrypted in Vault, round-robin rotation | `/admin/keys` |
 | Health, audit trail, backup status | `/admin/health` |
 | Exam builder: questions, timers, lockdown settings, publish | `/exams` |

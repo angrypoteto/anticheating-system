@@ -23,6 +23,8 @@ export async function signup(
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const rawNext = String(formData.get("next") ?? "");
+  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
 
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };
@@ -77,5 +79,5 @@ export async function signup(
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
   if (signInError) return { error: "Account created. Please sign in." };
 
-  redirect("/");
+  redirect(next);
 }

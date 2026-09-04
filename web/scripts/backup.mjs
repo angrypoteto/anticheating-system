@@ -53,7 +53,7 @@ const upload = !args.includes("--no-upload");
 // both a student and a section, so people and classes go in before the links.
 const TABLES = [
   "users", "sections", "enrollments", "exams", "questions", "question_answers",
-  "lesson_files", "exam_sessions", "answers", "flags",
+  "lesson_files", "exam_access", "exam_sessions", "answers", "flags",
   "audit_log", "backup_runs", "ai_provider_keys",
 ];
 

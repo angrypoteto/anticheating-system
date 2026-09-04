@@ -5,7 +5,12 @@ import { AuthShell } from "@/components/auth-shell";
 import { SignupForm } from "./form";
 import { classesEnabled } from "@/lib/settings";
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   // Already signed in? No reason to be here.
   const profile = await getCurrentUser();
   if (profile) redirect("/");
@@ -32,7 +37,7 @@ export default async function SignupPage() {
         </>
       }
     >
-      <SignupForm useClasses={useClasses} />
+      <SignupForm useClasses={useClasses} next={next} />
     </AuthShell>
   );
 }

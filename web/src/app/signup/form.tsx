@@ -4,11 +4,12 @@ import { useActionState } from "react";
 import { signup, type SignupState } from "./actions";
 import { authButton, authField, authLabel } from "@/components/auth-shell";
 
-export function SignupForm({ useClasses }: { useClasses: boolean }) {
+export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: string }) {
   const [state, action, pending] = useActionState<SignupState, FormData>(signup, {});
 
   return (
     <form action={action} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div>
         <label htmlFor="email" className={authLabel}>
           School email

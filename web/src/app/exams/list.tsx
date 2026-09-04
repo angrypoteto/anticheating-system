@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { parseTimer } from "@/lib/exam-config";
 import { classLabel } from "@/lib/classes";
 import { classesEnabled } from "@/lib/settings";
+import { siteUrl } from "@/lib/site-url";
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "text-amber-700 dark:text-amber-400",
@@ -53,7 +54,7 @@ export async function ExamList() {
     supabase
       .from("exams")
       .select(
-        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, exam_sections(section_id)",
+        "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, share_token, exam_sections(section_id)",
       )
       .order("created_at", { ascending: false }),
     supabase.from("sections").select("id, name, subject"),
@@ -62,6 +63,7 @@ export async function ExamList() {
 
   const sectionName = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
   const useClasses = await classesEnabled();
+  const base = await siteUrl();
   const personName = new Map(
     (people ?? []).map((p) => [p.id, p.full_name || p.email]),
   );
@@ -146,6 +148,21 @@ export async function ExamList() {
                         · {timer.perQuestionSeconds}s per question
                       </span>
                     ) : null}
+                  </Detail>
+
+                  <Detail label="Student link">
+                    {e.status === "PUBLISHED" ? (
+                      <a
+                        href={`${base}/e/${e.share_token}`}
+                        className="break-all font-mono text-xs text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                      >
+                        {`${base}/e/${e.share_token}`}
+                      </a>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Publish it to hand out the link
+                      </span>
+                    )}
                   </Detail>
 
                   <Detail label={published ? "Given on" : "Not yet given"}>

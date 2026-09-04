@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
 import { authButton, authField, authLabel } from "@/components/auth-shell";
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(
     login,
     {},
@@ -12,6 +12,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="space-y-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <div>
         <label htmlFor="email" className={authLabel}>
           Email

@@ -6,6 +6,8 @@ import { parseLockdown, parseTimer } from "@/lib/exam-config";
 import { QuestionForm, QuestionRow, SettingsForm } from "./editor";
 import { ExamPreview } from "./preview";
 import { ClassTargets, PublishControls } from "./publish";
+import { ShareLink } from "./share";
+import { siteUrl } from "@/lib/site-url";
 import { classesEnabled } from "@/lib/settings";
 
 // PostgREST returns this embed as an object (question_id is question_answers'
@@ -27,7 +29,7 @@ export default async function ExamEditorPage({
 
   const { data: exam } = await supabase
     .from("exams")
-    .select("id, title, status, section_id, timer_config, lockdown_config")
+    .select("id, title, status, section_id, timer_config, lockdown_config, share_token")
     .eq("id", id)
     .maybeSingle();
 
@@ -49,6 +51,7 @@ export default async function ExamEditorPage({
   const timer = parseTimer(exam.timer_config);
   const lockdown = parseLockdown(exam.lockdown_config);
   const published = exam.status === "PUBLISHED";
+  const shareUrl = `${await siteUrl()}/e/${exam.share_token}`;
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
   const useClasses = await classesEnabled();
   const qs = questions ?? [];
@@ -103,6 +106,8 @@ export default async function ExamEditorPage({
             it cannot return to draft. Archive it to withdraw it from students.
           </div>
         ) : null}
+
+        <ShareLink url={shareUrl} live={published} />
 
         {/* Editor on the left, the student's view on the right. */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">

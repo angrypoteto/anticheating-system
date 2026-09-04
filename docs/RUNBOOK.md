@@ -273,3 +273,25 @@ The rule is enforced in the database, not in the pages: `private.classes_enabled
 is read by `exam_reaches_my_section()`, `owns_exam()` and the instructor policies
 on `exams` and `users`. Hiding the UI is a convenience; the switch would still
 hold with the UI bypassed.
+
+
+## Exam share links
+
+Every exam carries an unguessable token and a link at `/e/<token>`, shown on the
+exam editor and in the exam list. It is the Google Forms idea: finish the paper,
+publish it, send one link.
+
+Opening the link is what grants access. That matters — a link that only worked
+for people already enrolled would be pointless, since those students already see
+the exam. Following it records a row in `exam_access` for that **one exam**, so
+sending a link never adds anyone to a class or hands over a teacher's other
+papers. The grant is per person, so an exam still knows who sat it and every
+flag, score and timer applies as normal.
+
+Signed-out visitors are sent to `/login?next=…` and land on the paper afterwards.
+A link to an unpublished exam says the exam is not open rather than letting
+anyone in, and starts working the moment it is published.
+
+To withdraw someone, delete their row from `exam_access`; the teacher who owns
+the exam can see and remove those rows. To invalidate a link entirely, change the
+exam's `share_token`.

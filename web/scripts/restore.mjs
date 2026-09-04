@@ -57,7 +57,7 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY
 // class membership lives in enrollments rather than on the user row.
 const ORDER = [
   "users", "sections", "enrollments", "exams", "questions", "question_answers",
-  "lesson_files", "exam_sessions", "answers", "flags",
+  "lesson_files", "exam_access", "exam_sessions", "answers", "flags",
   "audit_log", "backup_runs", "ai_provider_keys",
 ];
 
@@ -66,6 +66,7 @@ const ORDER = [
 const CONFLICT_COLUMN = {
   question_answers: "question_id",
   enrollments: "student_id,section_id",
+  exam_access: "exam_id,student_id",
 };
 const keyOf = (table) => CONFLICT_COLUMN[table] ?? "id";
 

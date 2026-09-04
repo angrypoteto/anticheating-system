@@ -12,6 +12,10 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Only ever a path on this site: "//evil.example" and "https://…" are both
+  // absolute to a browser, so anything but a single leading slash is dropped.
+  const raw = String(formData.get("next") ?? "");
+  const next = /^\/(?!\/)/.test(raw) ? raw : "/";
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -26,5 +30,5 @@ export async function login(
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect(next);
 }

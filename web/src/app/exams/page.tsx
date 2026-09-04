@@ -1,43 +1,29 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { ExamList } from "./list";
 
-const STATUS_STYLES: Record<string, string> = {
-  DRAFT: "text-amber-700 dark:text-amber-400",
-  PUBLISHED: "text-green-700 dark:text-green-400",
-  ARCHIVED: "text-gray-400 dark:text-gray-500",
-};
+export const dynamic = "force-dynamic";
 
 export default async function ExamsPage() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   // Admins live in the console, so send them back there rather than bouncing
   // them through "/" only to be redirected again.
   const backHref = me.role === "ADMIN" ? "/admin" : "/";
-  const supabase = await createClient();
-
-  const [{ data: exams }, { data: sections }] = await Promise.all([
-    supabase
-      .from("exams")
-      .select("id, title, status, section_id, updated_at")
-      .order("updated_at", { ascending: false }),
-    supabase.from("sections").select("id, name").order("name"),
-  ]);
-
-  const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
+  const buildHref = me.role === "ADMIN" ? "/admin/exams/new" : "/exams/new";
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
       <div className="mx-auto max-w-4xl space-y-10">
         <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
-            Exams
+            Exams &amp; quizzes
           </h1>
           <div className="flex items-center gap-4">
             <Link
-              href="/exams/new"
+              href={buildHref}
               className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
             >
-              Build an exam
+              Generate an exam
             </Link>
             <Link
               href={backHref}
@@ -54,36 +40,7 @@ export default async function ExamsPage() {
               Your exams
             </h2>
           </div>
-
-          {exams?.length ? (
-            <ul>
-              {exams.map((e) => (
-                <li
-                  key={e.id}
-                  className="flex items-center justify-between border-b border-gray-100 px-6 py-4 last:border-0 dark:border-gray-800"
-                >
-                  <div>
-                    <Link
-                      href={`/exams/${e.id}`}
-                      className="font-medium text-gray-900 underline-offset-4 hover:underline dark:text-gray-100"
-                    >
-                      {e.title}
-                    </Link>
-                    <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                      {e.section_id ? (sectionName.get(e.section_id) ?? "—") : "—"}
-                    </p>
-                  </div>
-                  <span className={`text-sm ${STATUS_STYLES[e.status] ?? ""}`}>
-                    {e.status.toLowerCase()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
-              No exams yet.
-            </p>
-          )}
+          <ExamList />
         </section>
       </div>
     </main>

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Anti-Cheating Exam System",
+  title: "Proctorly — Anti-Cheating Exam System",
   description:
     "Monitored online exams with lockdown mode, live proctoring and AI-assisted question generation.",
 };

@@ -16,7 +16,7 @@ export default function LoginPage() {
           Sign in
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Anti-Cheating Exam System
+          Proctorly
         </p>
 
         <form action={formAction} className="mt-6 space-y-4">

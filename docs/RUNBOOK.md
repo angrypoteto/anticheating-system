@@ -396,3 +396,21 @@ Two things this got wrong first time, both worth remembering:
   closes land on the same instant, which is precisely correct — it was never
   open — so the ordering constraint allows equal, and rejects only a close
   *before* an open.
+
+
+## Generating a lot of questions
+
+There is no cap on how many questions can be asked for. There is a cap on how
+many go in one model call — `PER_CALL` in `lib/ai/batches.ts`, currently 15 —
+because a single reply cannot hold 60 good questions: it runs past the output
+limit and the later items degrade into restatements of the earlier ones.
+
+A large order is planned into calls that preserve the requested mix in total,
+run one after another, and merged with repeats dropped. A call that fails does
+not discard the ones that worked; the notice says how many came back and
+suggests generating again for any shortfall.
+
+Sequential calls take time, and the page carries `maxDuration = 60`, which is
+the ceiling on Vercel's hobby plan. Past roughly sixty questions in one go the
+request is likely to be cut off, so split it over two goes. Raising the limit
+means a paid plan, not a code change.

@@ -146,6 +146,13 @@ export function GenerateStudio({ examId }: { examId: string }) {
           <input type="hidden" name="storagePath" value={uploaded?.path ?? ""} />
           <input type="hidden" name="filename" value={uploaded?.name ?? ""} />
 
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Ask for as many as you need. Large orders are split into several
+            requests and merged, so they take longer — and repeats between
+            requests are dropped, which can leave you a few short. Generate
+            again for the rest.
+          </p>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="mcCount" className={label}>
@@ -156,7 +163,6 @@ export function GenerateStudio({ examId }: { examId: string }) {
                 name="mcCount"
                 type="number"
                 min={0}
-                max={20}
                 defaultValue={5}
                 className={field}
               />
@@ -170,7 +176,6 @@ export function GenerateStudio({ examId }: { examId: string }) {
                 name="identCount"
                 type="number"
                 min={0}
-                max={20}
                 defaultValue={2}
                 className={field}
               />

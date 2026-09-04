@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
 import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
 import { generateQuestions } from "@/lib/ai/generate";
+import { mergeDrafts, planBatches } from "@/lib/ai/batches";
 
 export type GenerateState = {
   error?: string;
@@ -14,8 +15,6 @@ export type GenerateState = {
   drafts?: DraftQuestion[];
   sourceChars?: number;
 };
-
-const MAX_QUESTIONS = 20;
 
 /**
  * The file is already in Storage (uploaded client-direct, so its bytes never pass
@@ -35,13 +34,14 @@ export async function generateFromFile(
 
   // Composition is specified per type, the way the proposal frames it:
   // "ten multiple-choice items and five identification items".
-  const mcCount = Math.max(0, Number(formData.get("mcCount") ?? 0));
-  const identCount = Math.max(0, Number(formData.get("identCount") ?? 0));
-  const count = Math.min(MAX_QUESTIONS, mcCount + identCount);
-  const mix = describeMix(mcCount, identCount);
+  const mcCount = Math.max(0, Math.floor(Number(formData.get("mcCount") ?? 0)));
+  const identCount = Math.max(0, Math.floor(Number(formData.get("identCount") ?? 0)));
+  const count = mcCount + identCount;
 
   if (!storagePath) return { error: "Upload a lesson file first." };
-  if (count < 1) return { error: "Ask for at least one question." };
+  if (!Number.isFinite(count) || count < 1) {
+    return { error: "Ask for at least one question." };
+  }
 
   // Confirm the caller owns this exam under RLS before the service role touches
   // anything on their behalf.
@@ -63,8 +63,34 @@ export async function generateFromFile(
   const extracted = await extractText(buffer, filename);
   if (!extracted.ok) return { error: extracted.error };
 
-  const result = await generateQuestions(extracted.text, count, mix);
-  if (!result.ok) return { error: result.error };
+  // One call per batch, merged. A batch that fails does not lose the ones that
+  // worked — a teacher would rather have 45 of 60 than an error message.
+  const batches = planBatches(mcCount, identCount);
+  const returned: DraftQuestion[][] = [];
+  let keyLabel = "";
+  let lastError = "";
+
+  for (const batch of batches) {
+    const result = await generateQuestions(
+      extracted.text,
+      batch.mc + batch.ident,
+      describeMix(batch.mc, batch.ident),
+    );
+
+    if (!result.ok) {
+      lastError = result.error;
+      continue;
+    }
+
+    keyLabel = result.keyLabel;
+    returned.push(result.questions);
+  }
+
+  const drafts = mergeDrafts(returned);
+
+  if (!drafts.length) {
+    return { error: lastError || "The model returned nothing usable." };
+  }
 
   // Record the source file now that we know it parsed.
   await admin.from("lesson_files").insert({
@@ -74,12 +100,20 @@ export async function generateFromFile(
     parsed_text: extracted.text.slice(0, 500_000),
   });
 
+  const short = count - drafts.length;
+
   return {
-    drafts: result.questions,
+    drafts,
     sourceChars: extracted.chars,
     notice:
-      `${result.questions.length} draft${result.questions.length === 1 ? "" : "s"} from ` +
-      `${extracted.chars.toLocaleString()} characters, using key “${result.keyLabel}”.`,
+      `${drafts.length} draft${drafts.length === 1 ? "" : "s"} from ` +
+      `${extracted.chars.toLocaleString()} characters` +
+      (batches.length > 1 ? ` across ${batches.length} requests` : "") +
+      (keyLabel ? `, using key “${keyLabel}”` : "") +
+      "." +
+      (short > 0
+        ? ` You asked for ${count}; ${short} came back repeated or missing, so generate again for the rest.`
+        : ""),
   };
 }
 

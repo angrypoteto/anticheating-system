@@ -91,6 +91,8 @@ export function GenerateStudio({ examId }: { examId: string }) {
           1 · Upload lesson material
         </h2>
         <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          Deleted as soon as its text has been read — only the text is kept, and
+          only so you can generate more without uploading again.
           PDF, DOCX, PPTX, TXT or MD, up to 20 MB. A scanned PDF has no text layer
           and won&apos;t work without OCR.
         </p>

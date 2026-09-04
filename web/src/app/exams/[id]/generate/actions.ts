@@ -17,6 +17,46 @@ export type GenerateState = {
 };
 
 /**
+ * Remove a lesson file's bytes from Storage.
+ *
+ * The extracted text is already on the lesson_files row and is all that
+ * regeneration reads, so once a file has been read it has no further use. It is
+ * somebody's slide deck; leaving it in a bucket indefinitely is a cost with no
+ * benefit. Failing to delete is not worth failing the request over — the sweep
+ * after the drafts are kept will catch it.
+ */
+async function removeLessonFile(
+  admin: ReturnType<typeof createAdminClient>,
+  storagePath: string,
+) {
+  const { error } = await admin.storage.from("lesson-files").remove([storagePath]);
+  if (error) return false;
+  await admin
+    .from("lesson_files")
+    .update({ file_deleted_at: new Date().toISOString() })
+    .eq("storage_path", storagePath);
+  return true;
+}
+
+/** Everything still sitting in this exam's folder, gone. */
+async function sweepLessonFiles(
+  admin: ReturnType<typeof createAdminClient>,
+  examId: string,
+) {
+  const { data: left } = await admin.storage.from("lesson-files").list(examId);
+  const paths = (left ?? []).map((f) => `${examId}/${f.name}`);
+  if (!paths.length) return 0;
+
+  const { error } = await admin.storage.from("lesson-files").remove(paths);
+  if (error) return 0;
+  await admin
+    .from("lesson_files")
+    .update({ file_deleted_at: new Date().toISOString() })
+    .in("storage_path", paths);
+  return paths.length;
+}
+
+/**
  * The file is already in Storage (uploaded client-direct, so its bytes never pass
  * through a serverless request body). This reads it back, extracts the text, and
  * asks the model for drafts. Nothing is written to `questions` — the instructor
@@ -54,14 +94,48 @@ export async function generateFromFile(
   if (!exam) return { error: "Exam not found, or not yours." };
 
   const admin = createAdminClient();
-  const { data: blob, error: dlError } = await admin.storage
-    .from("lesson-files")
-    .download(storagePath);
-  if (dlError || !blob) return { error: `Could not read the uploaded file: ${dlError?.message}` };
 
-  const buffer = Buffer.from(await blob.arrayBuffer());
-  const extracted = await extractText(buffer, filename);
-  if (!extracted.ok) return { error: extracted.error };
+  // The file is read once. Asking again for more questions from the same lesson
+  // uses the text already on the row, which is also what makes deleting the
+  // upload safe.
+  const { data: already } = await admin
+    .from("lesson_files")
+    .select("parsed_text")
+    .eq("exam_id", examId)
+    .eq("storage_path", storagePath)
+    .maybeSingle();
+
+  let text: string;
+  let chars: number;
+
+  if (already?.parsed_text) {
+    text = already.parsed_text;
+    chars = text.length;
+  } else {
+    const { data: blob, error: dlError } = await admin.storage
+      .from("lesson-files")
+      .download(storagePath);
+    if (dlError || !blob) {
+      return { error: `Could not read the uploaded file: ${dlError?.message}` };
+    }
+
+    const buffer = Buffer.from(await blob.arrayBuffer());
+    const extracted = await extractText(buffer, filename);
+    if (!extracted.ok) return { error: extracted.error };
+
+    text = extracted.text;
+    chars = extracted.chars;
+
+    // Record the text before removing the file, so a failure between the two
+    // cannot lose both.
+    await admin.from("lesson_files").insert({
+      exam_id: examId,
+      uploaded_by_id: user.id,
+      storage_path: storagePath,
+      parsed_text: text.slice(0, 500_000),
+    });
+    await removeLessonFile(admin, storagePath);
+  }
 
   // One call per batch, merged. A batch that fails does not lose the ones that
   // worked — a teacher would rather have 45 of 60 than an error message.
@@ -72,7 +146,7 @@ export async function generateFromFile(
 
   for (const batch of batches) {
     const result = await generateQuestions(
-      extracted.text,
+      text,
       batch.mc + batch.ident,
       describeMix(batch.mc, batch.ident),
     );
@@ -92,22 +166,14 @@ export async function generateFromFile(
     return { error: lastError || "The model returned nothing usable." };
   }
 
-  // Record the source file now that we know it parsed.
-  await admin.from("lesson_files").insert({
-    exam_id: examId,
-    uploaded_by_id: user.id,
-    storage_path: storagePath,
-    parsed_text: extracted.text.slice(0, 500_000),
-  });
-
   const short = count - drafts.length;
 
   return {
     drafts,
-    sourceChars: extracted.chars,
+    sourceChars: chars,
     notice:
       `${drafts.length} draft${drafts.length === 1 ? "" : "s"} from ` +
-      `${extracted.chars.toLocaleString()} characters` +
+      `${chars.toLocaleString()} characters` +
       (batches.length > 1 ? ` across ${batches.length} requests` : "") +
       (keyLabel ? `, using key “${keyLabel}”` : "") +
       "." +
@@ -193,6 +259,16 @@ export async function acceptDrafts(
   if (!drafts.length) return { error: "Nothing selected to add." };
 
   const supabase = await createClient();
+
+  // Confirm the exam is theirs under RLS before the service role sweeps its
+  // folder — this is the only place that touches another exam's path shape.
+  const { data: ownExam } = await supabase
+    .from("exams")
+    .select("id")
+    .eq("id", examId)
+    .maybeSingle();
+  if (!ownExam) return { error: "Exam not found, or not yours." };
+
   const { count: existing } = await supabase
     .from("questions")
     .select("id", { count: "exact", head: true })
@@ -230,6 +306,15 @@ export async function acceptDrafts(
     added++;
   }
 
+  // Done with the lesson material: the questions exist now, and anything still
+  // in the bucket is a file nobody will read again. Catches uploads whose
+  // generation failed as well as the one just used.
+  const swept = await sweepLessonFiles(createAdminClient(), examId);
+
   revalidatePath(`/exams/${examId}`);
-  return { notice: `Added ${added} question${added === 1 ? "" : "s"} to the exam.` };
+  return {
+    notice:
+      `Added ${added} question${added === 1 ? "" : "s"} to the exam.` +
+      (swept ? ` Your uploaded file was deleted.` : ""),
+  };
 }

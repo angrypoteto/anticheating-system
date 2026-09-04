@@ -455,3 +455,21 @@ up, and can never report an absentee.
 
 Removing someone from the roster stops them starting; it does not delete a
 result they have already earned.
+
+
+## Lesson files do not linger
+
+An uploaded lesson file is read once, its text is stored on the `lesson_files`
+row, and the file itself is deleted from Storage immediately. Asking for more
+questions from the same lesson reads that text rather than the file, which is
+what makes deleting it safe — and regeneration of a single draft already worked
+that way.
+
+Keeping the drafts sweeps the exam's folder again, which catches uploads whose
+generation failed before the first delete. In normal running the bucket stays
+empty.
+
+`npm run sweep-uploads` lists anything left — from before this behaviour
+existed, or from a generation that died early — and names the exam each file
+belongs to. It removes nothing without `--yes`, because these are files a
+teacher uploaded and the extracted text is not a substitute for the original.

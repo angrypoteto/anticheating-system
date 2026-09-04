@@ -184,6 +184,9 @@ model LessonFile {
   uploadedBy   User     @relation("LessonUploader", fields: [uploadedById], references: [id])
   storagePath  String   @map("storage_path")
   parsedText   String?  @map("parsed_text")
+  /// When the uploaded bytes were removed. The text above is kept; the file is
+  /// deleted as soon as it has been read.
+  fileDeletedAt DateTime? @map("file_deleted_at") @db.Timestamptz(3)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("lesson_files")

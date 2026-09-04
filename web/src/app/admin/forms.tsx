@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   assignInstructor,
+  setEnrollment,
   createAccount,
   createSection,
   setAccountStatus,
@@ -34,9 +35,9 @@ function Feedback({ state }: { state: ActionState }) {
 }
 
 export function CreateAccountForm({
-  sections,
+  classes,
 }: {
-  sections: { id: string; name: string }[];
+  classes: { id: string; label: string }[];
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     createAccount,
@@ -76,16 +77,19 @@ export function CreateAccountForm({
         </div>
         <div>
           <label htmlFor="sectionId" className={label}>
-            Section (optional)
+            First class (optional)
           </label>
           <select id="sectionId" name="sectionId" defaultValue="" className={field}>
             <option value="">— none —</option>
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Students only. You can add more classes afterwards.
+          </p>
         </div>
       </div>
 
@@ -112,8 +116,20 @@ export function CreateSectionForm({
     <form action={action} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
+          <label htmlFor="subject" className={label}>
+            Subject
+          </label>
+          <input
+            id="subject"
+            name="subject"
+            placeholder="System Administration"
+            required
+            className={field}
+          />
+        </div>
+        <div>
           <label htmlFor="name" className={label}>
-            Section name
+            Section
           </label>
           <input
             id="name"
@@ -223,6 +239,51 @@ export function AssignInstructor({
       ) : null}
       {state.success ? (
         <span role="status" className="text-xs text-green-700 dark:text-green-400">{state.success}</span>
+      ) : null}
+    </form>
+  );
+}
+
+
+/** Enrol a student in a class, or drop them from it. */
+export function EnrollmentToggle({
+  studentId,
+  sectionId,
+  enrolled,
+  label: classLabel,
+}: {
+  studentId: string;
+  sectionId: string;
+  enrolled: boolean;
+  label: string;
+}) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    setEnrollment,
+    {},
+  );
+
+  return (
+    <form action={action} className="inline">
+      <input type="hidden" name="studentId" value={studentId} />
+      <input type="hidden" name="sectionId" value={sectionId} />
+      <input type="hidden" name="enrol" value={enrolled ? "0" : "1"} />
+      <button
+        type="submit"
+        disabled={pending}
+        aria-label={`${enrolled ? "Remove from" : "Add to"} ${classLabel}`}
+        className={`rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-50 ${
+          enrolled
+            ? "border-teal-300 bg-teal-50 text-teal-800 hover:border-red-300 hover:bg-red-50 hover:text-red-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300 dark:hover:border-red-900 dark:hover:bg-red-950/50 dark:hover:text-red-300"
+            : "border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100"
+        }`}
+      >
+        {enrolled ? "✓ " : "+ "}
+        {classLabel}
+      </button>
+      {state.error ? (
+        <span role="alert" className="ml-2 text-xs text-red-600 dark:text-red-400">
+          {state.error}
+        </span>
       ) : null}
     </form>
   );

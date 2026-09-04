@@ -44,7 +44,7 @@ export async function createAccount(
   // code, after the account exists.
   const { error: roleError } = await admin
     .from("users")
-    .update({ role, ...(sectionId ? { section_id: sectionId } : {}) })
+    .update({ role })
     .eq("id", data.user.id);
 
   if (roleError) {
@@ -53,13 +53,23 @@ export async function createAccount(
     return { error: `Could not set the account's role: ${roleError.message}` };
   }
 
+  if (sectionId && role === "STUDENT") {
+    const { error: enrolError } = await admin
+      .from("enrollments")
+      .insert({ student_id: data.user.id, section_id: sectionId });
+    if (enrolError) {
+      await admin.auth.admin.deleteUser(data.user.id).catch(() => {});
+      return { error: `Could not enrol them: ${enrolError.message}` };
+    }
+  }
+
   await auditServerAction(actor.id, "create_account", "users", data.user.id, {
     email,
     role,
     section_id: sectionId || null,
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/accounts");
   return { success: `Created ${role.toLowerCase()} account for ${email}.` };
 }
 
@@ -101,22 +111,31 @@ export async function createSection(
 ): Promise<ActionState> {
   const actor = await requireRole("ADMIN");
 
+  const subject = String(formData.get("subject") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const instructorId = String(formData.get("instructorId") ?? "");
 
-  if (!name) return { error: "Class name is required." };
+  if (!subject) return { error: "Which subject is this class for?" };
+  if (!name) return { error: "Which section sits it? e.g. BSIT 4C" };
   // A class may be created before anyone is staffed to it, so an instructor is
   // optional here and assigned later from the class list.
 
   const admin = createAdminClient();
   const { data: created, error } = await admin
     .from("sections")
-    .insert({ name, instructor_id: instructorId || null })
+    .insert({ subject, name, instructor_id: instructorId || null })
     .select("id")
     .single();
-  if (error) return { error: error.message };
+  if (error) {
+    return {
+      error: /duplicate|unique/i.test(error.message)
+        ? `${subject} for ${name} already exists.`
+        : error.message,
+    };
+  }
 
   await auditServerAction(actor.id, "create_section", "sections", created.id, {
+    subject,
     name,
     instructor_id: instructorId || null,
   });
@@ -124,8 +143,8 @@ export async function createSection(
   revalidatePath("/admin/accounts");
   return {
     success: instructorId
-      ? `Class "${name}" created.`
-      : `Class "${name}" created. Assign a teacher when you are ready.`,
+      ? `${subject} for ${name} created.`
+      : `${subject} for ${name} created. Assign a teacher when you are ready.`,
   };
 }
 
@@ -153,4 +172,48 @@ export async function assignInstructor(
 
   revalidatePath("/admin/accounts");
   return { success: instructorId ? "Teacher assigned." : "Teacher removed." };
+}
+
+
+/** Put a student into a class, or take them out of one. */
+export async function setEnrollment(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireRole("ADMIN");
+
+  const studentId = String(formData.get("studentId") ?? "");
+  const sectionId = String(formData.get("sectionId") ?? "");
+  const enrol = String(formData.get("enrol") ?? "") === "1";
+  if (!studentId || !sectionId) return { error: "Which student, and which class?" };
+
+  const admin = createAdminClient();
+
+  if (enrol) {
+    const { error } = await admin
+      .from("enrollments")
+      .upsert({ student_id: studentId, section_id: sectionId }, {
+        onConflict: "student_id,section_id",
+      });
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await admin
+      .from("enrollments")
+      .delete()
+      .eq("student_id", studentId)
+      .eq("section_id", sectionId);
+    if (error) return { error: error.message };
+  }
+
+  await auditServerAction(
+    actor.id,
+    enrol ? "enrol_student" : "unenrol_student",
+    "users",
+    studentId,
+    { section_id: sectionId },
+  );
+
+  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/students");
+  return { success: enrol ? "Enrolled." : "Removed from the class." };
 }

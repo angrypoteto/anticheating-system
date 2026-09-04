@@ -52,11 +52,11 @@ const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY
   auth: { persistSession: false },
 });
 
-// users.section_id references sections, and sections.instructor_id references
-// users — a cycle. Users go in first with the link stripped, then sections, then
-// the link is applied.
+// sections.instructor_id and enrollments both point at users, so people go in
+// first, then classes, then who sits which. There is no longer a cycle to break:
+// class membership lives in enrollments rather than on the user row.
 const ORDER = [
-  "users", "sections", "exams", "questions", "question_answers",
+  "users", "sections", "enrollments", "exams", "questions", "question_answers",
   "lesson_files", "exam_sessions", "answers", "flags",
   "audit_log", "backup_runs", "ai_provider_keys",
 ];
@@ -65,6 +65,7 @@ const ORDER = [
 // belongs to. Getting this wrong silently skipped the answer key on restore.
 const CONFLICT_COLUMN = {
   question_answers: "question_id",
+  enrollments: "student_id,section_id",
 };
 const keyOf = (table) => CONFLICT_COLUMN[table] ?? "id";
 
@@ -81,8 +82,7 @@ for (const table of ORDER) {
     continue;
   }
 
-  const payload =
-    table === "users" ? rows.map(({ section_id, ...r }) => ({ ...r, section_id: null })) : rows;
+  const payload = rows;
 
   if (dryRun) {
     console.log(`  ${table.padEnd(18)} would restore ${payload.length} rows`);
@@ -96,19 +96,6 @@ for (const table of ORDER) {
   } else {
     console.log(`  ${table.padEnd(18)} ${String(payload.length).padStart(5)} rows`);
   }
-}
-
-// Second pass: reattach students to their sections now that both exist.
-const withSection = (archive.tables.users ?? []).filter((u) => u.section_id);
-if (withSection.length && !dryRun) {
-  let linked = 0;
-  for (const u of withSection) {
-    const { error } = await admin.from("users").update({ section_id: u.section_id }).eq("id", u.id);
-    if (!error) linked++;
-  }
-  console.log(`  ${"users.section_id".padEnd(18)} ${String(linked).padStart(5)} relinked`);
-} else if (withSection.length) {
-  console.log(`  ${"users.section_id".padEnd(18)} would relink ${withSection.length}`);
 }
 
 console.log(

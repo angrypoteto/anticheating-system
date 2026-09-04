@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { loadEnrolment } from "@/lib/enrolment";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "../ui";
 import { ReportActions } from "./report-actions";
@@ -15,17 +16,24 @@ const BAND_TONE = {
 export default async function StudentsPage() {
   const admin = createAdminClient();
 
-  const [{ data: settings }, { data: users }, { data: sections }, { data: exams }] =
+  const [{ data: settings }, { data: users }, { data: exams }, enrolment] =
     await Promise.all([
       admin.from("system_settings").select("pass_threshold").eq("id", true).maybeSingle(),
-      admin.from("users").select("id, email, role, status, section_id").eq("role", "STUDENT"),
-      admin.from("sections").select("id, name"),
+      admin
+        .from("users")
+        .select("id, email, full_name, role, status")
+        .eq("role", "STUDENT"),
       admin.from("exams").select("id, title, section_id, status").eq("status", "PUBLISHED"),
+      loadEnrolment(admin),
     ]);
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
   const students = users ?? [];
-  const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
+  const { label: sectionName, classesOf } = enrolment;
+  const classesText = (studentId: string) => {
+    const names = enrolment.labelsFor(studentId);
+    return names.length ? names.join(", ") : "No class";
+  };
 
   const { data: sessions } = await admin
     .from("exam_sessions")
@@ -38,8 +46,9 @@ export default async function StudentsPage() {
     flagsBySession.set(f.session_id, (flagsBySession.get(f.session_id) ?? 0) + 1);
   }
 
-  const examsForSection = (sectionId: string | null) =>
-    (exams ?? []).filter((e) => e.section_id === sectionId).length;
+  // Every published exam that reaches any class the student sits.
+  const examsFacing = (studentId: string) =>
+    (exams ?? []).filter((e) => enrolment.reachesStudent(e, studentId)).length;
 
   // --- per student ---
   const assessed = students.map((s) => {
@@ -50,21 +59,25 @@ export default async function StudentsPage() {
         status: o.status,
         flags: flagsBySession.get(o.id) ?? 0,
       })),
-      examsForSection(s.section_id),
+      examsFacing(s.id),
       passThreshold,
     );
     return { student: s, risk, attempts: own };
   });
 
   // --- per class ---
+  // A student sitting three subjects counts towards all three classes, so the
+  // per-class picture reflects who actually turns up to that class.
   const bySection = new Map<string, { name: string; risks: Risk[] }>();
   for (const a of assessed) {
-    const key = a.student.section_id ?? "none";
-    const name = a.student.section_id
-      ? (sectionName.get(a.student.section_id) ?? "Unknown class")
-      : "No class assigned";
-    if (!bySection.has(key)) bySection.set(key, { name, risks: [] });
-    bySection.get(key)!.risks.push(a.risk);
+    const mine = classesOf.get(a.student.id) ?? [];
+    const keys = mine.length ? mine : ["none"];
+    for (const key of keys) {
+      const name =
+        key === "none" ? "No class assigned" : (sectionName.get(key) ?? "Unknown class");
+      if (!bySection.has(key)) bySection.set(key, { name, risks: [] });
+      bySection.get(key)!.risks.push(a.risk);
+    }
   }
   const sectionRisks = [...bySection.entries()]
     .map(([id, v]) => ({ id, name: v.name, ...assessSection(v.risks) }))
@@ -76,7 +89,7 @@ export default async function StudentsPage() {
     .map((a) => {
       const taken = new Set(a.attempts.map((t) => t.exam_id));
       const missing = (exams ?? [])
-        .filter((e) => e.section_id === a.student.section_id && !taken.has(e.id))
+        .filter((e) => enrolment.reachesStudent(e, a.student.id) && !taken.has(e.id))
         .map((e) => e.title);
       return { ...a, missing };
     })
@@ -177,7 +190,7 @@ export default async function StudentsPage() {
                 <div className="min-w-0">
                   <p className="text-sm text-gray-900 dark:text-gray-100">{o.student.email}</p>
                   <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {o.student.section_id ? sectionName.get(o.student.section_id) : "No class"} ·
+                    {classesText(o.student.id)} ·
                     {" "}
                     {o.missing.join(", ")}
                   </p>
@@ -214,7 +227,7 @@ export default async function StudentsPage() {
                         ) : null}
                       </p>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {student.section_id ? sectionName.get(student.section_id) : "No class"} ·{" "}
+                        {classesText(student.id)} ·{" "}
                         {risk.graded} graded · confidence: {risk.confidence}
                       </p>
                     </div>

@@ -15,8 +15,8 @@ export async function ExamBuilder() {
   // Admins can build into any class; an instructor only into their own.
   const { data: sections } =
     me.role === "ADMIN"
-      ? await supabase.from("sections").select("id, name").order("name")
-      : await supabase.from("sections").select("id, name").eq("instructor_id", me.id).order("name");
+      ? await supabase.from("sections").select("id, name, subject").order("subject").order("name")
+      : await supabase.from("sections").select("id, name, subject").eq("instructor_id", me.id).order("subject").order("name");
 
   if (sections?.length) return <CreateExamForm sections={sections} />;
 

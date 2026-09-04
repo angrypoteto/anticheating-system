@@ -6,11 +6,16 @@ import { LiveMonitor, type FlagRow, type SessionRow } from "./live";
 
 export default async function MonitorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
-  await requireRole("INSTRUCTOR", "ADMIN");
+  const me = await requireRole("INSTRUCTOR", "ADMIN");
   const { id } = await params;
+  // Opened from the exam list, going "back" means the list — not the editor
+  // you never visited. The editor's own link says where it came from.
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   const { data: exam } = await supabase
@@ -59,10 +64,16 @@ export default async function MonitorPage({
       <div className="mx-auto max-w-4xl space-y-8">
         <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
           <Link
-            href={`/exams/${exam.id}`}
+            href={
+              from === "list"
+                ? me.role === "ADMIN"
+                  ? "/admin/exams"
+                  : "/exams"
+                : `/exams/${exam.id}`
+            }
             className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
-            ← Back to exam
+            {from === "list" ? "← Back to exams & quizzes" : "← Back to exam"}
           </Link>
           <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
             {exam.title}

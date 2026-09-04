@@ -41,8 +41,8 @@ export default async function ExamEditorPage({
     supabase.from("exam_sections").select("section_id").eq("exam_id", id),
     // Admins can deliver to any class; an instructor only to their own.
     me.role === "ADMIN"
-      ? supabase.from("sections").select("id, name").order("name")
-      : supabase.from("sections").select("id, name").eq("instructor_id", me.id).order("name"),
+      ? supabase.from("sections").select("id, name, subject").order("subject").order("name")
+      : supabase.from("sections").select("id, name, subject").eq("instructor_id", me.id).order("subject").order("name"),
   ]);
 
   const timer = parseTimer(exam.timer_config);

@@ -32,7 +32,7 @@ export async function signup(
 
   const { data: section } = await admin
     .from("sections")
-    .select("id, name")
+    .select("id, name, subject")
     .eq("join_code", code)
     .maybeSingle();
 
@@ -53,10 +53,11 @@ export async function signup(
       : { error: error.message };
   }
 
+  // A student can sit several subjects, so joining is an enrolment row rather
+  // than a column on the account.
   const { error: linkError } = await admin
-    .from("users")
-    .update({ section_id: section.id })
-    .eq("id", created.user.id);
+    .from("enrollments")
+    .insert({ student_id: created.user.id, section_id: section.id });
 
   if (linkError) {
     await admin.auth.admin.deleteUser(created.user.id).catch(() => {});

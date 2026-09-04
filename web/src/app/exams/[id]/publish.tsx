@@ -1,5 +1,7 @@
 "use client";
 
+import { classLabel } from "@/lib/classes";
+
 import { useActionState, useState } from "react";
 import { setExamClasses, setExamStatus, type ActionState } from "../actions";
 
@@ -129,7 +131,7 @@ export function ClassTargets({
   locked,
 }: {
   examId: string;
-  allClasses: { id: string; name: string }[];
+  allClasses: { id: string; name: string; subject?: string | null }[];
   selected: string[];
   locked: boolean;
 }) {
@@ -151,7 +153,7 @@ export function ClassTargets({
               defaultChecked={selected.includes(c.id)}
               disabled={locked}
             />
-            {c.name}
+            {classLabel(c)}
           </label>
         ))}
         {allClasses.length === 0 ? (

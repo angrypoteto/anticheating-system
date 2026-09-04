@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseTimer } from "@/lib/exam-config";
+import { classLabel } from "@/lib/classes";
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "text-amber-700 dark:text-amber-400",
@@ -54,11 +55,11 @@ export async function ExamList() {
         "id, title, status, section_id, created_at, published_at, timer_config, created_by_id, exam_sections(section_id)",
       )
       .order("created_at", { ascending: false }),
-    supabase.from("sections").select("id, name"),
+    supabase.from("sections").select("id, name, subject"),
     supabase.from("users").select("id, full_name, email"),
   ]);
 
-  const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
+  const sectionName = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
   const personName = new Map(
     (people ?? []).map((p) => [p.id, p.full_name || p.email]),
   );
@@ -159,7 +160,7 @@ export async function ExamList() {
                   </Link>
                   {e.status === "PUBLISHED" ? (
                     <Link
-                      href={`/exams/${e.id}/monitor`}
+                      href={`/exams/${e.id}/monitor?from=list`}
                       className="text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                     >
                       Watch it live

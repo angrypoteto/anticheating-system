@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { loadEnrolment } from "@/lib/enrolment";
 import { requireRole } from "@/lib/auth";
 import { assessStudent, BAND_LABEL } from "@/lib/risk";
 
@@ -7,18 +8,17 @@ export async function GET() {
   await requireRole("ADMIN");
   const admin = createAdminClient();
 
-  const [{ data: settings }, { data: users }, { data: sections }, { data: exams }, { data: sessions }, { data: flags }] =
+  const [{ data: settings }, { data: users }, { data: exams }, { data: sessions }, { data: flags }, enrolment] =
     await Promise.all([
       admin.from("system_settings").select("pass_threshold").eq("id", true).maybeSingle(),
-      admin.from("users").select("id, email, role, status, section_id").eq("role", "STUDENT"),
-      admin.from("sections").select("id, name"),
+      admin.from("users").select("id, email, full_name, role, status").eq("role", "STUDENT"),
       admin.from("exams").select("id, section_id, status").eq("status", "PUBLISHED"),
       admin.from("exam_sessions").select("id, exam_id, student_id, status, score, started_at, submitted_at"),
       admin.from("flags").select("session_id, resolution"),
+      loadEnrolment(admin),
     ]);
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
-  const sectionName = new Map((sections ?? []).map((s) => [s.id, s.name]));
   const openFlags = new Map<string, number>();
   for (const f of flags ?? []) {
     if (f.resolution) continue;
@@ -39,7 +39,7 @@ export async function GET() {
 
   for (const s of users ?? []) {
     const own = (sessions ?? []).filter((x) => x.student_id === s.id);
-    const available = (exams ?? []).filter((e) => e.section_id === s.section_id).length;
+    const available = (exams ?? []).filter((e) => enrolment.reachesStudent(e, s.id)).length;
     const risk = assessStudent(
       own.map((o) => ({ score: o.score, status: o.status, flags: openFlags.get(o.id) ?? 0 })),
       available,
@@ -47,7 +47,7 @@ export async function GET() {
     );
     lines.push([
       s.email,
-      s.section_id ? (sectionName.get(s.section_id) ?? "") : "",
+      enrolment.labelsFor(s.id).join("; "),
       s.status,
       own.length,
       risk.graded,

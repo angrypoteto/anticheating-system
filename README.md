@@ -17,7 +17,7 @@ GitHub Actions.
 | Area | Where |
 |---|---|
 | Sign-in, three roles, per-role row-level security | `/login` |
-| Create accounts and sections, enable/disable users | `/admin` |
+| Create accounts and classes (one subject per section), enable/disable users | `/admin` |
 | AI provider keys — encrypted in Vault, round-robin rotation | `/admin/keys` |
 | Health, audit trail, backup status | `/admin/health` |
 | Exam builder: questions, timers, lockdown settings, publish | `/exams` |
@@ -31,7 +31,7 @@ The parts that actually hold are server-side, and each was verified against the 
 database rather than assumed:
 
 - **Row-level security on every table.** A student reads only their own rows, an
-  instructor only their own sections. Enforced on the Realtime stream too, not just on
+  instructor only the classes they teach. Enforced on the Realtime stream too, not just on
   queries — a second instructor subscribed to the same channel receives nothing.
 - **The answer key is a separate table.** RLS is row-level and students and instructors
   share one Postgres role, so `correct_answer` could not be hidden while it sat on

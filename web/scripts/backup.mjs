@@ -49,10 +49,10 @@ const args = process.argv.slice(2);
 const outDir = args.includes("--out") ? args[args.indexOf("--out") + 1] : path.join(ROOT, "backups");
 const upload = !args.includes("--no-upload");
 
-// Order matters on restore: users and sections reference each other, so users go
-// in first without a section, then sections, then the link is filled in.
+// Order matters on restore: sections name an instructor and enrollments name
+// both a student and a section, so people and classes go in before the links.
 const TABLES = [
-  "users", "sections", "exams", "questions", "question_answers",
+  "users", "sections", "enrollments", "exams", "questions", "question_answers",
   "lesson_files", "exam_sessions", "answers", "flags",
   "audit_log", "backup_runs", "ai_provider_keys",
 ];

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { loadEnrolment } from "@/lib/enrolment";
+import { classLabel } from "@/lib/classes";
 import { assessStudent } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "./ui";
 import { ClassProgressChart, ExamsByInstructorChart } from "./charts";
@@ -22,16 +24,18 @@ export default async function AdminOverview() {
     { data: recent },
     { data: keys },
     { data: backups },
+    enrolment,
   ] = await Promise.all([
     admin.from("system_settings").select("pass_threshold, institution_name").eq("id", true).maybeSingle(),
-    admin.from("users").select("id, email, role, status, section_id"),
-    admin.from("sections").select("id, name"),
+    admin.from("users").select("id, email, full_name, role, status"),
+    admin.from("sections").select("id, name, subject"),
     admin.from("exams").select("id, section_id, status, created_by_id"),
     admin.from("exam_sessions").select("id, exam_id, student_id, status, score, submitted_at"),
     admin.from("flags").select("id, session_id").is("resolution", null),
     admin.from("audit_log").select("action, actor_id, created_at").order("created_at", { ascending: false }).limit(6),
     admin.from("ai_provider_keys").select("status, last_error"),
     admin.from("backup_runs").select("started_at, status").order("started_at", { ascending: false }).limit(1),
+    loadEnrolment(admin),
   ]);
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
@@ -45,7 +49,7 @@ export default async function AdminOverview() {
   // Reuse the same indicator the students page shows, so the two never disagree.
   const atRisk = students.filter((s) => {
     const own = (sessions ?? []).filter((x) => x.student_id === s.id);
-    const available = published.filter((e) => e.section_id === s.section_id).length;
+    const available = published.filter((e) => enrolment.reachesStudent(e, s.id)).length;
     const r = assessStudent(
       own.map((o) => ({ score: o.score, status: o.status, flags: 0 })),
       available,
@@ -67,7 +71,8 @@ export default async function AdminOverview() {
   }
 
   const classRows = (sections ?? []).map((sec) => {
-    const inClass = students.filter((s) => s.section_id === sec.id);
+    const roll = new Set(enrolment.rollOf.get(sec.id) ?? []);
+    const inClass = students.filter((s) => roll.has(s.id));
     let done = 0, taking = 0, notStarted = 0;
     for (const st of inClass) {
       const own = sessionsByStudent.get(st.id) ?? [];
@@ -75,10 +80,10 @@ export default async function AdminOverview() {
       else if (own.length > 0) done++;
       else notStarted++;
     }
-    return { name: sec.name, done, taking, notStarted };
+    return { name: classLabel(sec), done, taking, notStarted };
   });
 
-  const unassigned = students.filter((s) => !s.section_id).length;
+  const unassigned = students.filter((s) => !(enrolment.classesOf.get(s.id) ?? []).length).length;
   if (unassigned > 0) {
     classRows.push({ name: "No class assigned", done: 0, taking: 0, notStarted: unassigned });
   }

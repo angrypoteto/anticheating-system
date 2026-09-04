@@ -1,5 +1,7 @@
 "use client";
 
+import { classLabel } from "@/lib/classes";
+
 import { useActionState } from "react";
 import { createExam, type ActionState } from "./actions";
 
@@ -12,7 +14,7 @@ const button =
 export function CreateExamForm({
   sections,
 }: {
-  sections: { id: string; name: string }[];
+  sections: { id: string; name: string; subject?: string | null }[];
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     createExam,
@@ -40,11 +42,11 @@ export function CreateExamForm({
           </label>
           <select id="sectionId" name="sectionId" required defaultValue="" className={field}>
             <option value="" disabled>
-              {sections.length ? "— pick one —" : "— no sections assigned —"}
+              {sections.length ? "— pick one —" : "— no classes assigned —"}
             </option>
             {sections.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {classLabel(s)}
               </option>
             ))}
           </select>

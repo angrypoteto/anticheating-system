@@ -3,10 +3,46 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
+import { classLabel } from "@/lib/classes";
+import { JoinClassForm } from "./join-class";
+
+/** The subjects this student has joined; RLS returns only their own. */
+async function MyClasses() {
+  const supabase = await createClient();
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("id, name, subject")
+    .order("subject")
+    .order("name");
+
+  return (
+    <div className="mt-2">
+      {sections?.length ? (
+        <ul className="flex flex-wrap gap-2">
+          {sections.map((s) => (
+            <li
+              key={s.id}
+              className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300"
+            >
+              {classLabel(s)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          You have not joined a class yet. Enter a class code below.
+        </p>
+      )}
+      <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+        <JoinClassForm />
+      </div>
+    </div>
+  );
+}
 
 async function StudentExams() {
   const supabase = await createClient();
-  // RLS returns only PUBLISHED exams for this student's section.
+  // RLS returns only PUBLISHED exams reaching a class this student has joined.
   const [{ data: exams }, { data: sessions }] = await Promise.all([
     supabase.from("exams").select("id, title").order("updated_at", { ascending: false }),
     supabase.from("exam_sessions").select("exam_id, status, score"),
@@ -17,7 +53,8 @@ async function StudentExams() {
   if (!exams?.length) {
     return (
       <p className="mt-2">
-        Your assigned exams will appear here once an instructor publishes one.
+        No exams yet. They appear here once a teacher publishes one for a
+        subject you have joined.
       </p>
     );
   }
@@ -85,7 +122,16 @@ export default async function Home() {
           </form>
         </header>
 
-        <section className="mt-8 rounded-lg border border-gray-200 bg-white p-8 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+        {role === "STUDENT" ? (
+          <section className="mt-8 rounded-lg border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900">
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              Your subjects
+            </p>
+            <MyClasses />
+          </section>
+        ) : null}
+
+        <section className="mt-6 rounded-lg border border-gray-200 bg-white p-8 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
           <p className="font-medium text-gray-900 dark:text-gray-100">
             {role === "STUDENT" ? "Your exams" : "Getting started"}
           </p>

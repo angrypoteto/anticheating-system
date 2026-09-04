@@ -129,8 +129,9 @@ npm run restore -- ../backups/backup-<stamp>.json.gz
 ```
 
 Run the migrations against the target database first so the schema exists, then this
-replays the rows. It handles the `users` ↔ `sections` foreign-key cycle by inserting
-users without a section, then sections, then relinking.
+replays the rows in dependency order: people first, then classes, then `enrollments`,
+which says who sits which subject. Class membership used to be a column on the user
+row, which made a foreign-key cycle; it no longer is.
 
 > A dry run only prints the plan; it never touches the database and so cannot catch a
 > write-level problem. Restoring over the current data is idempotent, so it is safe to

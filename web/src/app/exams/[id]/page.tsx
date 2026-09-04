@@ -6,6 +6,7 @@ import { parseLockdown, parseTimer } from "@/lib/exam-config";
 import { QuestionForm, QuestionRow, SettingsForm } from "./editor";
 import { ExamPreview } from "./preview";
 import { ClassTargets, PublishControls } from "./publish";
+import { classesEnabled } from "@/lib/settings";
 
 // PostgREST returns this embed as an object (question_id is question_answers'
 // primary key, making it one-to-one) while supabase-js's inference types it as an
@@ -49,6 +50,7 @@ export default async function ExamEditorPage({
   const lockdown = parseLockdown(exam.lockdown_config);
   const published = exam.status === "PUBLISHED";
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
+  const useClasses = await classesEnabled();
   const qs = questions ?? [];
 
   return (
@@ -174,7 +176,8 @@ export default async function ExamEditorPage({
               />
             </section>
 
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+            {useClasses ? (
+              <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Classes
               </h2>
@@ -188,6 +191,7 @@ export default async function ExamEditorPage({
                 locked={published}
               />
             </section>
+            ) : null}
           </div>
         </div>
       </div>

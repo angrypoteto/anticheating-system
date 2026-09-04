@@ -249,3 +249,27 @@ A student with devtools open can suppress them. This is a stated limitation in t
 proposal, not a defect — say so plainly rather than implying the browser is secured.
 The server-side protections (RLS, the split answer key, forced session state) are the
 ones that actually hold.
+
+
+## Turning classes off
+
+`Settings → Classes → Organise exams by class and subject` controls whether the
+system knows about subjects at all.
+
+**On** (the default) a class is one subject taught to one section, with its own
+join code; an exam reaches only the classes it is set for, and a teacher sees
+only the students they teach.
+
+**Off**, classes, subjects, join codes and enrolment disappear from every
+teacher and student screen. Each published exam reaches every student, and a
+teacher can read every student's account — they have to, to show results, and
+there is no longer a class to say whose results are whose. That widening is the
+price of the setting, and it is the only thing the switch gives away.
+
+Nothing is deleted either way. Classes, enrolments and join codes sit untouched
+while it is off and come back exactly as they were when it is switched on.
+
+The rule is enforced in the database, not in the pages: `private.classes_enabled()`
+is read by `exam_reaches_my_section()`, `owns_exam()` and the instructor policies
+on `exams` and `users`. Hiding the UI is a convenience; the switch would still
+hold with the UI bypassed.

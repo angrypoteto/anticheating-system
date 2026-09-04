@@ -13,6 +13,7 @@ export type Settings = {
   default_block_copy_paste: boolean;
   default_honeypot: boolean;
   allow_student_signup: boolean;
+  classes_enabled: boolean;
 };
 
 const field =
@@ -129,6 +130,26 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             Include the hidden honeypot field
           </label>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          Classes
+        </h3>
+        <label className={check}>
+          <input type="checkbox" name="classesEnabled" defaultChecked={settings.classes_enabled} className="mt-0.5" />
+          <span>
+            Organise exams by class and subject
+            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+              On, a class is one subject for one section with its own join code,
+              and an exam only reaches the classes it is set for. Off, all of
+              that disappears for teachers and students: an exam simply reaches
+              every student, and teachers just publish, watch it live and read
+              the results. Nothing is deleted — your classes and enrolments come
+              back if you switch it on again.
+            </span>
+          </span>
+        </label>
       </section>
 
       <section className="space-y-3">

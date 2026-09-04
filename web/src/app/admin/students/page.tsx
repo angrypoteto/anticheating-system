@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
+import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "../ui";
 import { ReportActions } from "./report-actions";
@@ -27,10 +28,13 @@ export default async function StudentsPage() {
       loadEnrolment(admin),
     ]);
 
+  const useClasses = await classesEnabled();
+
   const passThreshold = Number(settings?.pass_threshold ?? 75);
   const students = users ?? [];
   const { label: sectionName, classesOf } = enrolment;
   const classesText = (studentId: string) => {
+    if (!useClasses) return "";
     const names = enrolment.labelsFor(studentId);
     return names.length ? names.join(", ") : "No class";
   };
@@ -120,7 +124,8 @@ export default async function StudentsPage() {
         <Stat label="Sitting now" value={String(inProgress)} />
       </div>
 
-      {/* --- class projection --- */}
+      {/* Class projection only means something when exams are organised by class. */}
+      {useClasses ? (
       <Card
         title="Class projection"
         hint="Which class is trending toward trouble. Ranked by students at risk, then by average."
@@ -176,6 +181,7 @@ export default async function StudentsPage() {
           prompt to look, not a conclusion.
         </p>
       </Card>
+      ) : null}
 
       {/* --- who hasn't sat an exam --- */}
       <Card

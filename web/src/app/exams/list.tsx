@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseTimer } from "@/lib/exam-config";
 import { classLabel } from "@/lib/classes";
+import { classesEnabled } from "@/lib/settings";
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "text-amber-700 dark:text-amber-400",
@@ -60,6 +61,7 @@ export async function ExamList() {
   ]);
 
   const sectionName = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
+  const useClasses = await classesEnabled();
   const personName = new Map(
     (people ?? []).map((p) => [p.id, p.full_name || p.email]),
   );
@@ -93,9 +95,11 @@ export async function ExamList() {
                   <p className="truncate font-medium text-gray-900 dark:text-gray-100">
                     {e.title}
                   </p>
-                  <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
-                    {classes.length ? classes.join(", ") : "No class assigned"}
-                  </p>
+                  {useClasses ? (
+                    <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
+                      {classes.length ? classes.join(", ") : "No class assigned"}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className={`text-sm ${STATUS_STYLES[e.status] ?? ""}`}>
@@ -112,6 +116,7 @@ export async function ExamList() {
 
               <div className="border-t border-gray-100 bg-gray-50/60 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/40">
                 <dl className="grid gap-4 sm:grid-cols-2">
+                  {useClasses ? (
                   <Detail label="Given to">
                     {classes.length ? (
                       <ul className="space-y-0.5">
@@ -125,6 +130,7 @@ export async function ExamList() {
                       </span>
                     )}
                   </Detail>
+                  ) : null}
 
                   <Detail label="Set by">
                     {personName.get(e.created_by_id) ?? (

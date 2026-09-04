@@ -26,10 +26,13 @@ export function Directory({
   people,
   classes,
   adminId,
+  useClasses,
 }: {
   people: Person[];
   classes: ClassOption[];
   adminId: string | undefined;
+  /** Classes are switched off system-wide, so do not offer them here either. */
+  useClasses: boolean;
 }) {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("ALL");
@@ -43,11 +46,12 @@ export function Directory({
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    const byClass = useClasses ? classId : "ALL";
     return people.filter((p) => {
       if (role !== "ALL" && p.role !== role) return false;
       if (status !== "ALL" && p.status !== status) return false;
-      if (classId === "NONE" && p.classIds.length) return false;
-      if (classId !== "ALL" && classId !== "NONE" && !p.classIds.includes(classId)) {
+      if (byClass === "NONE" && p.classIds.length) return false;
+      if (byClass !== "ALL" && byClass !== "NONE" && !p.classIds.includes(byClass)) {
         return false;
       }
       if (!needle) return true;
@@ -55,10 +59,13 @@ export function Directory({
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(needle));
     });
-  }, [people, q, role, status, classId]);
+  }, [people, q, role, status, classId, useClasses]);
 
   const filtering =
-    q.trim() !== "" || role !== "ALL" || status !== "ALL" || classId !== "ALL";
+    q.trim() !== "" ||
+    role !== "ALL" ||
+    status !== "ALL" ||
+    (useClasses && classId !== "ALL");
 
   return (
     <div>
@@ -94,25 +101,27 @@ export function Directory({
           </select>
         </div>
 
-        <div>
-          <label htmlFor="filter-class" className="sr-only">
-            Class
-          </label>
-          <select
-            id="filter-class"
-            value={classId}
-            onChange={(e) => setClassId(e.target.value)}
-            className={control}
-          >
-            <option value="ALL">All classes</option>
-            <option value="NONE">No class yet</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {useClasses ? (
+          <div>
+            <label htmlFor="filter-class" className="sr-only">
+              Class
+            </label>
+            <select
+              id="filter-class"
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              className={control}
+            >
+              <option value="ALL">All classes</option>
+              <option value="NONE">No class yet</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         <div>
           <label htmlFor="filter-status" className="sr-only">
@@ -161,7 +170,7 @@ export function Directory({
               <tr>
                 <th className="px-6 py-3 font-medium">Person</th>
                 <th className="px-6 py-3 font-medium">Role</th>
-                <th className="px-6 py-3 font-medium">Classes</th>
+                {useClasses ? <th className="px-6 py-3 font-medium">Classes</th> : null}
                 <th className="px-6 py-3 font-medium">Status</th>
                 <th className="px-6 py-3 font-medium">Action</th>
               </tr>
@@ -185,6 +194,7 @@ export function Directory({
                   <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
                     {p.role.toLowerCase()}
                   </td>
+{useClasses ? (
                   <td className="px-6 py-3">
                     {p.role !== "STUDENT" ? (
                       <span className="text-gray-400 dark:text-gray-600">—</span>
@@ -217,6 +227,7 @@ export function Directory({
                       </details>
                     )}
                   </td>
+                  ) : null}
                   <td className="px-6 py-3">
                     <span
                       className={

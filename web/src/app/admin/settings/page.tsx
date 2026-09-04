@@ -18,6 +18,7 @@ export default async function SettingsPage() {
     default_block_copy_paste: data?.default_block_copy_paste ?? true,
     default_honeypot: data?.default_honeypot ?? true,
     allow_student_signup: data?.allow_student_signup ?? true,
+    classes_enabled: data?.classes_enabled ?? true,
   };
 
   return (

@@ -40,6 +40,7 @@ export async function saveSettings(
       default_block_copy_paste: formData.get("defaultBlockCopyPaste") === "on",
       default_honeypot: formData.get("defaultHoneypot") === "on",
       allow_student_signup: formData.get("allowStudentSignup") === "on",
+      classes_enabled: formData.get("classesEnabled") === "on",
       updated_at: new Date().toISOString(),
       updated_by: actor.id,
     })
@@ -50,6 +51,7 @@ export async function saveSettings(
   await auditServerAction(actor.id, "update_system_settings", "system_settings", actor.id, {
     pass_threshold: passThreshold,
     allow_student_signup: formData.get("allowStudentSignup") === "on",
+    classes_enabled: formData.get("classesEnabled") === "on",
   });
 
   revalidatePath("/admin/settings");

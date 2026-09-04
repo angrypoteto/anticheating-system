@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { signup, type SignupState } from "./actions";
 import { authButton, authField, authLabel } from "@/components/auth-shell";
 
-export function SignupForm() {
+export function SignupForm({ useClasses }: { useClasses: boolean }) {
   const [state, action, pending] = useActionState<SignupState, FormData>(signup, {});
 
   return (
@@ -23,22 +23,24 @@ export function SignupForm() {
         />
       </div>
 
-      <div>
-        <label htmlFor="code" className={authLabel}>
-          Class code
-        </label>
-        <input
-          id="code"
-          name="code"
-          required
-          placeholder="e.g. EE7D24"
-          autoCapitalize="characters"
-          className={`${authField} font-mono uppercase tracking-widest`}
-        />
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Your instructor gives you this. It puts you in the right class.
-        </p>
-      </div>
+      {useClasses ? (
+        <div>
+          <label htmlFor="code" className={authLabel}>
+            Class code
+          </label>
+          <input
+            id="code"
+            name="code"
+            required
+            placeholder="e.g. EE7D24"
+            autoCapitalize="characters"
+            className={`${authField} font-mono uppercase tracking-widest`}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Your instructor gives you this. It puts you in the right class.
+          </p>
+        </div>
+      ) : null}
 
       <div>
         <label htmlFor="password" className={authLabel}>

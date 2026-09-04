@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { classesEnabled } from "@/lib/settings";
 
 export type SignupState = { error?: string };
 
@@ -26,17 +27,22 @@ export async function signup(
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };
   if (password !== confirm) return { error: "Those passwords don't match." };
-  if (!code) return { error: "Enter the class code your instructor gave you." };
+  const useClasses = await classesEnabled();
+  if (useClasses && !code) {
+    return { error: "Enter the class code your instructor gave you." };
+  }
 
   const admin = createAdminClient();
 
-  const { data: section } = await admin
-    .from("sections")
-    .select("id, name, subject")
-    .eq("join_code", code)
-    .maybeSingle();
+  const { data: section } = useClasses
+    ? await admin
+        .from("sections")
+        .select("id, name, subject")
+        .eq("join_code", code)
+        .maybeSingle()
+    : { data: null };
 
-  if (!section) {
+  if (useClasses && !section) {
     return { error: "That class code doesn't match any class. Check it with your instructor." };
   }
 
@@ -54,14 +60,16 @@ export async function signup(
   }
 
   // A student can sit several subjects, so joining is an enrolment row rather
-  // than a column on the account.
-  const { error: linkError } = await admin
-    .from("enrollments")
-    .insert({ student_id: created.user.id, section_id: section.id });
+  // than a column on the account. With classes off there is nothing to join.
+  if (section) {
+    const { error: linkError } = await admin
+      .from("enrollments")
+      .insert({ student_id: created.user.id, section_id: section.id });
 
-  if (linkError) {
-    await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
-    return { error: "Could not finish setting up your account. Try again." };
+    if (linkError) {
+      await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
+      return { error: "Could not finish setting up your account. Try again." };
+    }
   }
 
   // Sign them straight in — the account is already confirmed.

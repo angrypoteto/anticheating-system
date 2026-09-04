@@ -89,8 +89,10 @@ enum ExamStatus {
 model Exam {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title          String
-  sectionId      String   @map("section_id") @db.Uuid
-  section        Section  @relation(fields: [sectionId], references: [id])
+  /// Null when classes are switched off system-wide: the exam belongs to no
+  /// class and reaches every student.
+  sectionId      String?  @map("section_id") @db.Uuid
+  section        Section? @relation(fields: [sectionId], references: [id])
   createdById    String   @map("created_by_id") @db.Uuid
   createdBy      User     @relation("ExamCreator", fields: [createdById], references: [id])
   status         ExamStatus @default(DRAFT)

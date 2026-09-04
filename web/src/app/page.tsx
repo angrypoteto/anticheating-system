@@ -5,6 +5,7 @@ import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
 import { classLabel } from "@/lib/classes";
 import { JoinClassForm } from "./join-class";
+import { classesEnabled } from "@/lib/settings";
 
 /** The subjects this student has joined; RLS returns only their own. */
 async function MyClasses() {
@@ -122,7 +123,7 @@ export default async function Home() {
           </form>
         </header>
 
-        {role === "STUDENT" ? (
+        {role === "STUDENT" && (await classesEnabled()) ? (
           <section className="mt-8 rounded-lg border border-gray-200 bg-white p-8 dark:border-gray-800 dark:bg-gray-900">
             <p className="font-medium text-gray-900 dark:text-gray-100">
               Your subjects

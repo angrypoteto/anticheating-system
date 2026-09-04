@@ -13,8 +13,11 @@ const button =
 
 export function CreateExamForm({
   sections,
+  classless,
 }: {
   sections: { id: string; name: string; subject?: string | null }[];
+  /** Classes are switched off system-wide: publish to everyone, ask nothing. */
+  classless?: boolean;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     createExam,
@@ -36,21 +39,23 @@ export function CreateExamForm({
             className={field}
           />
         </div>
-        <div>
-          <label htmlFor="sectionId" className={label}>
-            Section
-          </label>
-          <select id="sectionId" name="sectionId" required defaultValue="" className={field}>
-            <option value="" disabled>
-              {sections.length ? "— pick one —" : "— no classes assigned —"}
-            </option>
-            {sections.map((s) => (
-              <option key={s.id} value={s.id}>
-                {classLabel(s)}
+        {classless ? null : (
+          <div>
+            <label htmlFor="sectionId" className={label}>
+              Class
+            </label>
+            <select id="sectionId" name="sectionId" required defaultValue="" className={field}>
+              <option value="" disabled>
+                {sections.length ? "— pick one —" : "— no classes assigned —"}
               </option>
-            ))}
-          </select>
-        </div>
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {classLabel(s)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {state.error ? (
@@ -59,9 +64,15 @@ export function CreateExamForm({
         </p>
       ) : null}
 
+      {classless ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Every student sees this once you publish it.
+        </p>
+      ) : null}
+
       <button
         type="submit"
-        disabled={pending || sections.length === 0}
+        disabled={pending || (!classless && sections.length === 0)}
         className={button}
       >
         {pending ? "Creating…" : "Create exam"}

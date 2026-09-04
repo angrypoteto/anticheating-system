@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
+import { classesEnabled } from "@/lib/settings";
 import {
   DEFAULT_LOCKDOWN,
   DEFAULT_TIMER,
@@ -27,7 +28,11 @@ export async function createExam(
   const title = String(formData.get("title") ?? "").trim();
   const sectionId = String(formData.get("sectionId") ?? "");
   if (!title) return { error: "Title is required." };
-  if (!sectionId) return { error: "Pick a section." };
+
+  // With classes switched off an exam has no class; the server decides that,
+  // not the form, so a stale page cannot smuggle one in either direction.
+  const useClasses = await classesEnabled();
+  if (useClasses && !sectionId) return { error: "Pick a class." };
 
   const supabase = await createClient();
 
@@ -61,7 +66,7 @@ export async function createExam(
     .from("exams")
     .insert({
       title,
-      section_id: sectionId,
+      section_id: useClasses ? sectionId : null,
       created_by_id: user.id,
       status: "DRAFT",
       timer_config: timer,

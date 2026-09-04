@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
+import { classesEnabled } from "@/lib/settings";
 import { classLabel } from "@/lib/classes";
 import { assessStudent } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "./ui";
@@ -37,6 +38,8 @@ export default async function AdminOverview() {
     admin.from("backup_runs").select("started_at, status").order("started_at", { ascending: false }).limit(1),
     loadEnrolment(admin),
   ]);
+
+  const useClasses = await classesEnabled();
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
   const students = (users ?? []).filter((u) => u.role === "STUDENT");
@@ -121,7 +124,7 @@ export default async function AdminOverview() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Students" value={String(students.length)} note={`${sections?.length ?? 0} class${sections?.length === 1 ? "" : "es"}`} />
+        <Stat label="Students" value={String(students.length)} note={useClasses ? `${sections?.length ?? 0} class${sections?.length === 1 ? "" : "es"}` : "all students"} />
         <Stat label="Sitting now" value={String(live.length)} tone={live.length ? "warn" : "plain"} />
         <Stat label="Submitted (24h)" value={String(submittedToday.length)} />
         <Stat label="Open flags" value={String((openFlags ?? []).length)} tone={(openFlags ?? []).length ? "warn" : "good"} />
@@ -151,13 +154,15 @@ export default async function AdminOverview() {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card
-          title="Where each class stands"
-          hint="Every student in a class, split by whether they have finished, are sitting an exam now, or have not started."
-        >
-          <ClassProgressChart rows={classRows} />
-        </Card>
+      <div className={`grid gap-6 ${useClasses ? "lg:grid-cols-2" : ""}`}>
+        {useClasses ? (
+          <Card
+            title="Where each class stands"
+            hint="Every student in a class, split by whether they have finished, are sitting an exam now, or have not started."
+          >
+            <ClassProgressChart rows={classRows} />
+          </Card>
+        ) : null}
 
         <Card title="Exams created" hint="By the instructor who made them.">
           <ExamsByInstructorChart rows={instructorRows} />

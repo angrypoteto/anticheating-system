@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CreateExamForm } from "./forms";
+import { classesEnabled } from "@/lib/settings";
 
 /**
  * The "start a new exam" form, shared by the two places it appears: the
@@ -11,6 +12,10 @@ import { CreateExamForm } from "./forms";
 export async function ExamBuilder() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();
+
+  // With classes switched off an exam belongs to nobody in particular: it
+  // reaches every student, so there is nothing to pick.
+  if (!(await classesEnabled())) return <CreateExamForm sections={[]} classless />;
 
   // Admins can build into any class; an instructor only into their own.
   const { data: sections } =

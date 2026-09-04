@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { classLabel } from "@/lib/classes";
+import { classesEnabled } from "@/lib/settings";
 import { AssignInstructor, CreateAccountForm, CreateSectionForm } from "../forms";
 import { Card, PageHeader } from "../ui";
 import { Directory, type Person } from "./directory";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountsPage() {
   const admin = await getCurrentUser();
+  const useClasses = await classesEnabled();
   const supabase = await createClient();
 
   const [{ data: users }, { data: sections }, { data: enrollments }] = await Promise.all([
@@ -53,11 +55,16 @@ export default async function AccountsPage() {
         title="Create account"
         hint="Confirmed immediately — share the temporary password directly with the person."
       >
-        <CreateAccountForm classes={classes} />
+        <CreateAccountForm classes={useClasses ? classes : []} />
       </Card>
 
       <Card title="All accounts" flush>
-        <Directory people={people} classes={classes} adminId={admin?.id} />
+        <Directory
+          people={people}
+          classes={classes}
+          adminId={admin?.id}
+          useClasses={useClasses}
+        />
       </Card>
     </div>
   );
@@ -145,14 +152,29 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Accounts & classes"
-        subtitle="Provision people, group them into classes by subject, and hand out join codes."
+        title={useClasses ? "Accounts & classes" : "Accounts"}
+        subtitle={
+          useClasses
+            ? "Provision people, group them into classes by subject, and hand out join codes."
+            : "Provision people and enable or disable their accounts."
+        }
       />
       <Tabs
         tabs={[
           { id: "accounts", label: "Accounts", count: users?.length ?? 0, content: accountsPanel },
-          { id: "classes", label: "Classes", count: sections?.length ?? 0, content: classesPanel },
-          { id: "codes", label: "Class codes", content: codesPanel },
+          // Classes are switched off in Settings; the tabs go with them, and the
+          // classes themselves are untouched underneath.
+          ...(useClasses
+            ? [
+                {
+                  id: "classes",
+                  label: "Classes",
+                  count: sections?.length ?? 0,
+                  content: classesPanel,
+                },
+                { id: "codes", label: "Class codes", content: codesPanel },
+              ]
+            : []),
         ]}
       />
     </div>

@@ -4,19 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldMark } from "@/components/auth-shell";
 
-const LINKS = [
+const LINKS = (useClasses: boolean) => [
   { href: "/admin", label: "Overview", exact: true },
   { href: "/admin/exams/new", label: "Generate exams & quizzes" },
   { href: "/admin/exams", label: "Exams & quizzes", exact: true },
   { href: "/admin/students", label: "Students & risk" },
-  { href: "/admin/accounts", label: "Accounts & classes" },
+  { href: "/admin/accounts", label: useClasses ? "Accounts & classes" : "Accounts" },
   { href: "/admin/health", label: "System health" },
   { href: "/admin/keys", label: "AI provider keys" },
   { href: "/admin/settings", label: "Settings" },
   { href: "/admin/profile", label: "My profile" },
 ];
 
-export function AdminNav({ email }: { email: string }) {
+export function AdminNav({ email, useClasses }: { email: string; useClasses: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -29,7 +29,7 @@ export function AdminNav({ email }: { email: string }) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 pb-4">
-        {LINKS.map((l) => {
+        {LINKS(useClasses).map((l) => {
           const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
           return (
             <Link

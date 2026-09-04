@@ -36,6 +36,7 @@ model User {
   taughtSections Section[]       @relation("InstructorSections")
   enrollments    Enrollment[]
   examAccess     ExamAccess[]
+  generationRuns GenerationProgress[] @relation("ProgressOwner")
   examsCreated   Exam[]          @relation("ExamCreator")
   lessonUploads  LessonFile[]    @relation("LessonUploader")
   examSessions   ExamSession[]
@@ -307,4 +308,19 @@ model AiProviderKey {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@map("ai_provider_keys")
+}
+
+/// A running generation's position, so the page can show real progress. Written
+/// only by the server action, read only by the teacher who started it.
+model GenerationProgress {
+  runId     String   @id @map("run_id") @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  owner     User     @relation("ProgressOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  done      Int      @default(0)
+  total     Int
+  startedAt DateTime @default(now()) @map("started_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@index([ownerId])
+  @@map("generation_progress")
 }

@@ -139,10 +139,38 @@ export async function generateFromFile(
 
   // One call per batch, merged. A batch that fails does not lose the ones that
   // worked — a teacher would rather have 45 of 60 than an error message.
+  // Report each batch as it lands, so the page can show real progress rather
+  // than a bar advancing on a guess.
+  const runId = String(formData.get("runId") ?? "");
   const batches = planBatches(mcCount, identCount);
+
+  const say = async (done: number) => {
+    if (!runId) return;
+    await admin.from("generation_progress").upsert(
+      {
+        run_id: runId,
+        owner_id: user.id,
+        done,
+        total: batches.length,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "run_id" },
+    );
+  };
+
+  // Clear anything abandoned by a run that died. A failed sweep must not stop a
+  // teacher generating, but it should not vanish either.
+  const { error: sweepError } = await admin
+    .from("generation_progress")
+    .delete()
+    .lt("updated_at", new Date(Date.now() - 3600_000).toISOString());
+  if (sweepError) console.warn(`stale progress sweep failed: ${sweepError.message}`);
+
+  await say(0);
   const returned: DraftQuestion[][] = [];
   let keyLabel = "";
   let lastError = "";
+  let failedCount = 0;
 
   for (const batch of batches) {
     const result = await generateQuestions(
@@ -153,14 +181,21 @@ export async function generateFromFile(
 
     if (!result.ok) {
       lastError = result.error;
+      failedCount++;
+      await say(returned.length + failedCount);
       continue;
     }
 
     keyLabel = result.keyLabel;
     returned.push(result.questions);
+    await say(returned.length + failedCount);
   }
 
   const drafts = mergeDrafts(returned);
+
+  // The run is over either way; leaving the row would make the next one look
+  // finished before it started.
+  if (runId) await admin.from("generation_progress").delete().eq("run_id", runId);
 
   if (!drafts.length) {
     return { error: lastError || "The model returned nothing usable." };

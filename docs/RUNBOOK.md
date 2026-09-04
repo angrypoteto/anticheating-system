@@ -493,3 +493,26 @@ off entirely, which left an exam with no subject at all. The list is seeded from
 the subjects already in use on classes, and existing exams are pointed at the
 subject of the class they were built for, so nothing starts empty on a system
 that has been running with classes on.
+
+
+## The generation progress bar
+
+A large order is several model calls in sequence and a server action cannot
+stream, so the browser used to see nothing between pressing Generate and the
+drafts arriving — a minute of a button that looks stuck.
+
+The action now records each batch as it finishes in `generation_progress`, and
+the page polls that row. The bar shows "request 3 of 6" because that is what is
+actually happening, not an animation timed to look busy. It holds at 97% rather
+than 100%, since the last batch is only finished once the drafts come back.
+
+Before the first batch reports — the file is still being read — there is nothing
+to measure, so it says "Reading your lesson file…" with a moving stripe instead
+of claiming a number it does not have.
+
+Only the server action writes those rows, through the service role: there is no
+INSERT or UPDATE policy, so a browser cannot invent a run or fake its progress.
+A run that dies leaves a row behind, which the next generation clears on its way
+in. That sweep is a plain delete rather than a function — the first version put
+it in the `private` schema, where PostgREST cannot reach it, so it failed
+silently every time and only a test that checked the result caught it.

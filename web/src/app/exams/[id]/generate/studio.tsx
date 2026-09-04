@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { GenerationProgress } from "./progress";
 import {
   acceptDrafts,
   generateFromFile,
@@ -23,6 +24,10 @@ export function GenerateStudio({ examId }: { examId: string }) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploaded, setUploaded] = useState<{ path: string; name: string } | null>(null);
+
+  // One id per mounted studio; the action upserts against it and deletes it
+  // when the run ends, so reusing it across runs is fine.
+  const [runId] = useState(() => crypto.randomUUID());
 
   const [genState, generate, generating] = useActionState<GenerateState, FormData>(
     generateFromFile,
@@ -147,6 +152,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
           <input type="hidden" name="examId" value={examId} />
           <input type="hidden" name="storagePath" value={uploaded?.path ?? ""} />
           <input type="hidden" name="filename" value={uploaded?.name ?? ""} />
+          <input type="hidden" name="runId" value={runId} />
 
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Ask for as many as you need. Large orders are split into several
@@ -195,9 +201,13 @@ export function GenerateStudio({ examId }: { examId: string }) {
             </p>
           ) : null}
 
-          <button type="submit" disabled={!uploaded || generating} className={button}>
-            {generating ? "Generating… this can take a moment" : "Generate drafts"}
-          </button>
+          {generating ? (
+            <GenerationProgress runId={runId} />
+          ) : (
+            <button type="submit" disabled={!uploaded} className={button}>
+              Generate drafts
+            </button>
+          )}
         </form>
       </section>
 

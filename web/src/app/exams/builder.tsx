@@ -36,7 +36,7 @@ export async function ExamBuilder() {
           Create a class
         </Link>
       ) : (
-        <p className="mt-2">Ask an administrator to assign you one.</p>
+        <p className="mt-2">Ask an administrator to assign you a class.</p>
       )}
     </div>
   );

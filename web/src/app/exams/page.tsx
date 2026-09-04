@@ -8,8 +8,8 @@ export default async function ExamsPage() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   // Admins live in the console, so send them back there rather than bouncing
   // them through "/" only to be redirected again.
-  const backHref = me.role === "ADMIN" ? "/admin" : "/";
-  const buildHref = me.role === "ADMIN" ? "/admin/exams/new" : "/exams/new";
+  const backHref = me.role === "ADMIN" ? "/admin" : "/teacher";
+  const buildHref = me.role === "ADMIN" ? "/admin/exams/new" : "/teacher/exams/new";
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">

@@ -10,10 +10,10 @@ export default function NewExamPage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
           <Link
-            href="/exams"
+            href="/teacher/exams"
             className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
-            ← All exams
+            ← All exams &amp; quizzes
           </Link>
           <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
             Generate an exam or quiz

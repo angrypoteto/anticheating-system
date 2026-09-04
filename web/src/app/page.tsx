@@ -54,9 +54,10 @@ export default async function Home() {
 
   const role = profile.role as string;
 
-  // An admin's home is the console — landing on a page whose only content is a
+  // Staff homes are their consoles — landing on a page whose only content is a
   // link to the console is a hop for nothing.
   if (role === "ADMIN") redirect("/admin");
+  if (role === "INSTRUCTOR") redirect("/teacher");
 
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">

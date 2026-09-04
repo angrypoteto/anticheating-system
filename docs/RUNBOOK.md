@@ -350,3 +350,21 @@ their dashboard.
 code fields disappear from sign-up and from the dashboard, and `join_class()`
 refuses a code even if one is sent by hand. You or their teacher enrols them
 from Accounts, which is unaffected.
+
+
+## The two consoles
+
+`/admin` is the whole institution; `/teacher` is one person's own work. They
+share their components — the cards, the charts, the risk maths, the exam list
+and builder — so the two cannot drift into disagreeing about who is at risk or
+how many exams exist.
+
+What they do not share is how they read the database. The admin console uses
+the service role, because an administrator is meant to see everything. The
+teacher console reads through the teacher's own session, so row-level security
+decides what counts as theirs — a filter in page code could be written wrong,
+a policy cannot be bypassed by forgetting one.
+
+That means the teacher console needs no scoping logic of its own, and it is
+worth keeping it that way. If a page there ever needs `createAdminClient()`,
+that is the moment to stop and ask what it is really trying to show.

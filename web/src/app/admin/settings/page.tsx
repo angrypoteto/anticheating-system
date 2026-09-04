@@ -19,6 +19,7 @@ export default async function SettingsPage() {
     default_honeypot: data?.default_honeypot ?? true,
     allow_student_signup: data?.allow_student_signup ?? true,
     classes_enabled: data?.classes_enabled ?? true,
+    allowed_email_domains: data?.allowed_email_domains ?? "",
   };
 
   return (

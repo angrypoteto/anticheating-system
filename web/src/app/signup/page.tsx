@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AuthShell } from "@/components/auth-shell";
 import { SignupForm } from "./form";
-import { classesEnabled } from "@/lib/settings";
+import { classesEnabled, selfSignupAllowed } from "@/lib/settings";
+import { AuthDivider, GoogleButton } from "@/components/google-button";
 
 export default async function SignupPage({
   searchParams,
@@ -15,7 +16,10 @@ export default async function SignupPage({
   const profile = await getCurrentUser();
   if (profile) redirect("/");
 
-  const useClasses = await classesEnabled();
+  const [useClasses, selfSignup] = await Promise.all([
+    classesEnabled(),
+    selfSignupAllowed(),
+  ]);
 
   return (
     <AuthShell
@@ -37,7 +41,23 @@ export default async function SignupPage({
         </>
       }
     >
-      <SignupForm useClasses={useClasses} next={next} />
+      {selfSignup ? (
+        <div className="space-y-4">
+          <GoogleButton next={next} label="Sign up with Google" />
+          {useClasses ? (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              You will be asked for your class code once you are in.
+            </p>
+          ) : null}
+          <AuthDivider>or use your email</AuthDivider>
+          <SignupForm useClasses={useClasses} next={next} />
+        </div>
+      ) : (
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Registration is closed. Ask your teacher or an administrator to create
+          your account.
+        </p>
+      )}
     </AuthShell>
   );
 }

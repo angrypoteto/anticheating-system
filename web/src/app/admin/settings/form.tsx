@@ -14,6 +14,7 @@ export type Settings = {
   default_honeypot: boolean;
   allow_student_signup: boolean;
   classes_enabled: boolean;
+  allowed_email_domains: string;
 };
 
 const field =
@@ -162,10 +163,31 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             Let students register themselves with a class code
             <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
               Turn this off and only an administrator can create accounts. Either
-              way, self-registration can only ever produce a student.
+              way, self-registration can only ever produce a student, and the
+              database refuses to activate an account made while this is off.
             </span>
           </span>
         </label>
+
+        <div>
+          <label htmlFor="allowedEmailDomains" className={label}>
+            Accepted email domains
+          </label>
+          <input
+            id="allowedEmailDomains"
+            name="allowedEmailDomains"
+            defaultValue={settings.allowed_email_domains}
+            placeholder="students.school.edu.ph, school.edu.ph"
+            className={field}
+          />
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Comma-separated. Leave blank to accept any address. With Google
+            sign-in switched on, anyone with a Gmail account can reach the
+            registration page, so this is what keeps registration to your school:
+            an address outside the list gets an account that stays disabled until
+            an administrator enables it.
+          </p>
+        </div>
       </section>
 
       {state.error ? (

@@ -18,3 +18,19 @@ export async function classesEnabled(): Promise<boolean> {
     .maybeSingle();
   return data?.classes_enabled ?? true;
 }
+
+/**
+ * Whether students may register themselves at all.
+ *
+ * The database enforces this too — an account made while it is off is created
+ * DISABLED — so this only decides whether to offer the forms.
+ */
+export async function selfSignupAllowed(): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("system_settings")
+    .select("allow_student_signup")
+    .eq("id", true)
+    .maybeSingle();
+  return data?.allow_student_signup ?? true;
+}

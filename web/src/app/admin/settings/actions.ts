@@ -41,6 +41,7 @@ export async function saveSettings(
       default_honeypot: formData.get("defaultHoneypot") === "on",
       allow_student_signup: formData.get("allowStudentSignup") === "on",
       classes_enabled: formData.get("classesEnabled") === "on",
+      allowed_email_domains: String(formData.get("allowedEmailDomains") ?? "").trim(),
       updated_at: new Date().toISOString(),
       updated_by: actor.id,
     })
@@ -52,6 +53,7 @@ export async function saveSettings(
     pass_threshold: passThreshold,
     allow_student_signup: formData.get("allowStudentSignup") === "on",
     classes_enabled: formData.get("classesEnabled") === "on",
+    allowed_email_domains: String(formData.get("allowedEmailDomains") ?? "").trim(),
   });
 
   revalidatePath("/admin/settings");

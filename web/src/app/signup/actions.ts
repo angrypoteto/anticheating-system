@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { classesEnabled } from "@/lib/settings";
+import { classesEnabled, selfSignupAllowed } from "@/lib/settings";
 
 export type SignupState = { error?: string };
 
@@ -29,6 +29,10 @@ export async function signup(
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };
   if (password !== confirm) return { error: "Those passwords don't match." };
+  if (!(await selfSignupAllowed())) {
+    return { error: "Registration is closed. Ask your teacher to create your account." };
+  }
+
   const useClasses = await classesEnabled();
   if (useClasses && !code) {
     return { error: "Enter the class code your instructor gave you." };

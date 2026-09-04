@@ -42,9 +42,12 @@ export async function createAccount(
   // metadata is browser-controlled and a stranger could otherwise self-declare
   // ADMIN. Any role above student is granted here instead, by trusted server
   // code, after the account exists.
+  // ACTIVE is set here rather than left to the trigger: the trigger disables
+  // anyone who does not clear the self-registration gate, and an account an
+  // admin typed in by hand is not self-registration.
   const { error: roleError } = await admin
     .from("users")
-    .update({ role })
+    .update({ role, status: "ACTIVE" })
     .eq("id", data.user.id);
 
   if (roleError) {

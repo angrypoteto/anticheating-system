@@ -295,3 +295,45 @@ anyone in, and starts working the moment it is published.
 To withdraw someone, delete their row from `exam_access`; the teacher who owns
 the exam can see and remove those rows. To invalidate a link entirely, change the
 exam's `share_token`.
+
+
+## Signing in with Google
+
+The code is in place; the provider still has to be switched on, which needs
+credentials only you can create.
+
+**1. Google Cloud Console** — <https://console.cloud.google.com/apis/credentials>
+
+Create an OAuth 2.0 Client ID of type *Web application*. Under
+*Authorised redirect URIs* add exactly:
+
+    https://yhfhwageblxsjlaopfqy.supabase.co/auth/v1/callback
+
+That is Supabase's address, not this site's — Google returns to Supabase, which
+then returns to us. You will also need to fill in the OAuth consent screen once;
+"External" plus your own email as a test user is enough while developing.
+
+**2. Supabase** — Authentication → Providers → Google: paste the client ID and
+secret, and enable it. Then Authentication → URL Configuration:
+
+- *Site URL*: the address people actually use (currently `http://localhost:3000`)
+- *Redirect URLs*: add `http://localhost:3000/auth/callback` and the same path on
+  your production domain
+
+**3. Supabase** — Authentication → Sign In / Providers: turn **off** "Disable
+signup". Google cannot create an account while that is on, and it is on today.
+
+That last step is the one to think about, because it opens Supabase's own public
+registration endpoint — which can be called directly, without visiting our
+signup page. Three things stand between that and trouble, all in the database
+rather than in the forms:
+
+- the trigger only ever creates a STUDENT, whatever the request claims;
+- **Settings → Let students register themselves**, off today, makes any
+  self-made account DISABLED;
+- **Settings → Accepted email domains** does the same to anyone outside your
+  school's addresses. Blank means any address, so set it before opening
+  registration if this is running anywhere public.
+
+DISABLED is enforced by row-level security, not only by the pages: a disabled
+account can sign in and see nothing at all.

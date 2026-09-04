@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "./form";
+import { AuthDivider, GoogleButton } from "@/components/google-button";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   // Arriving from an exam link: sign in, then carry on to the paper.
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
 
   return (
     <AuthShell
@@ -30,7 +31,24 @@ export default async function LoginPage({
         </>
       }
     >
-      <LoginForm next={next} />
+      <div className="space-y-4">
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          >
+            {error === "disabled"
+              ? "That account is not active. If you have just registered, your address may be outside the addresses this school accepts — ask your teacher."
+              : error === "missing_code"
+                ? "Google did not complete the sign-in. Please try again."
+                : error}
+          </p>
+        ) : null}
+
+        <GoogleButton next={next} label="Sign in with Google" />
+        <AuthDivider>or use your email</AuthDivider>
+        <LoginForm next={next} />
+      </div>
     </AuthShell>
   );
 }

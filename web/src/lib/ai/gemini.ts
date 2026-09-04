@@ -1,12 +1,8 @@
 import "server-only";
 
-import { listActiveKeys, markKeyError, markKeyUsed, revealKey } from "./keys";
 
-// The API's own model listing advertises models that then return
-// "404 ... no longer available to new users" (gemini-2.5-flash does this), so a
-// floating alias is safer than pinning a version that can be retired underneath us.
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
-const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+// Prompt, schema and sanitising shared by every provider. The request itself
+// lives in generate.ts, which dispatches on the key's api_style.
 
 export type DraftQuestion = {
   type: "MULTIPLE_CHOICE" | "IDENTIFICATION";
@@ -15,7 +11,7 @@ export type DraftQuestion = {
   answer: string;
 };
 
-const RESPONSE_SCHEMA = {
+export const RESPONSE_SCHEMA = {
   type: "ARRAY",
   items: {
     type: "OBJECT",
@@ -37,7 +33,7 @@ export function describeMix(mc: number, ident: number): string {
   return parts.join(" and ") || "questions";
 }
 
-function buildPrompt(text: string, count: number, mix: string) {
+export function buildPrompt(text: string, count: number, mix: string) {
   return [
     "You are helping a teacher write an exam from their own lesson material.",
     `Write exactly ${count} questions (${mix}) answerable purely from the material below.`,
@@ -54,7 +50,7 @@ function buildPrompt(text: string, count: number, mix: string) {
 }
 
 /** Discards anything malformed rather than letting a bad item reach the review screen. */
-function sanitize(raw: unknown): DraftQuestion[] {
+export function sanitize(raw: unknown): DraftQuestion[] {
   if (!Array.isArray(raw)) return [];
   const out: DraftQuestion[] = [];
 
@@ -80,116 +76,4 @@ function sanitize(raw: unknown): DraftQuestion[] {
     }
   }
   return out;
-}
-
-export type GenerateResult =
-  | { ok: true; questions: DraftQuestion[]; keyLabel: string }
-  | { ok: false; error: string };
-
-/**
- * Tries each active key in turn. Gemini's free tier rate-limits per key, which is
- * the whole reason the admin console holds several: a 429 moves to the next key
- * rather than failing the request.
- */
-export async function generateQuestions(
-  text: string,
-  count: number,
-  mix: string,
-): Promise<GenerateResult> {
-  if (!text.trim()) return { ok: false, error: "The lesson file had no readable text." };
-
-  const keys = await listActiveKeys("gemini");
-  if (!keys.length) {
-    return { ok: false, error: "No active Gemini keys. Add one in the admin console." };
-  }
-
-  const body = {
-    contents: [{ parts: [{ text: buildPrompt(text, count, mix) }] }],
-    generationConfig: {
-      temperature: 0.4,
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-    },
-  };
-
-  let lastError = "All keys failed.";
-
-  for (const key of keys) {
-    const secret = await revealKey(key.id);
-    if (!secret) {
-      await markKeyError(key.id, "Could not decrypt key from vault");
-      continue;
-    }
-
-    try {
-      let res = await fetch(
-        `${ENDPOINT}/${MODEL}:generateContent?key=${encodeURIComponent(secret)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(120_000),
-        },
-      );
-
-      // 503 "model is currently experiencing high demand" is common on the free
-      // tier and clears on its own; a different key won't help because the model
-      // itself is busy, so back off briefly and retry the same one.
-      for (let attempt = 0; res.status >= 500 && attempt < 2; attempt++) {
-        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
-        res = await fetch(
-          `${ENDPOINT}/${MODEL}:generateContent?key=${encodeURIComponent(secret)}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-            signal: AbortSignal.timeout(120_000),
-          },
-        );
-      }
-
-      if (!res.ok) {
-        const detail = await res.text();
-        lastError = `${res.status}: ${detail.slice(0, 200)}`;
-        await markKeyError(key.id, lastError);
-        // Per-key problems (quota, rate limit, bad credential) and a still-busy
-        // model both justify trying the next key; anything else is a fault in the
-        // request itself that another key would hit identically.
-        if ([429, 401, 403].includes(res.status) || res.status >= 500) continue;
-        return { ok: false, error: lastError };
-      }
-
-      const json = await res.json();
-      const raw = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (typeof raw !== "string") {
-        lastError = "Model returned no content.";
-        await markKeyError(key.id, lastError);
-        continue;
-      }
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        lastError = "Model returned unparseable JSON.";
-        await markKeyError(key.id, lastError);
-        continue;
-      }
-
-      const questions = sanitize(parsed);
-      if (!questions.length) {
-        lastError = "No usable questions came back — try a longer lesson file.";
-        await markKeyError(key.id, lastError);
-        continue;
-      }
-
-      await markKeyUsed(key.id);
-      return { ok: true, questions, keyLabel: key.label };
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : "Request failed";
-      await markKeyError(key.id, lastError);
-    }
-  }
-
-  return { ok: false, error: lastError };
 }

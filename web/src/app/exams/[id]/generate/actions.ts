@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
-import { describeMix, generateQuestions, type DraftQuestion } from "@/lib/ai/gemini";
+import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
+import { generateQuestions } from "@/lib/ai/generate";
 
 export type GenerateState = {
   error?: string;

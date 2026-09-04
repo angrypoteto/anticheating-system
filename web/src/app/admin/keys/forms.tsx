@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { PROVIDER_PRESETS, presetFor } from "@/lib/ai/providers";
 import { addKey, deleteKey, setKeyStatus, testKey, type KeyState } from "./actions";
 
 const field =
@@ -21,20 +22,37 @@ function Feedback({ state }: { state: KeyState }) {
 
 export function AddKeyForm() {
   const [state, action, pending] = useActionState<KeyState, FormData>(addKey, {});
+  const [presetId, setPresetId] = useState("gemini");
+  const preset = presetFor(presetId);
+  const custom = presetId === "custom";
+  const needsEndpoint = (preset?.apiStyle ?? "openai") === "openai";
 
   return (
     <form action={action} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <label htmlFor="provider" className={label}>Provider</label>
-          <select id="provider" name="provider" defaultValue="gemini" className={field}>
-            <option value="gemini">Google Gemini</option>
+          <label htmlFor="preset" className={label}>Provider</label>
+          <select
+            id="preset"
+            name="preset"
+            value={presetId}
+            onChange={(e) => setPresetId(e.target.value)}
+            className={field}
+          >
+            {PROVIDER_PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>{p.label}</option>
+            ))}
           </select>
+          {preset?.hint ? (
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{preset.hint}</p>
+          ) : null}
         </div>
+
         <div>
           <label htmlFor="label" className={label}>Label</label>
           <input id="label" name="label" placeholder="Key 1" required className={field} />
         </div>
+
         <div>
           <label htmlFor="secret" className={label}>API key</label>
           <input
@@ -47,6 +65,62 @@ export function AddKeyForm() {
           />
         </div>
       </div>
+
+      {custom ? (
+        <div>
+          <label htmlFor="customName" className={label}>Provider name</label>
+          <input
+            id="customName"
+            name="customName"
+            placeholder="e.g. together"
+            required
+            className={field}
+          />
+        </div>
+      ) : null}
+
+      {/* Gemini is reached through Google's own API and needs no endpoint. */}
+      {needsEndpoint ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="baseUrl" className={label}>API base URL</label>
+            <input
+              id="baseUrl"
+              name="baseUrl"
+              key={`url-${presetId}`}
+              defaultValue={preset?.baseUrl ?? ""}
+              placeholder="https://api.example.com/v1"
+              className={field}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Must speak the OpenAI chat-completions API. Do not include
+              /chat/completions.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="model" className={label}>Model</label>
+            <input
+              id="model"
+              name="model"
+              key={`model-${presetId}`}
+              defaultValue={preset?.defaultModel ?? ""}
+              placeholder="model-name"
+              className={field}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="sm:max-w-xs">
+          <label htmlFor="model" className={label}>Model (optional)</label>
+          <input
+            id="model"
+            name="model"
+            key={`model-${presetId}`}
+            defaultValue={preset?.defaultModel ?? ""}
+            className={field}
+          />
+        </div>
+      )}
 
       <Feedback state={state} />
 

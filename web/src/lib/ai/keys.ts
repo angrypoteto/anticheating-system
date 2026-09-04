@@ -10,17 +10,24 @@ export type KeyRow = {
   status: string;
   last_used_at: string | null;
   last_error: string | null;
+  api_style: "gemini" | "openai";
+  base_url: string | null;
+  model: string | null;
 };
 
-/** Active keys for a provider, least-recently-used first so load spreads evenly. */
-export async function listActiveKeys(provider = "gemini"): Promise<KeyRow[]> {
+/**
+ * Every active key, least-recently-used first so load spreads evenly. Providers
+ * are no longer filtered: whichever keys an admin has configured are tried in
+ * turn, so a Groq key can cover for a rate-limited Gemini one.
+ */
+export async function listActiveKeys(provider?: string): Promise<KeyRow[]> {
   const admin = createAdminClient();
-  const { data } = await admin
+  let q = admin
     .from("ai_provider_keys")
-    .select("id, provider, label, key_hint, status, last_used_at, last_error")
-    .eq("provider", provider)
-    .eq("status", "ACTIVE")
-    .order("last_used_at", { ascending: true, nullsFirst: true });
+    .select("id, provider, label, key_hint, status, last_used_at, last_error, api_style, base_url, model")
+    .eq("status", "ACTIVE");
+  if (provider) q = q.eq("provider", provider);
+  const { data } = await q.order("last_used_at", { ascending: true, nullsFirst: true });
   return (data ?? []) as KeyRow[];
 }
 

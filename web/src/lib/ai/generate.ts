@@ -1,0 +1,168 @@
+import "server-only";
+
+import { listActiveKeys, markKeyError, markKeyUsed, revealKey, type KeyRow } from "./keys";
+import type { DraftQuestion } from "./gemini";
+import { buildPrompt, sanitize, RESPONSE_SCHEMA } from "./gemini";
+
+const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
+
+export type GenerateResult =
+  | { ok: true; questions: DraftQuestion[]; keyLabel: string; provider: string }
+  | { ok: false; error: string };
+
+type Attempt = { ok: true; text: string } | { ok: false; status: number; detail: string };
+
+async function callGemini(key: KeyRow, secret: string, prompt: string): Promise<Attempt> {
+  const model = key.model || DEFAULT_GEMINI_MODEL;
+  const res = await fetch(
+    `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(secret)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          responseMimeType: "application/json",
+          responseSchema: RESPONSE_SCHEMA,
+        },
+      }),
+      signal: AbortSignal.timeout(120_000),
+    },
+  );
+
+  if (!res.ok) return { ok: false, status: res.status, detail: (await res.text()).slice(0, 200) };
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return typeof text === "string"
+    ? { ok: true, text }
+    : { ok: false, status: 502, detail: "model returned no content" };
+}
+
+/** Groq, OpenAI, OpenRouter, DeepSeek and anything else speaking that shape. */
+async function callOpenAiCompatible(key: KeyRow, secret: string, prompt: string): Promise<Attempt> {
+  if (!key.base_url) return { ok: false, status: 400, detail: "no base URL configured" };
+  const url = `${key.base_url.replace(/\/+$/, "")}/chat/completions`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+    body: JSON.stringify({
+      model: key.model || "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write exam questions. Reply with a JSON array only — no prose, no code fences.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.4,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) return { ok: false, status: res.status, detail: (await res.text()).slice(0, 200) };
+  const json = await res.json();
+  const text = json?.choices?.[0]?.message?.content;
+  return typeof text === "string"
+    ? { ok: true, text }
+    : { ok: false, status: 502, detail: "model returned no content" };
+}
+
+/**
+ * Models that answer in prose sometimes wrap the array in a fence, and some
+ * return an object with the array under a key. Recover both rather than
+ * discarding an otherwise good response.
+ */
+function parseQuestions(raw: string): unknown {
+  const cleaned = raw.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\[[\s\S]*\]/);
+    if (!match) return null;
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === "object") {
+    const values = Object.values(parsed as Record<string, unknown>);
+    const arr = values.find((v) => Array.isArray(v));
+    if (arr) return arr;
+  }
+  return null;
+}
+
+/**
+ * Tries every active key in turn, whatever provider it belongs to, so a
+ * rate-limited Gemini key can fall through to a Groq one.
+ */
+export async function generateQuestions(
+  text: string,
+  count: number,
+  mix: string,
+): Promise<GenerateResult> {
+  if (!text.trim()) return { ok: false, error: "The lesson file had no readable text." };
+
+  const keys = await listActiveKeys();
+  if (!keys.length) {
+    return { ok: false, error: "No active AI provider key. Add one in the admin console." };
+  }
+
+  const prompt = buildPrompt(text, count, mix);
+  let lastError = "All keys failed.";
+
+  for (const key of keys) {
+    const secret = await revealKey(key.id);
+    if (!secret) {
+      await markKeyError(key.id, "Could not decrypt key from vault");
+      continue;
+    }
+
+    const call = () =>
+      key.api_style === "openai"
+        ? callOpenAiCompatible(key, secret, prompt)
+        : callGemini(key, secret, prompt);
+
+    try {
+      let attempt = await call();
+
+      // 5xx is usually "the model is busy" and clears on its own; another key
+      // would hit the same busy model, so back off on this one first.
+      for (let i = 0; i < 2 && !attempt.ok && attempt.status >= 500; i++) {
+        await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+        attempt = await call();
+      }
+
+      if (!attempt.ok) {
+        lastError = `${key.provider}: ${attempt.status} ${attempt.detail}`;
+        await markKeyError(key.id, lastError);
+        // Per-key faults and a still-busy model both justify the next key;
+        // anything else is a bad request that another key would hit identically.
+        if ([429, 401, 403].includes(attempt.status) || attempt.status >= 500) continue;
+        return { ok: false, error: lastError };
+      }
+
+      const questions = sanitize(parseQuestions(attempt.text));
+      if (!questions.length) {
+        lastError = `${key.provider} returned nothing usable.`;
+        await markKeyError(key.id, lastError);
+        continue;
+      }
+
+      await markKeyUsed(key.id);
+      return { ok: true, questions, keyLabel: key.label, provider: key.provider };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "Request failed";
+      await markKeyError(key.id, lastError);
+    }
+  }
+
+  return { ok: false, error: lastError };
+}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { auditServerAction } from "@/lib/audit";
+import { presetFor } from "@/lib/ai/providers";
 
 export type KeyState = { error?: string; success?: string };
 
@@ -13,12 +14,28 @@ export async function addKey(
 ): Promise<KeyState> {
   const admin = await requireRole("ADMIN");
 
-  const provider = String(formData.get("provider") ?? "gemini").trim();
+  const presetId = String(formData.get("preset") ?? "gemini").trim();
+  const preset = presetFor(presetId);
+  // "Other" lets an admin name a provider we have no preset for.
+  const provider =
+    presetId === "custom"
+      ? String(formData.get("customName") ?? "").trim().toLowerCase()
+      : presetId;
+  const apiStyle = preset?.apiStyle ?? "openai";
+  const baseUrl = String(formData.get("baseUrl") ?? "").trim() || preset?.baseUrl || "";
+  const model = String(formData.get("model") ?? "").trim() || preset?.defaultModel || "";
   const label = String(formData.get("label") ?? "").trim();
   const secret = String(formData.get("secret") ?? "").trim();
 
+  if (!provider) return { error: "Name the provider." };
   if (!label) return { error: "Give the key a label so you can tell them apart." };
   if (secret.length < 8) return { error: "That doesn't look like a valid key." };
+  if (apiStyle === "openai" && !baseUrl) {
+    return { error: "An OpenAI-compatible provider needs a base URL." };
+  }
+  if (apiStyle === "openai" && !model) {
+    return { error: "Name the model to use for this provider." };
+  }
 
   // ai_key_store writes the secret into Supabase Vault and keeps only a pointer
   // plus the last four characters on the row.
@@ -28,6 +45,9 @@ export async function addKey(
     p_label: label,
     p_secret: secret,
     p_added_by: admin.id,
+    p_api_style: apiStyle,
+    p_base_url: baseUrl || null,
+    p_model: model || null,
   });
 
   if (error) return { error: error.message };
@@ -36,6 +56,7 @@ export async function addKey(
   await auditServerAction(admin.id, "add_ai_key", "ai_provider_keys", String(keyId), {
     provider,
     label,
+    api_style: apiStyle,
   });
 
   revalidatePath("/admin/keys");
@@ -90,14 +111,27 @@ export async function testKey(
   const keyId = String(formData.get("keyId") ?? "");
 
   const client = createAdminClient();
+  const { data: key } = await client
+    .from("ai_provider_keys")
+    .select("api_style, base_url")
+    .eq("id", keyId)
+    .maybeSingle();
   const { data: secret, error } = await client.rpc("ai_key_reveal", { p_key_id: keyId });
   if (error || typeof secret !== "string") return { error: "Could not read that key." };
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(secret)}`,
-      { signal: AbortSignal.timeout(20_000) },
-    );
+    // Each style has a cheap endpoint that proves the credential without
+    // spending a generation.
+    const res =
+      key?.api_style === "openai"
+        ? await fetch(`${(key.base_url ?? "").replace(/\/+$/, "")}/models`, {
+            headers: { Authorization: `Bearer ${secret}` },
+            signal: AbortSignal.timeout(20_000),
+          })
+        : await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(secret)}`,
+            { signal: AbortSignal.timeout(20_000) },
+          );
     const ok = res.ok;
     const detail = ok ? null : (await res.text()).slice(0, 200);
 
@@ -109,7 +143,7 @@ export async function testKey(
     revalidatePath("/admin/keys");
     return ok
       ? { success: "Key works." }
-      : { error: `Key rejected by Google (${res.status}).` };
+      : { error: `Provider rejected the key (${res.status}).` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Test failed." };
   }

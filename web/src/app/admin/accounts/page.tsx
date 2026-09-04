@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { CreateAccountForm, CreateSectionForm, StatusToggle } from "../forms";
+import { AssignInstructor, CreateAccountForm, CreateSectionForm, StatusToggle } from "../forms";
 import { Card, PageHeader } from "../ui";
 import { Tabs } from "./tabs";
 
@@ -13,7 +13,7 @@ export default async function AccountsPage() {
   const [{ data: users }, { data: sections }] = await Promise.all([
     supabase
       .from("users")
-      .select("id, email, role, status, section_id")
+      .select("id, email, role, status, section_id, full_name, username")
       .order("role")
       .order("email"),
     supabase.from("sections").select("id, name, instructor_id, join_code").order("name"),
@@ -49,7 +49,18 @@ export default async function AccountsPage() {
             <tbody>
               {(users ?? []).map((u) => (
                 <tr key={u.id} className="border-b border-gray-100 last:border-0 dark:border-gray-800">
-                  <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{u.email}</td>
+                  <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
+                    {u.full_name ? (
+                      <>
+                        {u.full_name}
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          {u.username ? `@${u.username}` : u.email}
+                        </span>
+                      </>
+                    ) : (
+                      u.email
+                    )}
+                  </td>
                   <td className="px-6 py-3 text-gray-600 dark:text-gray-400">{u.role.toLowerCase()}</td>
                   <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
                     {u.section_id ? (sectionName.get(u.section_id) ?? "—") : "—"}
@@ -83,7 +94,7 @@ export default async function AccountsPage() {
 
   const classesPanel = (
     <div className="space-y-6">
-      <Card title="Create class" hint="A class belongs to one instructor — and an instructor can hold as many classes as they teach.">
+      <Card title="Create class" hint="Name the class now and staff it whenever you like — an instructor can hold as many classes as they teach.">
         <CreateSectionForm instructors={instructors} />
       </Card>
 
@@ -93,17 +104,25 @@ export default async function AccountsPage() {
             {sections.map((s) => {
               const owner = (users ?? []).find((u) => u.id === s.instructor_id);
               return (
-                <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {owner?.email ?? "no instructor"} · {studentsPerSection.get(s.id) ?? 0} student
-                      {(studentsPerSection.get(s.id) ?? 0) === 1 ? "" : "s"}
-                    </p>
+                <li key={s.id} className="space-y-3 px-6 py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {owner ? (owner.full_name || owner.email) : "no teacher yet"} ·{" "}
+                        {studentsPerSection.get(s.id) ?? 0} student
+                        {(studentsPerSection.get(s.id) ?? 0) === 1 ? "" : "s"}
+                      </p>
+                    </div>
+                    <code className="font-mono text-sm tracking-widest text-teal-700 dark:text-teal-400">
+                      {s.join_code}
+                    </code>
                   </div>
-                  <code className="font-mono text-sm tracking-widest text-teal-700 dark:text-teal-400">
-                    {s.join_code}
-                  </code>
+                  <AssignInstructor
+                    sectionId={s.id}
+                    current={s.instructor_id}
+                    instructors={instructors}
+                  />
                 </li>
               );
             })}

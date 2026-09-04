@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import {
+  assignInstructor,
   createAccount,
   createSection,
   setAccountStatus,
@@ -124,12 +125,10 @@ export function CreateSectionForm({
         </div>
         <div>
           <label htmlFor="instructorId" className={label}>
-            Instructor
+            Teacher (optional)
           </label>
-          <select id="instructorId" name="instructorId" required defaultValue="" className={field}>
-            <option value="" disabled>
-              {instructors.length ? "— pick one —" : "— create an instructor first —"}
-            </option>
+          <select id="instructorId" name="instructorId" defaultValue="" className={field}>
+            <option value="">— assign later —</option>
             {instructors.map((i) => (
               <option key={i.id} value={i.id}>
                 {i.email}
@@ -141,12 +140,8 @@ export function CreateSectionForm({
 
       <Feedback state={state} />
 
-      <button
-        type="submit"
-        disabled={pending || instructors.length === 0}
-        className={button}
-      >
-        {pending ? "Creating…" : "Create section"}
+      <button type="submit" disabled={pending} className={button}>
+        {pending ? "Creating…" : "Create class"}
       </button>
     </form>
   );
@@ -180,6 +175,54 @@ export function StatusToggle({
         <span role="alert" className="text-xs text-red-600 dark:text-red-400">
           {state.error}
         </span>
+      ) : null}
+    </form>
+  );
+}
+
+
+/** Staff or re-staff a class from the class list. */
+export function AssignInstructor({
+  sectionId,
+  current,
+  instructors,
+}: {
+  sectionId: string;
+  current: string | null;
+  instructors: { id: string; email: string; full_name?: string | null }[];
+}) {
+  const [state, action, pending] = useActionState<ActionState, FormData>(
+    assignInstructor,
+    {},
+  );
+
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="sectionId" value={sectionId} />
+      <select
+        name="instructorId"
+        defaultValue={current ?? ""}
+        className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+      >
+        <option value="">— no teacher —</option>
+        {instructors.map((i) => (
+          <option key={i.id} value={i.id}>
+            {i.full_name || i.email}
+          </option>
+        ))}
+      </select>
+      <button
+        type="submit"
+        disabled={pending}
+        className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+      >
+        {pending ? "…" : "Save"}
+      </button>
+      {state.error ? (
+        <span role="alert" className="text-xs text-red-600 dark:text-red-400">{state.error}</span>
+      ) : null}
+      {state.success ? (
+        <span role="status" className="text-xs text-green-700 dark:text-green-400">{state.success}</span>
       ) : null}
     </form>
   );

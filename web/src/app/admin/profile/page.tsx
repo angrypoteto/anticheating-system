@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { Card, PageHeader, Pill } from "../ui";
+import { ProfileForm } from "./form";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,15 @@ export default async function ProfilePage() {
     .select("id", { count: "exact", head: true })
     .eq("actor_id", me!.id);
 
+  const { data: profile } = await admin
+    .from("users")
+    .select("full_name, username")
+    .eq("id", me!.id)
+    .maybeSingle();
+
   const rows: [string, React.ReactNode][] = [
+    ["Name", profile?.full_name || "—"],
+    ["Username", profile?.username ? `@${profile.username}` : "—"],
     ["Email", me!.email],
     ["Role", <Pill key="r" tone="good">{String(me!.role).toLowerCase()}</Pill>],
     ["Status", String(me!.status ?? "ACTIVE").toLowerCase()],
@@ -32,6 +41,13 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-8">
       <PageHeader title="My profile" subtitle="Your account and what you have done in the system." />
+
+      <Card title="Your details" hint="Shown around the system instead of your email address.">
+        <ProfileForm
+          fullName={profile?.full_name ?? ""}
+          username={profile?.username ?? ""}
+        />
+      </Card>
 
       <Card title="Account">
         <dl className="divide-y divide-gray-100 dark:divide-gray-800">

@@ -25,6 +25,10 @@ enum UserStatus {
 model User {
   id             String    @id @db.Uuid
   email          String    @unique
+  // Set by the person themselves on their profile page; a database trigger
+  // stops that same write from touching role, status or section.
+  fullName       String?   @map("full_name")
+  username       String?   @unique
   role           Role
   status         UserStatus @default(ACTIVE)
   sectionId      String?   @map("section_id") @db.Uuid
@@ -46,8 +50,10 @@ model Section {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
   joinCode     String   @unique @default(dbgenerated("upper(substr(replace((gen_random_uuid())::text, '-'::text, ''::text), 1, 6))")) @map("join_code")
-  instructorId String   @map("instructor_id") @db.Uuid
-  instructor   User     @relation("InstructorSections", fields: [instructorId], references: [id])
+  // Nullable: a class can be created first and staffed later, so an admin
+  // isn't forced to invent a teacher just to name a section.
+  instructorId String?  @map("instructor_id") @db.Uuid
+  instructor   User?    @relation("InstructorSections", fields: [instructorId], references: [id])
   students     User[]   @relation("StudentSection")
   exams        Exam[]
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)

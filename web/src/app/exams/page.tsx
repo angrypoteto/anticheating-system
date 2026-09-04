@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { CreateExamForm } from "./forms";
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "text-amber-700 dark:text-amber-400",
@@ -33,20 +32,21 @@ export default async function ExamsPage() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
             Exams
           </h1>
-          <Link
-            href={backHref}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-          >
-            Back
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/exams/new"
+              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+            >
+              Build an exam
+            </Link>
+            <Link
+              href={backHref}
+              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              Back
+            </Link>
+          </div>
         </header>
-
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-gray-50">
-            New exam
-          </h2>
-          <CreateExamForm sections={sections ?? []} />
-        </section>
 
         <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
           <div className="border-b border-gray-200 p-6 dark:border-gray-800">

@@ -104,22 +104,53 @@ export async function createSection(
   const name = String(formData.get("name") ?? "").trim();
   const instructorId = String(formData.get("instructorId") ?? "");
 
-  if (!name) return { error: "Section name is required." };
-  if (!instructorId) return { error: "Pick an instructor." };
+  if (!name) return { error: "Class name is required." };
+  // A class may be created before anyone is staffed to it, so an instructor is
+  // optional here and assigned later from the class list.
 
   const admin = createAdminClient();
   const { data: created, error } = await admin
     .from("sections")
-    .insert({ name, instructor_id: instructorId })
+    .insert({ name, instructor_id: instructorId || null })
     .select("id")
     .single();
   if (error) return { error: error.message };
 
   await auditServerAction(actor.id, "create_section", "sections", created.id, {
     name,
-    instructor_id: instructorId,
+    instructor_id: instructorId || null,
   });
 
-  revalidatePath("/admin");
-  return { success: `Section "${name}" created.` };
+  revalidatePath("/admin/accounts");
+  return {
+    success: instructorId
+      ? `Class "${name}" created.`
+      : `Class "${name}" created. Assign a teacher when you are ready.`,
+  };
+}
+
+/** Staff a class, move it to another teacher, or leave it unstaffed. */
+export async function assignInstructor(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const actor = await requireRole("ADMIN");
+
+  const sectionId = String(formData.get("sectionId") ?? "");
+  const instructorId = String(formData.get("instructorId") ?? "");
+  if (!sectionId) return { error: "Which class?" };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("sections")
+    .update({ instructor_id: instructorId || null })
+    .eq("id", sectionId);
+  if (error) return { error: error.message };
+
+  await auditServerAction(actor.id, "assign_instructor", "sections", sectionId, {
+    instructor_id: instructorId || null,
+  });
+
+  revalidatePath("/admin/accounts");
+  return { success: instructorId ? "Teacher assigned." : "Teacher removed." };
 }

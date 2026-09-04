@@ -542,3 +542,27 @@ why — out of time, or the provider's own error — rather than losing the lot.
 
 The usual underlying cause is a provider that is failing or unresponsive. Check
 **AI provider keys** in the admin console: a key's last error is recorded there.
+
+
+## Testing a provider key
+
+The Test button asks the generation endpoint for one word. It used to ask the
+provider's model-*listing* endpoint instead, which proved the credential was
+valid and nothing more: measured against the live keys on this project, four of
+six answered "OK" to the listing while returning 503 to a generation. The
+console reported "Key works" over keys that could not generate anything, which
+is precisely the wrong thing to be confident about.
+
+A success now also means questions can be generated with that key, and the
+message distinguishes the cases that need different responses:
+
+- **401 / 403** — the provider rejected the key. Replace it.
+- **429** — the key is fine; its allowance is spent. Wait, or use another.
+- **5xx** — the key is fine; the model is busy. The provider's capacity, not
+  yours. Add a key from a *different* provider, since five keys against one
+  overloaded model all fail together.
+
+A failed test records the provider's own status against the key. A successful
+one clears it — which is only honest now that a success means generation
+actually worked; before, testing a key erased the record of the failure that
+had just happened to it.

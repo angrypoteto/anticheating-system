@@ -123,6 +123,29 @@ function parseQuestions(raw: string): unknown {
  * Tries every active key in turn, whatever provider it belongs to, so a
  * rate-limited Gemini key can fall through to a Groq one.
  */
+/**
+ * Ask the model for one word, through the same endpoint generation uses.
+ *
+ * The point is that "the key works" and "questions can be generated" are the
+ * same claim. Testing against the provider's model-listing endpoint proved only
+ * that the credential was valid: it answered happily while generateContent was
+ * returning 503, so the console reported a working key over a failing one.
+ */
+export async function pingModel(
+  key: KeyRow,
+  secret: string,
+): Promise<{ ok: boolean; status: number; detail: string }> {
+  const prompt = "Reply with the single word: OK";
+  const attempt =
+    key.api_style === "openai"
+      ? await callOpenAiCompatible(key, secret, prompt, 15_000)
+      : await callGemini(key, secret, prompt, 15_000);
+
+  return attempt.ok
+    ? { ok: true, status: 200, detail: "" }
+    : { ok: false, status: attempt.status, detail: attempt.detail };
+}
+
 export async function generateQuestions(
   text: string,
   count: number,

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { pingModel } from "@/lib/ai/generate";
 import { auditServerAction } from "@/lib/audit";
 import { presetFor } from "@/lib/ai/providers";
 
@@ -113,37 +114,47 @@ export async function testKey(
   const client = createAdminClient();
   const { data: key } = await client
     .from("ai_provider_keys")
-    .select("api_style, base_url")
+    .select("id, provider, label, api_style, base_url, model")
     .eq("id", keyId)
     .maybeSingle();
+  if (!key) return { error: "That key is gone." };
   const { data: secret, error } = await client.rpc("ai_key_reveal", { p_key_id: keyId });
   if (error || typeof secret !== "string") return { error: "Could not read that key." };
 
   try {
-    // Each style has a cheap endpoint that proves the credential without
-    // spending a generation.
-    const res =
-      key?.api_style === "openai"
-        ? await fetch(`${(key.base_url ?? "").replace(/\/+$/, "")}/models`, {
-            headers: { Authorization: `Bearer ${secret}` },
-            signal: AbortSignal.timeout(20_000),
-          })
-        : await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(secret)}`,
-            { signal: AbortSignal.timeout(20_000) },
-          );
-    const ok = res.ok;
-    const detail = ok ? null : (await res.text()).slice(0, 200);
+    // Ask the generation endpoint itself. Testing the provider's model listing
+    // proved only that the credential was valid — it answered happily while
+    // generateContent returned 503, so the console showed "Key works" over a
+    // key that could not generate anything.
+    const result = await pingModel(key as Parameters<typeof pingModel>[0], secret);
 
     await client
       .from("ai_provider_keys")
-      .update({ last_error: ok ? null : `${res.status}: ${detail}` })
+      .update({
+        last_error: result.ok ? null : `${key.provider}: ${result.status} ${result.detail}`.slice(0, 500),
+      })
       .eq("id", keyId);
 
     revalidatePath("/admin/keys");
-    return ok
-      ? { success: "Key works." }
-      : { error: `Provider rejected the key (${res.status}).` };
+
+    if (result.ok) return { success: "Key works — the model answered." };
+
+    // The provider's own status is the difference between "fix your key" and
+    // "wait and try again", so say which it is.
+    if (result.status === 401 || result.status === 403) {
+      return { error: `The provider rejected this key (${result.status}). Replace it.` };
+    }
+    if (result.status === 429) {
+      return { error: "Out of quota for now. The key is valid; the allowance is spent." };
+    }
+    if (result.status >= 500) {
+      return {
+        error:
+          `The key is valid, but the model is not answering (${result.status}). ` +
+          "This is the provider's capacity, not your key — try again, or add a key from another provider.",
+      };
+    }
+    return { error: `The model refused the request (${result.status}). ${result.detail.slice(0, 120)}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Test failed." };
   }

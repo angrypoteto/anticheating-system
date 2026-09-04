@@ -6,3 +6,7 @@ node_modules/
 .next/
 supabase/.temp/
 backups/
+
+# scratch SQL used to apply migrations via the Management API
+*.sql
+!web/prisma/migrations/**/*.sql

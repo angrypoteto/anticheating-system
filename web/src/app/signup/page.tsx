@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { AuthShell } from "@/components/auth-shell";
 import { SignupForm } from "./form";
-import { classesEnabled, selfSignupAllowed } from "@/lib/settings";
+import { classesEnabled, classSelfJoinAllowed } from "@/lib/settings";
 import { AuthDivider, GoogleButton } from "@/components/google-button";
 
 export default async function SignupPage({
@@ -16,18 +16,21 @@ export default async function SignupPage({
   const profile = await getCurrentUser();
   if (profile) redirect("/");
 
-  const [useClasses, selfSignup] = await Promise.all([
+  const [classesOn, selfJoin] = await Promise.all([
     classesEnabled(),
-    selfSignupAllowed(),
+    classSelfJoinAllowed(),
   ]);
+  // A class code is only asked for when classes exist *and* students are the
+  // ones who join them. Otherwise they register now and an admin enrols them.
+  const askForCode = classesOn && selfJoin;
 
   return (
     <AuthShell
       title="Create your student account"
       subtitle={
-        useClasses
+        askForCode
           ? "You'll need the class code from your instructor."
-          : "Sign up and your exams will appear as your teachers publish them."
+          : "Sign up and your exams will appear once your teacher adds you."
       }
       footer={
         <>
@@ -41,23 +44,16 @@ export default async function SignupPage({
         </>
       }
     >
-      {selfSignup ? (
-        <div className="space-y-4">
-          <GoogleButton next={next} label="Sign up with Google" />
-          {useClasses ? (
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              You will be asked for your class code once you are in.
-            </p>
-          ) : null}
-          <AuthDivider>or use your email</AuthDivider>
-          <SignupForm useClasses={useClasses} next={next} />
-        </div>
-      ) : (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Registration is closed. Ask your teacher or an administrator to create
-          your account.
-        </p>
-      )}
+      <div className="space-y-4">
+        <GoogleButton next={next} label="Sign up with Google" />
+        {askForCode ? (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            You will be asked for your class code once you are in.
+          </p>
+        ) : null}
+        <AuthDivider>or use your email</AuthDivider>
+        <SignupForm useClasses={askForCode} next={next} />
+      </div>
     </AuthShell>
   );
 }

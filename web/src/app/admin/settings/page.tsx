@@ -17,7 +17,7 @@ export default async function SettingsPage() {
     default_fullscreen: data?.default_fullscreen ?? true,
     default_block_copy_paste: data?.default_block_copy_paste ?? true,
     default_honeypot: data?.default_honeypot ?? true,
-    allow_student_signup: data?.allow_student_signup ?? true,
+    allow_class_self_join: data?.allow_class_self_join ?? true,
     classes_enabled: data?.classes_enabled ?? true,
     allowed_email_domains: data?.allowed_email_domains ?? "",
   };

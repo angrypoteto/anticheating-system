@@ -27,9 +27,12 @@ export async function joinClass(
   const { error } = await supabase.rpc("join_class", { code });
 
   if (error) {
-    return /does not match/i.test(error.message)
-      ? { error: "That code doesn't match any class. Check it with your teacher." }
-      : { error: error.message };
+    // join_class() is the authority — it refuses a bad code, an inactive
+    // account, and a school that assigns classes itself.
+    if (/does not match/i.test(error.message)) {
+      return { error: "That code doesn't match any class. Check it with your teacher." };
+    }
+    return { error: error.message };
   }
 
   revalidatePath("/");

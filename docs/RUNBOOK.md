@@ -325,15 +325,27 @@ signup". Google cannot create an account while that is on, and it is on today.
 
 That last step is the one to think about, because it opens Supabase's own public
 registration endpoint — which can be called directly, without visiting our
-signup page. Three things stand between that and trouble, all in the database
+signup page. Two things stand between that and trouble, both in the database
 rather than in the forms:
 
 - the trigger only ever creates a STUDENT, whatever the request claims;
-- **Settings → Let students register themselves**, off today, makes any
-  self-made account DISABLED;
-- **Settings → Accepted email domains** does the same to anyone outside your
-  school's addresses. Blank means any address, so set it before opening
-  registration if this is running anywhere public.
+- **Settings → Accepted email domains** disables anyone outside your school's
+  addresses. Blank means any address, so **set it before opening registration**
+  if this is running anywhere public — it is the only rule that decides who
+  belongs here.
 
 DISABLED is enforced by row-level security, not only by the pages: a disabled
 account can sign in and see nothing at all.
+
+## Who assigns classes
+
+**Settings → Let students join a class with a code** decides that, and nothing
+else. It has never been about whether people may register.
+
+**On**, a student types a class code at sign-up and can add more subjects from
+their dashboard.
+
+**Off**, they register exactly as before and simply arrive with no class; the
+code fields disappear from sign-up and from the dashboard, and `join_class()`
+refuses a code even if one is sent by hand. You or their teacher enrols them
+from Accounts, which is unaffected.

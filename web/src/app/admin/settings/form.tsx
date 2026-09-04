@@ -12,7 +12,7 @@ export type Settings = {
   default_fullscreen: boolean;
   default_block_copy_paste: boolean;
   default_honeypot: boolean;
-  allow_student_signup: boolean;
+  allow_class_self_join: boolean;
   classes_enabled: boolean;
   allowed_email_domains: string;
 };
@@ -158,13 +158,15 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           Registration
         </h3>
         <label className={check}>
-          <input type="checkbox" name="allowStudentSignup" defaultChecked={settings.allow_student_signup} className="mt-0.5" />
+          <input type="checkbox" name="allowClassSelfJoin" defaultChecked={settings.allow_class_self_join} className="mt-0.5" />
           <span>
-            Let students register themselves with a class code
+            Let students join a class with a code
             <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
-              Turn this off and only an administrator can create accounts. Either
-              way, self-registration can only ever produce a student, and the
-              database refuses to activate an account made while this is off.
+              Turn this off and students still register normally — they just
+              arrive with no class, and you or their teacher enrols them from
+              Accounts. The class code fields disappear from sign-up and from
+              the student dashboard, and the database refuses a code either way.
+              Registration itself can only ever produce a student.
             </span>
           </span>
         </label>

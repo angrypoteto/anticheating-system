@@ -20,17 +20,19 @@ export async function classesEnabled(): Promise<boolean> {
 }
 
 /**
- * Whether students may register themselves at all.
+ * Whether students may put themselves into a class with a join code.
  *
- * The database enforces this too — an account made while it is off is created
- * DISABLED — so this only decides whether to offer the forms.
+ * This is not about registering — anyone may make an account. It decides who
+ * assigns classes: the students themselves with a code, or an admin. The
+ * database enforces it in join_class(), so this only decides whether to offer
+ * the code fields.
  */
-export async function selfSignupAllowed(): Promise<boolean> {
+export async function classSelfJoinAllowed(): Promise<boolean> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("system_settings")
-    .select("allow_student_signup")
+    .select("allow_class_self_join")
     .eq("id", true)
     .maybeSingle();
-  return data?.allow_student_signup ?? true;
+  return data?.allow_class_self_join ?? true;
 }

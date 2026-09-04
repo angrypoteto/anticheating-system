@@ -21,6 +21,7 @@ GitHub Actions.
 | Turn classes off entirely — exams then reach every student | `/admin/settings` |
 | Share an exam by link, the way a Google Form is shared | `/exams/<id>` → "Send this to your students" |
 | Students sign up with email or a Google account | `/signup` (see the runbook for the one-time Google setup) |
+| Decide whether students join classes by code, or an admin enrols them | `/admin/settings` |
 | AI provider keys — encrypted in Vault, round-robin rotation | `/admin/keys` |
 | Health, audit trail, backup status | `/admin/health` |
 | Exam builder: questions, timers, lockdown settings, publish | `/exams` |

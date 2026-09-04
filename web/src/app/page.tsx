@@ -5,11 +5,12 @@ import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
 import { classLabel } from "@/lib/classes";
 import { JoinClassForm } from "./join-class";
-import { classesEnabled } from "@/lib/settings";
+import { classesEnabled, classSelfJoinAllowed } from "@/lib/settings";
 
 /** The subjects this student has joined; RLS returns only their own. */
 async function MyClasses() {
   const supabase = await createClient();
+  const selfJoin = await classSelfJoinAllowed();
   const { data: sections } = await supabase
     .from("sections")
     .select("id, name, subject")
@@ -31,12 +32,16 @@ async function MyClasses() {
         </ul>
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          You have not joined a class yet. Enter a class code below.
+          {selfJoin
+            ? "You have not joined a class yet. Enter a class code below."
+            : "You are not in a class yet. Your teacher will add you — exams appear here once they do."}
         </p>
       )}
-      <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
-        <JoinClassForm />
-      </div>
+      {selfJoin ? (
+        <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+          <JoinClassForm />
+        </div>
+      ) : null}
     </div>
   );
 }

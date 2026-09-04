@@ -13,7 +13,22 @@ export type GenerateResult =
 
 type Attempt = { ok: true; text: string } | { ok: false; status: number; detail: string };
 
-async function callGemini(key: KeyRow, secret: string, prompt: string): Promise<Attempt> {
+/**
+ * How long one model call may take.
+ *
+ * This has to sit well inside the serverless function's own limit — the page
+ * carries maxDuration = 60, and a call allowed to run for two minutes could
+ * never fail gracefully: the platform killed the whole request first and the
+ * teacher got a browser error page with no message in it at all.
+ */
+export const MODEL_CALL_TIMEOUT_MS = 25_000;
+
+async function callGemini(
+  key: KeyRow,
+  secret: string,
+  prompt: string,
+  timeoutMs: number,
+): Promise<Attempt> {
   const model = key.model || DEFAULT_GEMINI_MODEL;
   const res = await fetch(
     `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(secret)}`,
@@ -28,7 +43,7 @@ async function callGemini(key: KeyRow, secret: string, prompt: string): Promise<
           responseSchema: RESPONSE_SCHEMA,
         },
       }),
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(timeoutMs),
     },
   );
 
@@ -41,7 +56,12 @@ async function callGemini(key: KeyRow, secret: string, prompt: string): Promise<
 }
 
 /** Groq, OpenAI, OpenRouter, DeepSeek and anything else speaking that shape. */
-async function callOpenAiCompatible(key: KeyRow, secret: string, prompt: string): Promise<Attempt> {
+async function callOpenAiCompatible(
+  key: KeyRow,
+  secret: string,
+  prompt: string,
+  timeoutMs: number,
+): Promise<Attempt> {
   if (!key.base_url) return { ok: false, status: 400, detail: "no base URL configured" };
   const url = `${key.base_url.replace(/\/+$/, "")}/chat/completions`;
 
@@ -60,7 +80,7 @@ async function callOpenAiCompatible(key: KeyRow, secret: string, prompt: string)
       ],
       temperature: 0.4,
     }),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (!res.ok) return { ok: false, status: res.status, detail: (await res.text()).slice(0, 200) };
@@ -107,6 +127,13 @@ export async function generateQuestions(
   text: string,
   count: number,
   mix: string,
+  /**
+   * When the caller must have an answer by, as an epoch time. Retries and
+   * further keys are only attempted while there is room for them: without this
+   * a busy model could spend three calls and two backoffs — some eighty
+   * seconds — inside a function the platform kills at sixty.
+   */
+  deadline = Date.now() + MODEL_CALL_TIMEOUT_MS * 2,
 ): Promise<GenerateResult> {
   if (!text.trim()) return { ok: false, error: "The lesson file had no readable text." };
 
@@ -118,7 +145,14 @@ export async function generateQuestions(
   const prompt = buildPrompt(text, count, mix);
   let lastError = "All keys failed.";
 
+  /** What one call may take now: never more than its own cap, never past the deadline. */
+  const budget = () => Math.min(MODEL_CALL_TIMEOUT_MS, deadline - Date.now());
+
   for (const key of keys) {
+    if (budget() <= 1000) {
+      return { ok: false, error: lastError === "All keys failed." ? "Ran out of time." : lastError };
+    }
+
     const secret = await revealKey(key.id);
     if (!secret) {
       await markKeyError(key.id, "Could not decrypt key from vault");
@@ -127,16 +161,19 @@ export async function generateQuestions(
 
     const call = () =>
       key.api_style === "openai"
-        ? callOpenAiCompatible(key, secret, prompt)
-        : callGemini(key, secret, prompt);
+        ? callOpenAiCompatible(key, secret, prompt, budget())
+        : callGemini(key, secret, prompt, budget());
 
     try {
       let attempt = await call();
 
       // 5xx is usually "the model is busy" and clears on its own; another key
       // would hit the same busy model, so back off on this one first.
+      // Only retry while there is time for the retry and its backoff.
       for (let i = 0; i < 2 && !attempt.ok && attempt.status >= 500; i++) {
-        await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+        const backoff = 1500 * (i + 1);
+        if (deadline - Date.now() < backoff + 2000) break;
+        await new Promise((r) => setTimeout(r, backoff));
         attempt = await call();
       }
 

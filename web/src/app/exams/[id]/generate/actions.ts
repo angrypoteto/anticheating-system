@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
 import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
-import { generateQuestions } from "@/lib/ai/generate";
+import { generateQuestions, MODEL_CALL_TIMEOUT_MS } from "@/lib/ai/generate";
 import { mergeDrafts, planBatches } from "@/lib/ai/batches";
 
 export type GenerateState = {
@@ -167,23 +167,41 @@ export async function generateFromFile(
   if (sweepError) console.warn(`stale progress sweep failed: ${sweepError.message}`);
 
   await say(0);
+
+  // The page carries maxDuration = 60. Everything below must finish inside
+  // this, so the teacher gets an answer rather than a killed request and a
+  // browser error page with nothing in it.
+  const hardStop = Date.now() + 52_000;
+  let ranOutOfTime = false;
   const returned: DraftQuestion[][] = [];
   let keyLabel = "";
   let lastError = "";
   let failedCount = 0;
 
   for (const batch of batches) {
+    // Stop starting batches once there is not time for a useful one. The first
+    // batch always runs, however tight — returning "no time" without trying
+    // would be absurd.
+    if (returned.length && hardStop - Date.now() < 6000) {
+      ranOutOfTime = true;
+      break;
+    }
+
     const result = await generateQuestions(
       text,
       batch.mc + batch.ident,
       describeMix(batch.mc, batch.ident),
+      hardStop,
     );
 
     if (!result.ok) {
+      // Every batch uses the same keys and the same material, so a provider
+      // failure on one is a provider failure on all of them. Carrying on would
+      // spend the whole budget rediscovering that.
       lastError = result.error;
       failedCount++;
       await say(returned.length + failedCount);
-      continue;
+      break;
     }
 
     keyLabel = result.keyLabel;
@@ -202,6 +220,11 @@ export async function generateFromFile(
   }
 
   const short = count - drafts.length;
+  const why = ranOutOfTime
+    ? " There was not time for the rest — generate again to add more."
+    : lastError
+      ? ` The rest stopped at: ${lastError}`
+      : " Generate again for the rest.";
 
   return {
     drafts,
@@ -212,9 +235,7 @@ export async function generateFromFile(
       (batches.length > 1 ? ` across ${batches.length} requests` : "") +
       (keyLabel ? `, using key “${keyLabel}”` : "") +
       "." +
-      (short > 0
-        ? ` You asked for ${count}; ${short} came back repeated or missing, so generate again for the rest.`
-        : ""),
+      (short > 0 ? ` You asked for ${count}; ${short} did not arrive.${why}` : ""),
   };
 }
 

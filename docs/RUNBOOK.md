@@ -516,3 +516,29 @@ A run that dies leaves a row behind, which the next generation clears on its way
 in. That sweep is a plain delete rather than a function — the first version put
 it in the `private` schema, where PostgREST cannot reach it, so it failed
 silently every time and only a test that checked the result caught it.
+
+
+## When generation times out
+
+The generate page carries `maxDuration = 60`. Everything the action does has to
+finish inside that, and the first version did not: a model call was allowed
+120 seconds, so a slow or unresponsive provider could never fail gracefully —
+Vercel killed the request first and the teacher got a browser error page with no
+message in it at all. That is what "This page couldn't load" was.
+
+Three limits now nest properly:
+
+- one model call: 25s, and never longer than the time left
+- the whole action: 52s, leaving 8s to write a response
+- a new batch only starts with 6s of room; the first batch always runs
+
+`generateQuestions()` takes the deadline too, so its retries and its walk
+through the remaining keys stop when the time is gone. Without that, a busy
+model retrying twice could spend eighty seconds on its own inside a
+sixty-second function.
+
+If it still runs out, the teacher keeps whatever came back and the notice says
+why — out of time, or the provider's own error — rather than losing the lot.
+
+The usual underlying cause is a provider that is failing or unresponsive. Check
+**AI provider keys** in the admin console: a key's last error is recorded there.

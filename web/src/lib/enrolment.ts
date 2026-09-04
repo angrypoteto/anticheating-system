@@ -9,11 +9,15 @@ import { classLabel } from "./classes";
  * be counted per membership rather than per student.
  */
 export async function loadEnrolment(supabase: SupabaseClient) {
-  const [{ data: sections }, { data: enrollments }, { data: targets }] = await Promise.all([
-    supabase.from("sections").select("id, name, subject").order("subject").order("name"),
-    supabase.from("enrollments").select("student_id, section_id"),
-    supabase.from("exam_sections").select("exam_id, section_id"),
-  ]);
+  const [{ data: sections }, { data: enrollments }, { data: targets }, { data: grants }] =
+    await Promise.all([
+      supabase.from("sections").select("id, name, subject").order("subject").order("name"),
+      supabase.from("enrollments").select("student_id, section_id"),
+      supabase.from("exam_sections").select("exam_id, section_id"),
+      // A share link reaches a student without any class at all, and with
+      // classes switched off it is the *only* way an exam reaches anybody.
+      supabase.from("exam_access").select("exam_id, student_id"),
+    ]);
 
   const label = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
 
@@ -33,6 +37,13 @@ export async function loadEnrolment(supabase: SupabaseClient) {
     reaches.set(t.exam_id, set);
   }
 
+  const granted = new Map<string, Set<string>>();
+  for (const g of grants ?? []) {
+    const set = granted.get(g.exam_id) ?? new Set<string>();
+    set.add(g.student_id);
+    granted.set(g.exam_id, set);
+  }
+
   return {
     sections: sections ?? [],
     label,
@@ -44,12 +55,28 @@ export async function loadEnrolment(supabase: SupabaseClient) {
       if (exam.section_id) set.add(exam.section_id);
       return set;
     },
-    /** Does this exam reach any class the student sits? */
+    /**
+     * Was this exam given to this student — by their class, or by its link?
+     *
+     * Missing the link half made the risk report believe nobody had been set
+     * anything whenever classes were switched off, so "not taken" was always
+     * zero and nobody ever appeared to owe an exam.
+     */
     reachesStudent(exam: { id: string; section_id?: string | null }, studentId: string) {
+      if (granted.get(exam.id)?.has(studentId)) return true;
       const mine = classesOf.get(studentId) ?? [];
       const set = new Set(reaches.get(exam.id) ?? []);
       if (exam.section_id) set.add(exam.section_id);
       return mine.some((c) => set.has(c));
+    },
+
+    /** Every student this exam was given to, however they were given it. */
+    audienceOf(exam: { id: string; section_id?: string | null }) {
+      const people = new Set(granted.get(exam.id) ?? []);
+      const classes = new Set(reaches.get(exam.id) ?? []);
+      if (exam.section_id) classes.add(exam.section_id);
+      for (const c of classes) for (const s of rollOf.get(c) ?? []) people.add(s);
+      return people;
     },
     /** The classes a student sits, as readable labels. */
     labelsFor(studentId: string) {

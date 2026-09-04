@@ -45,7 +45,20 @@ export default async function TeacherStudentsPage() {
   ]);
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
-  const roll = students ?? [];
+
+  // With classes on, "your students" is your class roll, exams or no exams.
+  // With classes off there are no classes, and row-level security hands a
+  // teacher every student in the school — which is not a roll, it is a
+  // directory. Scope it to the people who were actually given one of their
+  // exams, or the counts describe strangers.
+  const everyone = students ?? [];
+  const roll = useClasses
+    ? everyone
+    : everyone.filter(
+        (s) =>
+          (exams ?? []).some((e) => enrolment.reachesStudent(e, s.id)) ||
+          (sessions ?? []).some((x) => x.student_id === s.id),
+      );
 
   const flagsBySession = new Map<string, number>();
   for (const f of flagRows ?? []) {
@@ -109,7 +122,11 @@ export default async function TeacherStudentsPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Your students" value={String(roll.length)} />
+        <Stat
+          label="Your students"
+          value={String(roll.length)}
+          note={useClasses ? undefined : "given one of your exams"}
+        />
         <Stat
           label="At risk"
           value={String(assessed.filter((a) => a.risk.band === "at-risk").length)}

@@ -414,3 +414,28 @@ Sequential calls take time, and the page carries `maxDuration = 60`, which is
 the ceiling on Vercel's hobby plan. Past roughly sixty questions in one go the
 request is likely to be cut off, so split it over two goes. Raising the limit
 means a paid plan, not a code change.
+
+
+## Before an exam with a real class
+
+A simulated sitting of 55 students turned up two things that only appear at
+that size. Both are settings, not code.
+
+**Supabase rate-limits sign-ins to 30 per five minutes, per IP.** A class on
+one school Wi-Fi is one IP, so students beyond the thirtieth are told "Request
+rate limit reached" and cannot sign in at all. In the simulation twelve of
+fifty-five were locked out this way. Raise it before exam day:
+Authentication → Rate limits → "Verify" (`rate_limit_verify`), or have students
+sign in ahead of time — a session lasts an hour by default (`jwt_exp`), so
+signing in during the previous period does not help unless the exam starts
+within that hour.
+
+**Token refresh is limited to 150 per five minutes per IP.** Fine for a
+45-minute paper; worth raising for anything longer than an hour, when every
+student's session refreshes mid-exam.
+
+The same simulation confirmed what does hold at that size: scores recompute
+exactly, students cannot see each other's sittings, answers or flags, the
+answer key stays unreadable, a second sitting is refused, answers are refused
+after submission, and no student can delete their own flags. Teacher pages
+render in under a second with 61 students and 40 sittings.

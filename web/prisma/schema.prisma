@@ -211,6 +211,7 @@ model ExamSession {
   flags   Flag[]
 
   @@unique([examId, studentId])
+  @@index([studentId])
   @@map("exam_sessions")
 }
 
@@ -251,6 +252,7 @@ model Flag {
   resolvedBy   User?           @relation("FlagResolver", fields: [resolvedById], references: [id])
   resolution   FlagResolution?
 
+  @@index([sessionId])
   @@map("flags")
 }
 

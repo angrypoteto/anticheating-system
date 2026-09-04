@@ -42,12 +42,14 @@ export default async function MonitorPage({
           .in("session_id", sessionIds)
           .order("occurred_at", { ascending: false })
       : Promise.resolve({ data: [] as FlagRow[] }),
-    supabase.from("users").select("id, email"),
+    supabase.from("users").select("id, email, full_name"),
     supabase.from("questions").select("id, prompt").eq("exam_id", id).order("order"),
   ]);
 
   const studentNames = Object.fromEntries(
-    (students ?? []).map((u) => [u.id, u.email]),
+    // A name, when they have set one. Watching forty rows of email addresses is
+    // exactly when a teacher most needs to recognise a person.
+    (students ?? []).map((u) => [u.id, u.full_name || u.email]),
   );
 
   // Numbering follows the instructor's authored order, not the student's

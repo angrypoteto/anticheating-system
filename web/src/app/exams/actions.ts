@@ -135,14 +135,25 @@ export async function setExamStatus(
     }
   }
 
-  const { error } = await supabase
-    .from("exams")
-    .update({ status })
-    .eq("id", examId);
+  const patch: Record<string, unknown> = { status };
+
+  // Stamp the moment it went out, but only the first time: re-publishing an
+  // archived exam shouldn't rewrite the date students actually sat it.
+  if (status === "PUBLISHED") {
+    const { data: current } = await supabase
+      .from("exams")
+      .select("published_at")
+      .eq("id", examId)
+      .maybeSingle();
+    if (!current?.published_at) patch.published_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase.from("exams").update(patch).eq("id", examId);
   if (error) return { error: error.message };
 
   revalidatePath(`/exams/${examId}`);
   revalidatePath("/exams");
+  revalidatePath("/admin/exams");
   return { success: `Exam ${status.toLowerCase()}.` };
 }
 

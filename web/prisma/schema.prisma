@@ -75,6 +75,9 @@ model Exam {
   createdById    String   @map("created_by_id") @db.Uuid
   createdBy      User     @relation("ExamCreator", fields: [createdById], references: [id])
   status         ExamStatus @default(DRAFT)
+  // Stamped on the first publish — updated_at moves on every edit, so it
+  // cannot answer "when was this given".
+  publishedAt    DateTime?  @map("published_at") @db.Timestamptz(3)
   timerConfig    Json     @map("timer_config")
   lockdownConfig Json     @map("lockdown_config")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)

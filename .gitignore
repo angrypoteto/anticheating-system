@@ -10,3 +10,11 @@ backups/
 # scratch SQL used to apply migrations via the Management API
 *.sql
 !web/prisma/migrations/**/*.sql
+
+# Credential files downloaded from a provider console. Google names its OAuth
+# download client_secret_<id>.apps.googleusercontent.com.json and it lands in
+# whatever directory the browser saves to - this repo is public, and "git add -A"
+# does not know the difference.
+client_secret*.json
+*.credentials.json
+service-account*.json

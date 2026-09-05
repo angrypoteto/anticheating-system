@@ -587,3 +587,30 @@ than losing focus to a notification.
 
 Three real departures still cost three strikes. The rule got more accurate, not
 more lenient.
+
+
+## Running the test passes
+
+    cd web
+    npm run qa           # features, then edge cases
+    npm run qa:pages     # every route as every role (needs the app running)
+
+They run against the live project: they create accounts, classes, exams and
+sittings and delete them again from a `finally` block, and they change system
+settings while running and put them back. If one is killed part-way, look in
+Accounts for leftovers named `qa-`, `qb-` or `qc-`.
+
+Findings are collected rather than asserted, so one failure does not hide the
+rest of the sweep. `scripts/qa/README.md` has the details.
+
+Two bugs came out of the first run of these, both of which only appear when two
+settings interact — which is why the passes flip settings rather than testing
+one configuration:
+
+- A student disabled *during* a paper could keep writing answers. The answer
+  policies asked whether the session was theirs, in progress and open, never
+  whether the account was still active.
+- An exam written while classes were off vanished from the teacher who wrote it
+  the moment classes were switched on, because ownership was "you teach its
+  class, or classes are off and you wrote it" — and it had no class. Authorship
+  is not conditional on a setting.

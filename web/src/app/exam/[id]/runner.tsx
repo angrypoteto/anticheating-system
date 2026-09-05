@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createDepartureTracker, type FlagType } from "@/lib/departure";
@@ -59,8 +61,11 @@ export function ExamRunner({
 
   // One departure is one strike, however many events the browser fires for it.
   // The tracker holds that rule; see lib/departure.ts for why it has to.
-  const trackerRef = useRef<ReturnType<typeof createDepartureTracker> | null>(null);
-  const recordFlagRef = useRef<(type: FlagType) => void>(() => {});
+  //
+  // Built once by useState's lazy initialiser, and told where to report in an
+  // effect: it outlives any one render, so it must not close over a callback
+  // that would go stale.
+  const [tracker] = useState(() => createDepartureTracker({}));
 
   const done = submitState.submitted === true;
 
@@ -124,31 +129,26 @@ export function ExamRunner({
     [sessionId, lockdown.maxStrikes, started, finish],
   );
 
-  // The tracker is built once and reads the latest recordFlag through a ref, so
-  // rebuilding it cannot lose a departure that is mid-collection.
   useEffect(() => {
-    recordFlagRef.current = recordFlag;
-  }, [recordFlag]);
-
-  if (!trackerRef.current) {
-    trackerRef.current = createDepartureTracker({
-      onStrike: (type) => recordFlagRef.current(type),
-    });
-  }
+    tracker.setOnStrike(recordFlag);
+  }, [tracker, recordFlag]);
 
   const noteDeparture = useCallback(
     (type: FlagType) => {
       if (endedRef.current || !started) return;
-      trackerRef.current?.leave(type);
+      tracker.leave(type);
     },
-    [started],
+    [started, tracker],
   );
 
   /** Back on the paper: the next departure is a new one. */
   const noteReturn = useCallback(() => {
     if (document.visibilityState !== "visible" || !document.hasFocus()) return;
-    trackerRef.current?.back();
-  }, []);
+    tracker.back();
+  }, [tracker]);
+
+  // A departure still being collected when the page goes must not fire later.
+  useEffect(() => () => tracker.dispose(), [tracker]);
 
   // --- lockdown listeners ---
   useEffect(() => {
@@ -289,12 +289,12 @@ export function ExamRunner({
             Score: {submitState.score}%
           </p>
         ) : null}
-        <a
+        <Link
           href="/"
           className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
         >
           Back to home
-        </a>
+        </Link>
       </Shell>
     );
   }

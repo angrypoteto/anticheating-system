@@ -21,21 +21,31 @@ export function worstOf(kinds: Set<FlagType>): FlagType {
  * burst has finished.
  */
 export function createDepartureTracker({
-  onStrike,
+  onStrike: initialOnStrike = () => {},
   settleMs = 400,
   setTimer = setTimeout,
   clearTimer = clearTimeout,
 }: {
-  onStrike: (type: FlagType) => void;
+  onStrike?: (type: FlagType) => void;
   settleMs?: number;
   setTimer?: typeof setTimeout;
   clearTimer?: typeof clearTimeout;
 }) {
+  let onStrike = initialOnStrike;
   let away = false;
   let pending = new Set<FlagType>();
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   return {
+    /**
+     * Point it at the current handler. The tracker outlives any one render, so
+     * it is told where to report rather than holding a reference that would go
+     * stale — or a ref, which cannot be read while rendering.
+     */
+    setOnStrike(fn: (type: FlagType) => void) {
+      onStrike = fn;
+    },
+
     /** A signal that the student may have left. */
     leave(type: FlagType) {
       pending.add(type);

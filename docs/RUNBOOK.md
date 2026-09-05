@@ -566,3 +566,24 @@ A failed test records the provider's own status against the key. A successful
 one clears it — which is only honest now that a success means generation
 actually worked; before, testing a key erased the record of the failure that
 had just happened to it.
+
+
+## Strikes: one departure, one warning
+
+Leaving the exam window raises up to three browser events at once. Alt-tabbing
+out of a fullscreen paper blurs the window, hides the document and ends
+fullscreen within milliseconds, and the runner counted each of them — so a
+single glance away spent the whole three-strike allowance and auto-submitted
+the exam. That is the opposite of what the allowance is for.
+
+`lib/departure.ts` holds the rule now: the events of one departure are collected
+for 400ms and counted once, nothing further counts until the student is actually
+back on the paper, and returning inside that window cancels it — a focus blip
+that resolves before the burst settles was never a departure.
+
+The reason recorded is the most telling of the burst: a hidden document is filed
+as a tab switch rather than a blur, because leaving for another app says more
+than losing focus to a notification.
+
+Three real departures still cost three strikes. The rule got more accurate, not
+more lenient.

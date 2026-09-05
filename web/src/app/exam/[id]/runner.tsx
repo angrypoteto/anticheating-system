@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { createDepartureTracker, type FlagType } from "@/lib/departure";
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
 import { submitExam, type SubmitState } from "./actions";
 
@@ -12,7 +13,6 @@ export type RunnerQuestion = {
   choices: string[] | null;
 };
 
-type FlagType = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "WINDOW_BLUR" | "HONEYPOT";
 
 const AUTOSAVE_MS = 700;
 
@@ -56,6 +56,11 @@ export function ExamRunner({
   const formRef = useRef<HTMLFormElement>(null);
   const endedRef = useRef(false);
   const strikesRef = useRef(0);
+
+  // One departure is one strike, however many events the browser fires for it.
+  // The tracker holds that rule; see lib/departure.ts for why it has to.
+  const trackerRef = useRef<ReturnType<typeof createDepartureTracker> | null>(null);
+  const recordFlagRef = useRef<(type: FlagType) => void>(() => {});
 
   const done = submitState.submitted === true;
 
@@ -105,6 +110,11 @@ export function ExamRunner({
       if (next >= lockdown.maxStrikes) {
         setWarning("Strike limit reached — submitting your exam.");
         finish("strikes");
+      } else if (next === lockdown.maxStrikes - 1) {
+        // The last warning has to say what happens next, not just count.
+        setWarning(
+          `Warning ${next} of ${lockdown.maxStrikes}. One more and your exam is submitted automatically.`,
+        );
       } else {
         setWarning(
           `Warning ${next} of ${lockdown.maxStrikes}: leaving the exam window is recorded.`,
@@ -114,23 +124,52 @@ export function ExamRunner({
     [sessionId, lockdown.maxStrikes, started, finish],
   );
 
+  // The tracker is built once and reads the latest recordFlag through a ref, so
+  // rebuilding it cannot lose a departure that is mid-collection.
+  useEffect(() => {
+    recordFlagRef.current = recordFlag;
+  }, [recordFlag]);
+
+  if (!trackerRef.current) {
+    trackerRef.current = createDepartureTracker({
+      onStrike: (type) => recordFlagRef.current(type),
+    });
+  }
+
+  const noteDeparture = useCallback(
+    (type: FlagType) => {
+      if (endedRef.current || !started) return;
+      trackerRef.current?.leave(type);
+    },
+    [started],
+  );
+
+  /** Back on the paper: the next departure is a new one. */
+  const noteReturn = useCallback(() => {
+    if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+    trackerRef.current?.back();
+  }, []);
+
   // --- lockdown listeners ---
   useEffect(() => {
     if (!started || done) return;
 
     const onVisibility = () => {
-      if (document.visibilityState === "hidden") recordFlag("TAB_SWITCH");
+      if (document.visibilityState === "hidden") noteDeparture("TAB_SWITCH");
+      else noteReturn();
     };
-    const onBlur = () => recordFlag("WINDOW_BLUR");
+    const onBlur = () => noteDeparture("WINDOW_BLUR");
+    const onFocus = () => noteReturn();
     const onFullscreenChange = () => {
-      if (lockdown.fullscreenRequired && !document.fullscreenElement) {
-        recordFlag("FULLSCREEN_EXIT");
-      }
+      if (!lockdown.fullscreenRequired) return;
+      if (!document.fullscreenElement) noteDeparture("FULLSCREEN_EXIT");
+      else noteReturn();
     };
     const block = (e: Event) => e.preventDefault();
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
     document.addEventListener("fullscreenchange", onFullscreenChange);
 
     if (lockdown.blockCopyPaste) {
@@ -143,13 +182,21 @@ export function ExamRunner({
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("copy", block);
       document.removeEventListener("paste", block);
       document.removeEventListener("cut", block);
       document.removeEventListener("contextmenu", block);
     };
-  }, [started, done, lockdown.fullscreenRequired, lockdown.blockCopyPaste, recordFlag]);
+  }, [
+    started,
+    done,
+    lockdown.fullscreenRequired,
+    lockdown.blockCopyPaste,
+    noteDeparture,
+    noteReturn,
+  ]);
 
   // --- countdown ---
   useEffect(() => {
@@ -272,8 +319,9 @@ export function ExamRunner({
           ) : null}
           {lockdown.fullscreenRequired ? <li>· Fullscreen is required.</li> : null}
           <li>
-            · Leaving the exam window is recorded. {lockdown.maxStrikes} warnings
-            end the attempt automatically.
+            · Leaving the exam window counts as one warning each time, however
+            you leave it. {lockdown.maxStrikes} warnings end the attempt
+            automatically.
           </li>
         </ul>
         {warning ? (

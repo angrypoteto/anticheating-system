@@ -46,8 +46,24 @@ async function resolveSubject(
     .insert({ name: named })
     .select("id")
     .single();
-  if (error) return { error: `Could not add that subject: ${error.message}` };
-  return { id: created.id };
+
+  if (!error) return { id: created.id };
+
+  // Looking and then inserting leaves a gap, and two teachers naming the same
+  // new subject in the same moment both fall into it. The loser was shown
+  // "duplicate key value violates unique constraint" — for something that had,
+  // from their point of view, worked. Whoever got there first created exactly
+  // the row this one wanted, so take it.
+  if (/duplicate key|unique constraint/i.test(error.message)) {
+    const { data: raced } = await supabase
+      .from("subjects")
+      .select("id")
+      .ilike("name", named)
+      .maybeSingle();
+    if (raced) return { id: raced.id };
+  }
+
+  return { error: `Could not add that subject: ${error.message}` };
 }
 
 export async function createExam(

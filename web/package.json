@@ -12,7 +12,8 @@
     "sweep-uploads": "node scripts/sweep-uploads.mjs",
     "qa": "node scripts/qa/features.mjs && node scripts/qa/edges.mjs",
     "qa:pages": "node scripts/qa/pages.mjs",
-    "qa:classroom": "node scripts/qa/classroom.mjs"
+    "qa:classroom": "node scripts/qa/classroom.mjs",
+    "qa:crowd": "node scripts/qa/crowd.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

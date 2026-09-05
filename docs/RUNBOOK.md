@@ -640,3 +640,33 @@ A count is not protection here. `count: "exact"` is right while the rows are
 short, so a check that compares a count to itself will pass over truncated data.
 The classroom pass compares a paged read against the count for exactly that
 reason.
+
+
+## Two people doing the same thing at once
+
+`npm run qa:crowd` runs ten administrators, ten instructors and ten students
+concurrently. Two findings came out of the first run, both invisible to
+single-user testing:
+
+**Naming a subject was check-then-insert.** The resolver looked for the subject,
+did not find it, and inserted — and two teachers naming the same new subject in
+the same moment both fell into the gap between those steps. The loser was shown
+`duplicate key value violates unique constraint`, for something that from their
+point of view had worked. It now takes the row the winner created, which is
+exactly the row it wanted.
+
+**The identity guard was refusing administrators.** `protect_user_identity()`
+stops a signed-in session changing anybody's role or status — that is what makes
+"edit your own profile" safe, since row-level security restricts rows and not
+columns. It applied to every session including an admin's, so disabling an
+account through an admin's own session was refused with "Only your name and
+username can be changed here." The console worked only because those actions go
+through the service role, where there is no session and the guard passes
+through. The next admin feature written the ordinary way would have hit it and
+looked like a permissions bug. Administrators are exempt now; they are already
+gated by the `users_admin_all` policy, and students are still refused.
+
+On performance: every admin page renders in under a second on its own. Eighty
+simultaneous renders against a single server push the slowest to about eleven,
+which is contention on one process rather than a cost in the page — the pass
+measures the single-page baseline first so the two are not confused.

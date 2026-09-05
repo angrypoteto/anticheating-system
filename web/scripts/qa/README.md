@@ -7,6 +7,7 @@ legitimately does.
     npm run qa            # features, then edge cases
     npm run qa:pages      # every route, as every role (needs the app running)
     npm run qa:classroom  # fifty students sit one exam (needs the app running)
+    npm run qa:crowd      # ten admins, ten teachers, ten students at once
 
 `qa:pages` loads pages over HTTP and defaults to `http://localhost:3001`; set
 `QA_BASE` to point it elsewhere.
@@ -27,3 +28,9 @@ rest of the sweep.
 paper is over 1,100 answers, past the 1,000-row reply cap, which is where
 silent truncation shows up. It takes a few minutes, most of it waiting out the
 sign-in rate limit — that wait is itself one of the findings, not an accident.
+
+`qa:crowd` runs the roles concurrently rather than one at a time, because the
+failures that survive careful single-user testing are races: two people creating
+the same thing, a check-then-insert with a gap in the middle. It measures each
+admin page alone first, so a slow number under eighty simultaneous renders can
+be read as contention on one server rather than mistaken for a slow page.

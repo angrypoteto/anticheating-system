@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
+import { readAllRows } from "@/lib/read-all";
 import { requireRole } from "@/lib/auth";
 import { assessStudent, BAND_LABEL } from "@/lib/risk";
 
@@ -8,13 +9,16 @@ export async function GET() {
   await requireRole("ADMIN");
   const admin = createAdminClient();
 
-  const [{ data: settings }, { data: users }, { data: exams }, { data: sessions }, { data: flags }, enrolment] =
+  const [{ data: settings }, { data: users }, { data: exams }, sessions, flags, enrolment] =
     await Promise.all([
       admin.from("system_settings").select("pass_threshold").eq("id", true).maybeSingle(),
       admin.from("users").select("id, email, full_name, role, status").eq("role", "STUDENT"),
       admin.from("exams").select("id, section_id, status").eq("status", "PUBLISHED"),
-      admin.from("exam_sessions").select("id, exam_id, student_id, status, score, started_at, submitted_at"),
-      admin.from("flags").select("session_id, resolution"),
+      readAllRows<{ id: string; exam_id: string; student_id: string; status: string; score: number | null; started_at: string; submitted_at: string | null }>(
+        (f, to) => admin.from("exam_sessions")
+          .select("id, exam_id, student_id, status, score, started_at, submitted_at").range(f, to)),
+      readAllRows<{ session_id: string; resolution: string | null }>(
+        (f, to) => admin.from("flags").select("session_id, resolution").range(f, to)),
       loadEnrolment(admin),
     ]);
 

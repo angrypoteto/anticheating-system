@@ -421,14 +421,19 @@ means a paid plan, not a code change.
 A simulated sitting of 55 students turned up two things that only appear at
 that size. Both are settings, not code.
 
-**Supabase rate-limits sign-ins to 30 per five minutes, per IP.** A class on
-one school Wi-Fi is one IP, so students beyond the thirtieth are told "Request
-rate limit reached" and cannot sign in at all. In the simulation twelve of
-fifty-five were locked out this way. Raise it before exam day:
-Authentication → Rate limits → "Verify" (`rate_limit_verify`), or have students
-sign in ahead of time — a session lasts an hour by default (`jwt_exp`), so
-signing in during the previous period does not help unless the exam starts
-within that hour.
+**Supabase rate-limits sign-ins per IP, and the limit is not one you can raise
+from the dashboard.** A class on one school Wi-Fi is one IP. In a 55-student
+run, twelve were told "Request rate limit reached" and could not sign in.
+
+Raising `rate_limit_verify` does **not** fix it — measured: set to 500, the wall
+still arrived at about forty sign-ins, and the window recovered over roughly a
+minute. That setting governs verification endpoints, not the password grant.
+
+What actually helps: stagger the class, in groups of about twenty-five a few
+minutes apart. A session lasts an hour (`jwt_exp`), so signing in during the
+previous period works if the exam starts within that hour. If this needs to be
+solved properly rather than worked around, it is a question for Supabase
+support about the password-grant limit on this plan.
 
 **Token refresh is limited to 150 per five minutes per IP.** Fine for a
 45-minute paper; worth raising for anything longer than an hour, when every
@@ -614,3 +619,24 @@ one configuration:
   the moment classes were switched on, because ownership was "you teach its
   class, or classes are off and you wrote it" — and it had no class. Authorship
   is not conditional on a setting.
+
+
+## The thousand-row reply
+
+A read returns at most 1,000 rows unless a range is asked for, and nothing says
+so: the request succeeds, the array looks plausible, and every figure computed
+from it is quietly wrong.
+
+Fifty students answering twenty-five questions is over 1,100 answers, so one
+ordinary exam crosses it. The per-question analysis was computing percentages
+over the first thousand answers and presenting them as the class's.
+
+`lib/read-all.ts` pages instead, and everything that aggregates uses it: the
+per-question analysis, both risk reports, both CSV exports, the admin overview,
+and the enrolment loader — enrolments and link grants grow with every class and
+every exam.
+
+A count is not protection here. `count: "exact"` is right while the rows are
+short, so a check that compares a count to itself will pass over truncated data.
+The classroom pass compares a paged read against the count for exactly that
+reason.

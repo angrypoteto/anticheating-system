@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { loadEnrolment } from "@/lib/enrolment";
+import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { requireRole } from "@/lib/auth";
 import { assessStudent, BAND_LABEL } from "@/lib/risk";
@@ -20,16 +21,19 @@ export async function GET() {
     { data: settings },
     { data: students },
     { data: exams },
-    { data: sessions },
-    { data: flags },
+    sessions,
+    flags,
     enrolment,
     useClasses,
   ] = await Promise.all([
     supabase.from("system_settings").select("pass_threshold").eq("id", true).maybeSingle(),
     supabase.from("users").select("id, email, full_name, status").eq("role", "STUDENT"),
     supabase.from("exams").select("id, title, section_id, status").eq("status", "PUBLISHED"),
-    supabase.from("exam_sessions").select("id, exam_id, student_id, status, score"),
-    supabase.from("flags").select("session_id, resolution"),
+    readAllRows<{ id: string; exam_id: string; student_id: string; status: string; score: number | null }>(
+      (f, to) => supabase.from("exam_sessions")
+        .select("id, exam_id, student_id, status, score").range(f, to)),
+    readAllRows<{ session_id: string; resolution: string | null }>(
+      (f, to) => supabase.from("flags").select("session_id, resolution").range(f, to)),
     loadEnrolment(supabase),
     classesEnabled(),
   ]);

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classLabel } from "./classes";
+import { readAllRows } from "./read-all";
 
 /**
  * Who is in which class, and which exams reach them.
@@ -9,15 +10,20 @@ import { classLabel } from "./classes";
  * be counted per membership rather than per student.
  */
 export async function loadEnrolment(supabase: SupabaseClient) {
-  const [{ data: sections }, { data: enrollments }, { data: targets }, { data: grants }] =
-    await Promise.all([
-      supabase.from("sections").select("id, name, subject").order("subject").order("name"),
-      supabase.from("enrollments").select("student_id, section_id"),
-      supabase.from("exam_sections").select("exam_id, section_id"),
-      // A share link reaches a student without any class at all, and with
-      // classes switched off it is the *only* way an exam reaches anybody.
-      supabase.from("exam_access").select("exam_id, student_id"),
-    ]);
+  // Enrolments and link grants both grow with every class and every exam, so
+  // these are paged: a reply stops at a thousand rows without saying so, and a
+  // short read here would silently drop students out of every figure below.
+  const [{ data: sections }, enrollments, targets, grants] = await Promise.all([
+    supabase.from("sections").select("id, name, subject").order("subject").order("name"),
+    readAllRows<{ student_id: string; section_id: string }>(
+      (f, t) => supabase.from("enrollments").select("student_id, section_id").range(f, t)),
+    readAllRows<{ exam_id: string; section_id: string }>(
+      (f, t) => supabase.from("exam_sections").select("exam_id, section_id").range(f, t)),
+    // A share link reaches a student without any class at all, and with
+    // classes switched off it is the *only* way an exam reaches anybody.
+    readAllRows<{ exam_id: string; student_id: string }>(
+      (f, t) => supabase.from("exam_access").select("exam_id, student_id").range(f, t)),
+  ]);
 
   const label = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
 

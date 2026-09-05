@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
+import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "../ui";
@@ -39,10 +40,13 @@ export default async function StudentsPage() {
     return names.length ? names.join(", ") : "No class";
   };
 
-  const { data: sessions } = await admin
-    .from("exam_sessions")
-    .select("id, exam_id, student_id, status, score, started_at");
-  const { data: flagRows } = await admin.from("flags").select("session_id, resolution");
+  // Paged: every sitting in the system outgrows a single reply, and a short
+  // read would under-report who is at risk without saying so.
+  const sessions = await readAllRows<{ id: string; exam_id: string; student_id: string; status: string; score: number | null; started_at: string }>(
+    (f, to) => admin.from("exam_sessions")
+      .select("id, exam_id, student_id, status, score, started_at").range(f, to));
+  const flagRows = await readAllRows<{ session_id: string; resolution: string | null }>(
+    (f, to) => admin.from("flags").select("session_id, resolution").range(f, to));
 
   const flagsBySession = new Map<string, number>();
   for (const f of flagRows ?? []) {

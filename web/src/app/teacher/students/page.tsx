@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadEnrolment } from "@/lib/enrolment";
+import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat } from "@/app/admin/ui";
@@ -30,16 +31,21 @@ export default async function TeacherStudentsPage() {
     { data: settings },
     { data: students },
     { data: exams },
-    { data: sessions },
-    { data: flagRows },
+    sessions,
+    flagRows,
     enrolment,
     useClasses,
   ] = await Promise.all([
     supabase.from("system_settings").select("pass_threshold").eq("id", true).maybeSingle(),
     supabase.from("users").select("id, email, full_name, status").eq("role", "STUDENT"),
     supabase.from("exams").select("id, title, section_id, status").eq("status", "PUBLISHED"),
-    supabase.from("exam_sessions").select("id, exam_id, student_id, status, score, started_at"),
-    supabase.from("flags").select("session_id, resolution"),
+    // Every sitting in the system, which passes a thousand rows after enough
+    // exams; a truncated read would quietly under-report who is at risk.
+    readAllRows<{ id: string; exam_id: string; student_id: string; status: string; score: number | null; started_at: string }>(
+      (f, to) => supabase.from("exam_sessions")
+        .select("id, exam_id, student_id, status, score, started_at").range(f, to)),
+    readAllRows<{ session_id: string; resolution: string | null }>(
+      (f, to) => supabase.from("flags").select("session_id, resolution").range(f, to)),
     loadEnrolment(supabase),
     classesEnabled(),
   ]);

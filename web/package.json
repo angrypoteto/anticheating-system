@@ -11,7 +11,8 @@
     "restore": "node scripts/restore.mjs",
     "sweep-uploads": "node scripts/sweep-uploads.mjs",
     "qa": "node scripts/qa/features.mjs && node scripts/qa/edges.mjs",
-    "qa:pages": "node scripts/qa/pages.mjs"
+    "qa:pages": "node scripts/qa/pages.mjs",
+    "qa:classroom": "node scripts/qa/classroom.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

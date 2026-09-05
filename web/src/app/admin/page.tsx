@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
+import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { classLabel } from "@/lib/classes";
 import { assessStudent } from "@/lib/risk";
@@ -20,7 +21,7 @@ export default async function AdminOverview() {
     { data: users },
     { data: sections },
     { data: exams },
-    { data: sessions },
+    sessions,
     { data: openFlags },
     { data: recent },
     { data: keys },
@@ -31,7 +32,9 @@ export default async function AdminOverview() {
     admin.from("users").select("id, email, full_name, role, status"),
     admin.from("sections").select("id, name, subject"),
     admin.from("exams").select("id, section_id, status, created_by_id"),
-    admin.from("exam_sessions").select("id, exam_id, student_id, status, score, submitted_at"),
+    readAllRows<{ id: string; exam_id: string; student_id: string; status: string; score: number | null; submitted_at: string | null }>(
+      (f, to) => admin.from("exam_sessions")
+        .select("id, exam_id, student_id, status, score, submitted_at").range(f, to)),
     admin.from("flags").select("id, session_id").is("resolution", null),
     admin.from("audit_log").select("action, actor_id, created_at").order("created_at", { ascending: false }).limit(6),
     admin.from("ai_provider_keys").select("status, last_error"),

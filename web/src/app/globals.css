@@ -1,28 +1,130 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --brand: #4f46e5;
+  --brand-strong: #4338ca;
+  --ring: rgba(79, 70, 229, 0.24);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #e2e8f0;
   }
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: #4f46e5;
+  color: #fff;
+}
+
+/* Refined focus: visible only for keyboard users, brand-tinted */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Subtle scrollbars that don't shout */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.45);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Soft SaaS elevation */
+.card-elev {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 4px 16px -4px rgb(15 23 42 / 0.08);
+}
+.card-elev-lg {
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 12px 32px -12px rgb(79 70 229 / 0.22);
+}
+
+@media (prefers-color-scheme: dark) {
+  .card-elev,
+  .card-elev-lg {
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 0.4),
+      0 8px 24px -8px rgb(0 0 0 / 0.5);
+  }
+}
+
+/* Decorative helpers */
+.bg-grid-slate {
+  background-image:
+    linear-gradient(to right, rgb(100 116 139 / 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(100 116 139 / 0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.bg-dots {
+  background-image: radial-gradient(rgb(100 116 139 / 0.22) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.mask-fade-b {
+  -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+}
+
+/* Entrance */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-up-1 { animation: fade-up 0.55s 0.06s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-up-2 { animation: fade-up 0.55s 0.12s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-up-3 { animation: fade-up 0.55s 0.18s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-1,
+  .animate-fade-up-2,
+  .animate-fade-up-3 {
+    animation: none;
+  }
 }
 
 /* Printing a report should produce the report, not the whole console. */

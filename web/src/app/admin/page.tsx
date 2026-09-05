@@ -132,13 +132,13 @@ export default async function AdminOverview() {
 
       {alerts.length ? (
         <Card title="Needs attention" flush>
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {alerts.map((a) => (
               <li key={a.text} className="flex items-center justify-between gap-4 px-6 py-3">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{a.text}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{a.text}</span>
                 <Link
                   href={a.href}
-                  className="shrink-0 text-sm text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                  className="shrink-0 text-sm text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
                 >
                   Look
                 </Link>
@@ -148,7 +148,7 @@ export default async function AdminOverview() {
         </Card>
       ) : (
         <Card title="Needs attention">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Nothing needs your attention right now.
           </p>
         </Card>
@@ -195,16 +195,16 @@ export default async function AdminOverview() {
 
       <Card title="Recent activity" hint="Append-only audit log." flush>
         {recent?.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {recent.map((a, i) => (
               <li key={i} className="flex items-baseline justify-between gap-4 px-6 py-3 text-sm">
-                <span className="text-gray-700 dark:text-gray-300">
+                <span className="text-slate-700 dark:text-slate-300">
                   <span className="font-mono text-xs">{a.action}</span>
-                  <span className="ml-2 text-gray-500 dark:text-gray-400">
+                  <span className="ml-2 text-slate-500 dark:text-slate-400">
                     {actorEmail.get(a.actor_id) ?? "unknown"}
                   </span>
                 </span>
-                <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
                   {new Date(a.created_at).toLocaleString()}
                 </span>
               </li>
@@ -221,8 +221,8 @@ export default async function AdminOverview() {
 function Row({ k, v, tone }: { k: string; v: string; tone?: "good" | "warn" | "bad" }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-600 dark:text-gray-400">{k}</span>
-      {tone ? <Pill tone={tone}>{v}</Pill> : <span className="text-gray-900 dark:text-gray-100">{v}</span>}
+      <span className="text-slate-600 dark:text-slate-400">{k}</span>
+      {tone ? <Pill tone={tone}>{v}</Pill> : <span className="text-slate-900 dark:text-slate-100">{v}</span>}
     </div>
   );
 }

@@ -23,13 +23,13 @@ export function SubjectPicker({
   const [choice, setChoice] = useState(defaultId ?? "");
 
   const field =
-    "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+    "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-400";
 
   return (
     <div>
       <label
         htmlFor="subjectId"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        className="block text-sm font-medium text-slate-700 dark:text-slate-300"
       >
         Subject{required ? "" : " (optional)"}
       </label>
@@ -63,7 +63,7 @@ export function SubjectPicker({
             placeholder="e.g. System Administration"
             className={field}
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Saved to the list, so you can pick it next time instead of typing it.
           </p>
         </>

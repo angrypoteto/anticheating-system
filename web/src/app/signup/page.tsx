@@ -37,7 +37,7 @@ export default async function SignupPage({
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="font-medium text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
           >
             Sign in
           </Link>
@@ -47,7 +47,7 @@ export default async function SignupPage({
       <div className="space-y-4">
         <GoogleButton next={next} label="Sign up with Google" />
         {askForCode ? (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             You will be asked for your class code once you are in.
           </p>
         ) : null}

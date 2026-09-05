@@ -50,11 +50,11 @@ export default async function ProfilePage() {
       </Card>
 
       <Card title="Account">
-        <dl className="divide-y divide-gray-100 dark:divide-gray-800">
+        <dl className="divide-y divide-slate-100 dark:divide-slate-800">
           {rows.map(([k, v]) => (
             <div key={k} className="flex items-center justify-between py-2.5">
-              <dt className="text-sm text-gray-500 dark:text-gray-400">{k}</dt>
-              <dd className="text-sm text-gray-900 dark:text-gray-100">{v}</dd>
+              <dt className="text-sm text-slate-500 dark:text-slate-400">{k}</dt>
+              <dd className="text-sm text-slate-900 dark:text-slate-100">{v}</dd>
             </div>
           ))}
         </dl>
@@ -66,23 +66,23 @@ export default async function ProfilePage() {
         flush
       >
         {recent?.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {recent.map((a, i) => (
               <li key={i} className="flex items-baseline justify-between gap-4 px-6 py-3 text-sm">
-                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{a.action}</span>
-                <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{a.action}</span>
+                <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
                   {new Date(a.created_at).toLocaleString()}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">Nothing recorded yet.</p>
+          <p className="p-6 text-sm text-slate-500 dark:text-slate-400">Nothing recorded yet.</p>
         )}
       </Card>
 
       <Card title="Password">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Passwords are managed by Supabase Auth. To change yours, use the reset
           flow from the sign-in page, or have another administrator issue a new
           one.

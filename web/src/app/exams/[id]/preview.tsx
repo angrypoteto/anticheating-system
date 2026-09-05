@@ -36,7 +36,7 @@ export function ExamPreview({
 
   if (!questions.length) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+      <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
         Add a question and it will appear here exactly as a student sees it.
       </div>
     );
@@ -44,9 +44,9 @@ export function ExamPreview({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
         {/* Mirrors the real runner's header so the instructor sees what students see. */}
-        <div className="mb-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <span>
             Question {Math.min(index + 1, ordered.length)} of {ordered.length}
           </span>
@@ -56,22 +56,22 @@ export function ExamPreview({
           </span>
         </div>
 
-        <p className="text-sm text-gray-900 dark:text-gray-100">{q?.prompt}</p>
+        <p className="text-sm text-slate-900 dark:text-slate-100">{q?.prompt}</p>
 
         {choices ? (
           <div className="mt-3 space-y-2">
             {choices.map((c) => (
               <div
                 key={c}
-                className="flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
               >
-                <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-gray-400 dark:border-gray-500" />
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-slate-400 dark:border-slate-500" />
                 {c}
               </div>
             ))}
           </div>
         ) : (
-          <div className="mt-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-400 dark:border-gray-700 dark:bg-gray-900">
+          <div className="mt-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900">
             short answer…
           </div>
         )}
@@ -81,25 +81,25 @@ export function ExamPreview({
             type="button"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
-            className="text-xs text-gray-500 underline underline-offset-4 disabled:opacity-40 dark:text-gray-400"
+            className="text-xs text-slate-500 underline underline-offset-4 disabled:opacity-40 dark:text-slate-400"
           >
             ← previous
           </button>
-          <span className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
+          <span className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-900">
             {index >= ordered.length - 1 ? "Submit exam" : "Next question"}
           </span>
           <button
             type="button"
             onClick={() => setIndex((i) => Math.min(ordered.length - 1, i + 1))}
             disabled={index >= ordered.length - 1}
-            className="text-xs text-gray-500 underline underline-offset-4 disabled:opacity-40 dark:text-gray-400"
+            className="text-xs text-slate-500 underline underline-offset-4 disabled:opacity-40 dark:text-slate-400"
           >
             next →
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
         <span>
           {lockdown.fullscreenRequired ? "Fullscreen · " : ""}
           {lockdown.blockCopyPaste ? "No copy-paste · " : ""}
@@ -112,13 +112,13 @@ export function ExamPreview({
             setSeed(`preview-session-${Math.random().toString(36).slice(2, 8)}`);
             setIndex(0);
           }}
-          className="underline underline-offset-4 hover:text-gray-900 dark:hover:text-gray-100"
+          className="underline underline-offset-4 hover:text-slate-900 dark:hover:text-slate-100"
         >
           Shuffle as another student
         </button>
       </div>
 
-      <p className="text-xs text-gray-400 dark:text-gray-500">
+      <p className="text-xs text-slate-400 dark:text-slate-500">
         Preview of &ldquo;{title}&rdquo;. Every student gets their own order, so no two
         papers match.
       </p>

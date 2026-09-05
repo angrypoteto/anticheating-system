@@ -29,15 +29,15 @@ export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: s
           <label htmlFor="code" className={authLabel}>
             Class code
           </label>
-          <input
-            id="code"
-            name="code"
-            required
-            placeholder="e.g. EE7D24"
-            autoCapitalize="characters"
-            className={`${authField} font-mono uppercase tracking-widest`}
-          />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <input
+          id="code"
+          name="code"
+          required
+          placeholder="e.g. EE7D24"
+          autoCapitalize="characters"
+          className={`${authField} font-mono uppercase tracking-widest`}
+        />
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
             Your instructor gives you this. It puts you in the right class.
           </p>
         </div>
@@ -56,7 +56,7 @@ export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: s
           required
           className={authField}
         />
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
           At least 8 characters.
         </p>
       </div>
@@ -78,7 +78,7 @@ export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: s
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          className="rounded-xl border border-rose-200/70 bg-rose-50 px-3.5 py-2.5 text-sm leading-relaxed text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
         >
           {state.error}
         </p>

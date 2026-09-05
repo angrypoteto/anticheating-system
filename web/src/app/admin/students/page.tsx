@@ -134,7 +134,7 @@ export default async function StudentsPage() {
         {sectionRisks.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-3 font-medium">Class</th>
                   <th className="px-6 py-3 font-medium">Students</th>
@@ -146,10 +146,10 @@ export default async function StudentsPage() {
               </thead>
               <tbody>
                 {sectionRisks.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-100 last:border-0 dark:border-gray-800">
-                    <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">{s.name}</td>
-                    <td className="px-6 py-3 text-gray-600 dark:text-gray-400">{s.students}</td>
-                    <td className="px-6 py-3 text-gray-900 dark:text-gray-100">
+                  <tr key={s.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                    <td className="px-6 py-3 font-medium text-slate-900 dark:text-slate-100">{s.name}</td>
+                    <td className="px-6 py-3 text-slate-600 dark:text-slate-400">{s.students}</td>
+                    <td className="px-6 py-3 text-slate-900 dark:text-slate-100">
                       {s.average != null ? `${s.average}%` : "—"}
                     </td>
                     <td className="px-6 py-3">
@@ -158,14 +158,14 @@ export default async function StudentsPage() {
                           {s.projectedPassRate}%
                         </Pill>
                       ) : (
-                        <span className="text-gray-400">not enough data</span>
+                        <span className="text-slate-400">not enough data</span>
                       )}
                     </td>
-                    <td className="px-6 py-3 text-xs text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-3 text-xs text-slate-600 dark:text-slate-400">
                       {s.atRisk} at risk · {s.watch} watch · {s.onTrack} on track
                       {s.noData ? ` · ${s.noData} unexamined` : ""}
                     </td>
-                    <td className="px-6 py-3 text-xs text-gray-500 dark:text-gray-400">{s.confidence}</td>
+                    <td className="px-6 py-3 text-xs text-slate-500 dark:text-slate-400">{s.confidence}</td>
                   </tr>
                 ))}
               </tbody>
@@ -174,7 +174,7 @@ export default async function StudentsPage() {
         ) : (
           <Empty>No students yet.</Empty>
         )}
-        <p className="border-t border-gray-200 px-6 py-3 text-xs text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <p className="border-t border-slate-200 px-6 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           This is a rule-based indicator, not a trained model: it compares averages
           against the pass mark and notes missed or auto-submitted attempts. Every
           band is explained per student below. Treat low-confidence rows as a
@@ -190,12 +190,12 @@ export default async function StudentsPage() {
         flush
       >
         {outstanding.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {outstanding.map((o) => (
               <li key={o.student.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-900 dark:text-gray-100">{o.student.email}</p>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-slate-900 dark:text-slate-100">{o.student.email}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                     {classesText(o.student.id)} ·
                     {" "}
                     {o.missing.join(", ")}
@@ -215,7 +215,7 @@ export default async function StudentsPage() {
       {/* --- per-student report --- */}
       <Card title="Student report" hint="Each band with the reasoning behind it." flush>
         {assessed.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {assessed
               .slice()
               .sort((a, b) => {
@@ -226,19 +226,19 @@ export default async function StudentsPage() {
                 <li key={student.id} className="px-6 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {student.email}
                         {student.status !== "ACTIVE" ? (
-                          <span className="ml-2 text-xs text-gray-400">(disabled)</span>
+                          <span className="ml-2 text-xs text-slate-400">(disabled)</span>
                         ) : null}
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                         {classesText(student.id)} ·{" "}
                         {risk.graded} graded · confidence: {risk.confidence}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
                         {risk.average != null ? `${risk.average}%` : "—"}
                       </span>
                       <Pill tone={BAND_TONE[risk.band]}>{BAND_LABEL[risk.band]}</Pill>
@@ -246,7 +246,7 @@ export default async function StudentsPage() {
                   </div>
                   <ul className="mt-2 space-y-1">
                     {risk.reasons.map((r) => (
-                      <li key={r} className="text-xs text-gray-600 dark:text-gray-400">
+                      <li key={r} className="text-xs text-slate-600 dark:text-slate-400">
                         · {r}
                       </li>
                     ))}

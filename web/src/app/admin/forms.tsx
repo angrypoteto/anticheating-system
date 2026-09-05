@@ -11,22 +11,22 @@ import {
 } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
-const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-400";
+const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
+  "rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300";
 
 function Feedback({ state }: { state: ActionState }) {
   if (state.error) {
     return (
-      <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+      <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">
         {state.error}
       </p>
     );
   }
   if (state.success) {
     return (
-      <p role="status" className="text-sm text-green-700 dark:text-green-400">
+      <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
         {state.success}
       </p>
     );
@@ -87,7 +87,7 @@ export function CreateAccountForm({
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Students only. You can add more classes afterwards.
           </p>
         </div>
@@ -183,12 +183,12 @@ export function StatusToggle({
       <button
         type="submit"
         disabled={pending}
-        className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+        className="text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100"
       >
         {pending ? "…" : status === "ACTIVE" ? "Disable" : "Enable"}
       </button>
       {state.error ? (
-        <span role="alert" className="text-xs text-red-600 dark:text-red-400">
+        <span role="alert" className="text-xs text-rose-600 dark:text-rose-400">
           {state.error}
         </span>
       ) : null}
@@ -218,7 +218,7 @@ export function AssignInstructor({
       <select
         name="instructorId"
         defaultValue={current ?? ""}
-        className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
       >
         <option value="">— no teacher —</option>
         {instructors.map((i) => (
@@ -230,15 +230,15 @@ export function AssignInstructor({
       <button
         type="submit"
         disabled={pending}
-        className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+        className="text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100"
       >
         {pending ? "…" : "Save"}
       </button>
       {state.error ? (
-        <span role="alert" className="text-xs text-red-600 dark:text-red-400">{state.error}</span>
+        <span role="alert" className="text-xs text-rose-600 dark:text-rose-400">{state.error}</span>
       ) : null}
       {state.success ? (
-        <span role="status" className="text-xs text-green-700 dark:text-green-400">{state.success}</span>
+        <span role="status" className="text-xs text-emerald-700 dark:text-emerald-400">{state.success}</span>
       ) : null}
     </form>
   );
@@ -273,15 +273,15 @@ export function EnrollmentToggle({
         aria-label={`${enrolled ? "Remove from" : "Add to"} ${classLabel}`}
         className={`rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-50 ${
           enrolled
-            ? "border-teal-300 bg-teal-50 text-teal-800 hover:border-red-300 hover:bg-red-50 hover:text-red-800 dark:border-teal-800 dark:bg-teal-950/60 dark:text-teal-300 dark:hover:border-red-900 dark:hover:bg-red-950/50 dark:hover:text-red-300"
-            : "border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100"
+            ? "border-indigo-300 bg-indigo-50 text-indigo-800 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800 dark:border-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:border-rose-900 dark:hover:bg-rose-950/50 dark:hover:text-rose-300"
+            : "border-slate-300 text-slate-500 hover:border-slate-400 hover:text-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-100"
         }`}
       >
         {enrolled ? "✓ " : "+ "}
         {classLabel}
       </button>
       {state.error ? (
-        <span role="alert" className="ml-2 text-xs text-red-600 dark:text-red-400">
+        <span role="alert" className="ml-2 text-xs text-rose-600 dark:text-rose-400">
           {state.error}
         </span>
       ) : null}

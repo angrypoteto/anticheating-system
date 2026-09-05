@@ -13,22 +13,22 @@ import {
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
-const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-400";
+const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
-const checkbox = "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300";
+  "rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300";
+const checkbox = "flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300";
 
 function Feedback({ state }: { state: ActionState }) {
   if (state.error)
     return (
-      <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+      <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">
         {state.error}
       </p>
     );
   if (state.success)
     return (
-      <p role="status" className="text-sm text-green-700 dark:text-green-400">
+      <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
         {state.success}
       </p>
     );
@@ -264,7 +264,7 @@ export function QuestionForm({
               defaultValue={correctIndex}
               className={field}
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               0 = first line
             </p>
           </div>
@@ -298,7 +298,7 @@ export function QuestionForm({
           <button
             type="button"
             onClick={onDone}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-slate-500 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
           >
             Cancel
           </button>
@@ -328,7 +328,7 @@ export function QuestionRow({
 
   if (editing) {
     return (
-      <li className="border-b border-gray-100 p-6 last:border-0 dark:border-gray-800">
+      <li className="border-b border-slate-100 p-6 last:border-0 dark:border-slate-800">
         <QuestionForm
           examId={examId}
           question={question}
@@ -339,30 +339,30 @@ export function QuestionRow({
   }
 
   return (
-    <li className="flex items-start justify-between gap-4 border-b border-gray-100 p-6 last:border-0 dark:border-gray-800">
+    <li className="flex items-start justify-between gap-4 border-b border-slate-100 p-6 last:border-0 dark:border-slate-800">
       <div className="min-w-0">
-        <p className="text-sm text-gray-900 dark:text-gray-100">
-          <span className="mr-2 text-gray-400 dark:text-gray-600">{index + 1}.</span>
+        <p className="text-sm text-slate-900 dark:text-slate-100">
+          <span className="mr-2 text-slate-400 dark:text-slate-600">{index + 1}.</span>
           {question.prompt}
         </p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <p className="mt-1 text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">
           {question.type.replace("_", " ").toLowerCase()}
           {question.choices?.length ? ` · ${question.choices.length} choices` : ""}
         </p>
         {state.error ? (
-          <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+          <p role="alert" className="mt-1 text-xs text-rose-600 dark:text-rose-400">
             {state.error}
           </p>
         ) : null}
       </div>
       {locked ? (
-        <span className="shrink-0 text-xs text-gray-400 dark:text-gray-600">locked</span>
+        <span className="shrink-0 text-xs text-slate-400 dark:text-slate-600">locked</span>
       ) : (
       <div className="flex shrink-0 gap-3 text-sm">
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="text-slate-600 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           Edit
         </button>
@@ -372,7 +372,7 @@ export function QuestionRow({
           <button
             type="submit"
             disabled={pending}
-            className="text-gray-600 underline underline-offset-4 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
+            className="text-slate-600 underline underline-offset-4 hover:text-rose-600 disabled:opacity-50 dark:text-slate-400 dark:hover:text-rose-400"
           >
             {pending ? "…" : "Delete"}
           </button>

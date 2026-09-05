@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { saveProfile, type ProfileState } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
-const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
+const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
 export function ProfileForm({
   fullName,
@@ -38,19 +38,19 @@ export function ProfileForm({
             placeholder="juandc"
             className={field}
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             3–30 characters: letters, numbers, dot, dash or underscore.
           </p>
         </div>
       </div>
 
       {state.error ? (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p role="status" className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+        <p role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
           {state.success}
         </p>
       ) : null}
@@ -58,7 +58,7 @@ export function ProfileForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600 dark:hover:bg-teal-500"
+        className="rounded-md bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
       >
         {pending ? "Saving…" : "Save profile"}
       </button>

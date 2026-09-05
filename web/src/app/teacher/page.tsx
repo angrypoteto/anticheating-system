@@ -139,13 +139,13 @@ export default async function TeacherOverview() {
 
       {alerts.length ? (
         <Card title="Needs attention" flush>
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {alerts.map((a) => (
               <li key={a.text} className="flex items-center justify-between gap-4 px-6 py-3">
-                <span className="text-sm text-gray-700 dark:text-gray-300">{a.text}</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">{a.text}</span>
                 <Link
                   href={a.href}
-                  className="shrink-0 text-sm text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                  className="shrink-0 text-sm text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
                 >
                   Look
                 </Link>
@@ -155,7 +155,7 @@ export default async function TeacherOverview() {
         </Card>
       ) : (
         <Card title="Needs attention">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Nothing needs your attention right now.
           </p>
         </Card>
@@ -179,7 +179,7 @@ export default async function TeacherOverview() {
           </div>
           <Link
             href="/teacher/students"
-            className="mt-4 inline-block text-sm text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="mt-4 inline-block text-sm text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
           >
             Open the report
           </Link>
@@ -196,13 +196,13 @@ export default async function TeacherOverview() {
                   <li key={e.id} className="flex items-center justify-between gap-3">
                     <Link
                       href={`/exams/${e.id}`}
-                      className="truncate text-gray-900 underline-offset-4 hover:underline dark:text-gray-100"
+                      className="truncate text-slate-900 underline-offset-4 hover:underline dark:text-slate-100"
                     >
                       {e.title}
                     </Link>
                     <Link
                       href={`/exams/${e.id}/monitor?from=list`}
-                      className="shrink-0 text-xs text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                      className="shrink-0 text-xs text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
                     >
                       Watch live
                     </Link>
@@ -214,7 +214,7 @@ export default async function TeacherOverview() {
               Nothing published yet.{" "}
               <Link
                 href="/teacher/exams/new"
-                className="text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                className="text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
               >
                 Generate one
               </Link>
@@ -230,8 +230,8 @@ export default async function TeacherOverview() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-600 dark:text-gray-400">{k}</span>
-      <span className="font-medium tabular-nums text-gray-900 dark:text-gray-100">{v}</span>
+      <span className="text-slate-600 dark:text-slate-400">{k}</span>
+      <span className="font-medium tabular-nums text-slate-900 dark:text-slate-100">{v}</span>
     </div>
   );
 }

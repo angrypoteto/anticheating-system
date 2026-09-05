@@ -56,35 +56,35 @@ export function GenerationProgress({ runId }: { runId: string }) {
     <div
       role="status"
       aria-live="polite"
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950/60"
+      className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
           {known
             ? total! > 1
               ? `Writing questions — request ${Math.min(done! + 1, total!)} of ${total!}`
               : "Writing questions"
             : "Reading your lesson file…"}
         </span>
-        <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+        <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">
           {seconds}s
         </span>
       </div>
 
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
         {pct == null ? (
           // Nothing to measure yet: a stripe that moves says "working" without
           // claiming a number it does not have.
-          <div className="h-full w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-teal-600 dark:bg-teal-500" />
+          <div className="h-full w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-indigo-600 dark:bg-indigo-500" />
         ) : (
           <div
-            className="h-full rounded-full bg-teal-600 transition-[width] duration-500 dark:bg-teal-500"
+            className="h-full rounded-full bg-indigo-600 transition-[width] duration-500 dark:bg-indigo-500"
             style={{ width: `${Math.max(4, pct)}%` }}
           />
         )}
       </div>
 
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
         {known && total! > 1
           ? "Large orders are split into several requests and merged. Leave this page open."
           : "Leave this page open — the model is writing from your material."}

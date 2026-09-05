@@ -37,12 +37,12 @@ export async function ExamBuilder() {
   }
 
   return (
-    <div className="text-sm text-gray-600 dark:text-gray-400">
+    <div className="text-sm text-slate-600 dark:text-slate-400">
       <p>You need a class before you can build an exam for it.</p>
       {me.role === "ADMIN" ? (
         <Link
           href="/admin/accounts"
-          className="mt-2 inline-block font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+          className="mt-2 inline-block font-medium text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
         >
           Create a class
         </Link>

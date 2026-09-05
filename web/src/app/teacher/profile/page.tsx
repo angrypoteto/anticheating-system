@@ -35,11 +35,11 @@ export default async function TeacherProfilePage() {
       </Card>
 
       <Card title="Account" flush>
-        <dl className="divide-y divide-gray-100 dark:divide-gray-800">
+        <dl className="divide-y divide-slate-100 dark:divide-slate-800">
           {rows.map(([k, v]) => (
             <div key={k} className="flex items-center justify-between gap-4 px-6 py-3">
-              <dt className="text-sm text-gray-600 dark:text-gray-400">{k}</dt>
-              <dd className="text-sm text-gray-900 dark:text-gray-100">{v}</dd>
+              <dt className="text-sm text-slate-600 dark:text-slate-400">{k}</dt>
+              <dd className="text-sm text-slate-900 dark:text-slate-100">{v}</dd>
             </div>
           ))}
         </dl>

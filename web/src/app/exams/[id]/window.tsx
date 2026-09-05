@@ -18,14 +18,14 @@ const shown = (iso: string | null) =>
 function Feedback({ state }: { state: ActionState }) {
   if (state.error) {
     return (
-      <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+      <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">
         {state.error}
       </p>
     );
   }
   if (state.success) {
     return (
-      <p role="status" className="text-sm text-green-700 dark:text-green-400">
+      <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">
         {state.success}
       </p>
     );
@@ -73,23 +73,23 @@ export function ExamWindow({
           };
 
   const tone = {
-    good: "bg-green-50 text-green-800 ring-green-200 dark:bg-green-950/60 dark:text-green-300 dark:ring-green-900",
+    good: "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-900",
     warn: "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-900",
-    bad: "bg-red-50 text-red-800 ring-red-200 dark:bg-red-950/60 dark:text-red-300 dark:ring-red-900",
-    muted: "bg-gray-100 text-gray-700 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700",
+    bad: "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-900",
+    muted: "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700",
   }[status.tone];
 
-  const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+    <section className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">Availability</h2>
+        <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">Availability</h2>
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${tone}`}>
           {status.label}
         </span>
       </div>
-      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{status.note}</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{status.note}</p>
 
       {/* Open and close by hand. Both are just the window, set to now. */}
       <div className="mt-4 flex flex-wrap gap-2">
@@ -101,8 +101,8 @@ export function ExamWindow({
             disabled={pending || !published}
             className={`rounded-md px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
               isOpen
-                ? "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
-                : "bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+                ? "bg-rose-700 hover:bg-rose-800 dark:bg-rose-600 dark:hover:bg-rose-500"
+                : "bg-indigo-700 hover:bg-indigo-800 dark:bg-indigo-600 dark:hover:bg-indigo-500"
             }`}
           >
             {pending ? "…" : isOpen ? "Close now" : "Open now"}
@@ -110,11 +110,11 @@ export function ExamWindow({
         </form>
       </div>
 
-      <form action={action} className="mt-6 space-y-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+      <form action={action} className="mt-6 space-y-4 border-t border-slate-100 pt-4 dark:border-slate-800">
         <input type="hidden" name="examId" value={examId} />
         <input type="hidden" name="mode" value="schedule" />
 
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Or set the window in advance. Pick a date and time from the calendar —
           leave either side unset to leave it unbounded.
         </p>
@@ -143,7 +143,7 @@ export function ExamWindow({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
         >
           {pending ? "Saving…" : "Save schedule"}
         </button>

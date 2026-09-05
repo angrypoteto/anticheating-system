@@ -44,19 +44,19 @@ export default async function TakeExamPage({
   // sentence instead of a failed insert.
   if ((notYet || over) && !existing) {
     return (
-      <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <main className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
             {exam.title}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             {notYet
               ? `This exam opens ${when(exam.opens_at!)}. Come back then — the link will still work.`
               : `This exam closed ${when(exam.closes_at!)} and can no longer be taken.`}
           </p>
           <a
             href="/"
-            className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
+            className="mt-6 inline-block text-sm text-slate-600 underline underline-offset-4 dark:text-slate-400"
           >
             Back to home
           </a>
@@ -67,18 +67,18 @@ export default async function TakeExamPage({
 
   if (existing && existing.status !== "IN_PROGRESS") {
     return (
-      <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <main className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
+        <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
             {exam.title}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
             You have already submitted this exam.
             {existing.score != null ? ` Score: ${existing.score}%` : ""}
           </p>
           <a
             href="/"
-            className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
+            className="mt-6 inline-block text-sm text-slate-600 underline underline-offset-4 dark:text-slate-400"
           >
             Back to home
           </a>

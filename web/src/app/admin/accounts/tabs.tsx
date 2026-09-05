@@ -18,7 +18,7 @@ export function Tabs({
       <div
         role="tablist"
         aria-label="Accounts and classes"
-        className="flex gap-1 border-b border-gray-200 dark:border-gray-800"
+        className="flex gap-1 border-b border-slate-200 dark:border-slate-800"
       >
         {tabs.map((t) => {
           const on = t.id === active;
@@ -32,13 +32,13 @@ export function Tabs({
               onClick={() => setActive(t.id)}
               className={`-mb-px border-b-2 px-4 py-2.5 text-sm transition ${
                 on
-                  ? "border-teal-600 font-medium text-teal-800 dark:border-teal-400 dark:text-teal-300"
-                  : "border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  ? "border-indigo-600 font-medium text-indigo-800 dark:border-indigo-400 dark:text-indigo-300"
+                  : "border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
               }`}
             >
               {t.label}
               {t.count != null ? (
-                <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{t.count}</span>
+                <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">{t.count}</span>
               ) : null}
             </button>
           );

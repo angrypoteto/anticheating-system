@@ -99,7 +99,7 @@ export default async function HealthPage() {
                 warn={backupStale || lastBackup.status === "FAILED"}
               />
               {lastBackup.storage_path ? (
-                <p className="mt-1 font-mono text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">
                   {lastBackup.storage_path}
                 </p>
               ) : null}
@@ -112,34 +112,34 @@ export default async function HealthPage() {
           )}
         </Panel>
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 p-6 dark:border-slate-800">
+            <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
               Recent activity
             </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Append-only. Nobody, including an administrator, can edit or delete
               these rows.
             </p>
           </div>
           {recentAudit.data?.length ? (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {recentAudit.data.map((a) => (
                 <li key={a.id} className="flex items-baseline justify-between gap-4 px-6 py-3 text-sm">
-                  <span className="text-gray-900 dark:text-gray-100">
-                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-slate-900 dark:text-slate-100">
+                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
                       {a.action}
                     </span>{" "}
                     · {actorName.get(a.actor_id) ?? "unknown"}
                   </span>
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
                     {new Date(a.created_at).toLocaleString()}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+            <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
               Nothing recorded yet.
             </p>
           )}
@@ -150,17 +150,17 @@ export default async function HealthPage() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">{value}</p>
+    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">{value}</p>
     </div>
   );
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-      <h2 className="mb-3 text-lg font-medium text-gray-900 dark:text-gray-50">{title}</h2>
+    <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <h2 className="mb-3 text-lg font-medium text-slate-900 dark:text-slate-50">{title}</h2>
       {children}
     </div>
   );
@@ -169,8 +169,8 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 function Row({ k, v, warn }: { k: string; v: string; warn?: boolean }) {
   return (
     <div className="flex justify-between py-1 text-sm">
-      <span className="text-gray-600 dark:text-gray-400">{k}</span>
-      <span className={warn ? "font-medium text-amber-700 dark:text-amber-400" : "text-gray-900 dark:text-gray-100"}>
+      <span className="text-slate-600 dark:text-slate-400">{k}</span>
+      <span className={warn ? "font-medium text-amber-700 dark:text-amber-400" : "text-slate-900 dark:text-slate-100"}>
         {v}
       </span>
     </div>

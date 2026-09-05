@@ -18,10 +18,10 @@ export type Settings = {
 };
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
-const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
-const hint = "mt-1 text-xs text-gray-500 dark:text-gray-400";
-const check = "flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/20 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
+const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
+const hint = "mt-1 text-xs text-slate-500 dark:text-slate-400";
+const check = "flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300";
 
 export function SettingsForm({ settings }: { settings: Settings }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(saveSettings, {});
@@ -30,7 +30,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   return (
     <form action={action} className="space-y-8">
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           General
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -62,10 +62,10 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Defaults for new exams
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Applied when an instructor creates an exam. Existing exams keep their own
           settings.
         </p>
@@ -134,14 +134,14 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Classes
         </h3>
         <label className={check}>
           <input type="checkbox" name="classesEnabled" defaultChecked={settings.classes_enabled} className="mt-0.5" />
           <span>
             Organise exams by class and subject
-            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
               On, a class is one subject for one section with its own join
               code, and an exam reaches the classes it is set for plus anyone
               holding its link. Off, all of that disappears for teachers and
@@ -155,14 +155,14 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Registration
         </h3>
         <label className={check}>
           <input type="checkbox" name="allowClassSelfJoin" defaultChecked={settings.allow_class_self_join} className="mt-0.5" />
           <span>
             Let students join a class with a code
-            <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
               Turn this off and students still register normally — they just
               arrive with no class, and you or their teacher enrols them from
               Accounts. The class code fields disappear from sign-up and from
@@ -183,7 +183,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             placeholder="students.school.edu.ph, school.edu.ph"
             className={field}
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Comma-separated. Leave blank to accept any address. With Google
             sign-in switched on, anyone with a Gmail account can reach the
             registration page, so this is what keeps registration to your school:
@@ -194,12 +194,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       {state.error ? (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p role="status" className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+        <p role="status" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300">
           {state.success}
         </p>
       ) : null}
@@ -207,7 +207,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600 dark:hover:bg-teal-500"
+        className="rounded-md bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-800 disabled:opacity-50 dark:bg-indigo-600 dark:hover:bg-indigo-500"
       >
         {pending ? "Saving…" : "Save settings"}
       </button>

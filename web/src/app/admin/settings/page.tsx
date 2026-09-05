@@ -32,7 +32,7 @@ export default async function SettingsPage() {
         <SettingsForm settings={settings} />
       </Card>
       {data?.updated_at ? (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Last changed {new Date(data.updated_at).toLocaleString()}
         </p>
       ) : null}

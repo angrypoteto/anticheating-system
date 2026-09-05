@@ -41,16 +41,16 @@ export default async function TeacherClassesPage() {
               hint={`${roll.length} student${roll.length === 1 ? "" : "s"}`}
               flush
             >
-              <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Class code</span>
-                <code className="font-mono text-base tracking-[0.2em] text-teal-700 dark:text-teal-400">
+              <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Class code</span>
+                <code className="font-mono text-base tracking-[0.2em] text-indigo-700 dark:text-indigo-400">
                   {s.join_code}
                 </code>
               </div>
               {roll.length ? (
-                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                   {roll.map((r) => (
-                    <li key={r!.id} className="px-6 py-3 text-sm text-gray-900 dark:text-gray-100">
+                    <li key={r!.id} className="px-6 py-3 text-sm text-slate-900 dark:text-slate-100">
                       {r!.full_name || r!.email}
                     </li>
                   ))}

@@ -37,7 +37,7 @@ export async function PerQuestion({ examId }: { examId: string }) {
   const sessionIds = (sessions ?? []).map((s) => s.id);
   if (!questions?.length || !sessionIds.length) {
     return (
-      <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+      <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
         Nothing to analyse until somebody has answered.
       </p>
     );
@@ -76,7 +76,7 @@ export async function PerQuestion({ examId }: { examId: string }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
           <tr>
             <th className="px-6 py-3 font-medium">Question</th>
             <th className="px-6 py-3 font-medium">Correct</th>
@@ -86,42 +86,42 @@ export async function PerQuestion({ examId }: { examId: string }) {
         </thead>
         <tbody>
           {ranked.map((r, i) => (
-            <tr key={i} className="border-b border-gray-100 last:border-0 dark:border-gray-800">
+            <tr key={i} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
               <td className="max-w-md px-6 py-3">
-                <p className="truncate text-gray-900 dark:text-gray-100" title={r.prompt}>
+                <p className="truncate text-slate-900 dark:text-slate-100" title={r.prompt}>
                   {r.prompt}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {r.type === "MULTIPLE_CHOICE" ? "multiple choice" : "identification"}
                 </p>
               </td>
               <td className="px-6 py-3">
                 {r.pct == null ? (
-                  <span className="text-gray-400 dark:text-gray-600">—</span>
+                  <span className="text-slate-400 dark:text-slate-600">—</span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span
                       className={`w-10 shrink-0 tabular-nums ${
                         r.pct < 50
-                          ? "font-medium text-red-700 dark:text-red-400"
+                          ? "font-medium text-rose-700 dark:text-rose-400"
                           : r.pct < 75
                             ? "text-amber-700 dark:text-amber-400"
-                            : "text-gray-700 dark:text-gray-300"
+                            : "text-slate-700 dark:text-slate-300"
                       }`}
                     >
                       {r.pct}%
                     </span>
                     <span
                       aria-hidden
-                      className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800"
+                      className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
                     >
                       <span
                         className={`block h-full rounded-full ${
                           r.pct < 50
-                            ? "bg-red-600 dark:bg-red-500"
+                            ? "bg-rose-600 dark:bg-rose-500"
                             : r.pct < 75
                               ? "bg-amber-500"
-                              : "bg-green-600 dark:bg-green-500"
+                              : "bg-emerald-600 dark:bg-emerald-500"
                         }`}
                         style={{ width: `${r.pct}%` }}
                       />
@@ -129,10 +129,10 @@ export async function PerQuestion({ examId }: { examId: string }) {
                   </div>
                 )}
               </td>
-              <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">
+              <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                 {r.correct}/{r.answered}
               </td>
-              <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">
+              <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                 {r.blank || "—"}
               </td>
             </tr>

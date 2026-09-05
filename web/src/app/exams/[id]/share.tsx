@@ -38,14 +38,14 @@ export function ShareLink({
     <section
       className={`rounded-lg border p-6 ${
         live
-          ? "border-teal-300 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/50"
-          : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+          ? "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/50"
+          : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
       }`}
     >
-      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+      <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
         {live ? "Send this to your students" : "Link to this exam"}
       </h2>
-      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
         {live
           ? linkOnly
             ? "This link is the only way in: a student who opens it and signs in can sit this exam, and nobody else sees it at all."
@@ -59,12 +59,12 @@ export function ShareLink({
           value={url}
           aria-label="Share link"
           onFocus={(e) => e.currentTarget.select()}
-          className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+          className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
         />
         <button
           type="button"
           onClick={copy}
-          className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
         >
           {copied ? "Copied" : "Copy link"}
         </button>

@@ -80,7 +80,7 @@ export default async function AccountsPage() {
 
       <Card title="Classes" hint={`${sections?.length ?? 0} total`} flush>
         {sections?.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {sections.map((s) => {
               const owner = (users ?? []).find((u) => u.id === s.instructor_id);
               const roll = rollOf.get(s.id) ?? 0;
@@ -88,16 +88,16 @@ export default async function AccountsPage() {
                 <li key={s.id} className="space-y-3 px-6 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                         {s.subject ?? s.name}
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                         {s.subject ? `${s.name} · ` : ""}
                         {owner ? owner.full_name || owner.email : "no teacher yet"} · {roll}{" "}
                         student{roll === 1 ? "" : "s"}
                       </p>
                     </div>
-                    <code className="font-mono text-sm tracking-widest text-teal-700 dark:text-teal-400">
+                    <code className="font-mono text-sm tracking-widest text-indigo-700 dark:text-indigo-400">
                       {s.join_code}
                     </code>
                   </div>
@@ -111,7 +111,7 @@ export default async function AccountsPage() {
             })}
           </ul>
         ) : (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">No classes yet.</p>
+          <p className="p-6 text-sm text-slate-500 dark:text-slate-400">No classes yet.</p>
         )}
       </Card>
     </div>
@@ -127,24 +127,24 @@ export default async function AccountsPage() {
           {sections.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-3 dark:border-slate-700"
             >
               <div>
-                <span className="text-sm text-gray-900 dark:text-gray-100">
+                <span className="text-sm text-slate-900 dark:text-slate-100">
                   {classLabel(s)}
                 </span>
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                   {rollOf.get(s.id) ?? 0} joined
                 </span>
               </div>
-              <code className="font-mono text-base tracking-[0.2em] text-teal-700 dark:text-teal-400">
+              <code className="font-mono text-base tracking-[0.2em] text-indigo-700 dark:text-indigo-400">
                 {s.join_code}
               </code>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Create a class to get a code.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Create a class to get a code.</p>
       )}
     </Card>
   );

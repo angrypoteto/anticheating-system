@@ -124,7 +124,7 @@ export default async function TeacherStudentsPage() {
       <div className="flex flex-wrap gap-3">
         <a
           href="/teacher/students/export"
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
         >
           Download CSV
         </a>
@@ -157,7 +157,7 @@ export default async function TeacherStudentsPage() {
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <tr>
                   <th className="px-6 py-3 font-medium">Class</th>
                   <th className="px-6 py-3 font-medium">Students</th>
@@ -168,16 +168,16 @@ export default async function TeacherStudentsPage() {
               </thead>
               <tbody>
                 {sectionRisks.map((s) => (
-                  <tr key={s.id} className="border-b border-gray-100 last:border-0 dark:border-gray-800">
-                    <td className="px-6 py-3 text-gray-900 dark:text-gray-100">{s.name}</td>
-                    <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">{s.students}</td>
-                    <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">
+                  <tr key={s.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800">
+                    <td className="px-6 py-3 text-slate-900 dark:text-slate-100">{s.name}</td>
+                    <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">{s.students}</td>
+                    <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                       {s.average == null ? "—" : `${s.average}%`}
                     </td>
-                    <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">
                       {s.projectedPassRate == null ? "—" : `${s.projectedPassRate}%`}
                     </td>
-                    <td className="px-6 py-3 tabular-nums text-gray-600 dark:text-gray-400">{s.atRisk}</td>
+                    <td className="px-6 py-3 tabular-nums text-slate-600 dark:text-slate-400">{s.atRisk}</td>
                   </tr>
                 ))}
               </tbody>
@@ -188,16 +188,16 @@ export default async function TeacherStudentsPage() {
 
       <Card title="Every student" hint={`${assessed.length} in total, most at risk first`} flush>
         {assessed.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {assessed.map((a) => (
               <li key={a.student.id}>
                 <details className="group">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
+                      <span className="block truncate font-medium text-slate-900 dark:text-slate-100">
                         {name(a.student)}
                       </span>
-                      <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
+                      <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
                         {useClasses ? `${enrolment.labelsFor(a.student.id).join(", ") || "No class"} · ` : ""}
                         {a.risk.graded} graded
                         {a.risk.average == null ? "" : ` · average ${a.risk.average}%`}
@@ -207,24 +207,24 @@ export default async function TeacherStudentsPage() {
                       <Pill tone={BAND_TONE[a.risk.band]}>{BAND_LABEL[a.risk.band]}</Pill>
                       <span
                         aria-hidden
-                        className="text-gray-400 transition group-open:rotate-90 dark:text-gray-500"
+                        className="text-slate-400 transition group-open:rotate-90 dark:text-slate-500"
                       >
                         ›
                       </span>
                     </span>
                   </summary>
 
-                  <div className="space-y-3 border-t border-gray-100 bg-gray-50/60 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/40">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">
                       {a.risk.reasons.join(" ")}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Confidence: {a.risk.confidence} · {a.risk.notTaken} not taken ·{" "}
                       {a.risk.autoSubmitted} auto-submitted · {a.risk.flags} flag
                       {a.risk.flags === 1 ? "" : "s"}
                     </p>
                     {a.missing.length ? (
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <p className="text-sm text-slate-700 dark:text-slate-300">
                         Still to sit: {a.missing.join(", ")}
                       </p>
                     ) : null}
@@ -247,11 +247,11 @@ export default async function TeacherStudentsPage() {
         flush
       >
         {outstanding.length ? (
-          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {outstanding.map((o) => (
               <li key={o.student.id} className="px-6 py-3">
-                <p className="text-sm text-gray-900 dark:text-gray-100">{name(o.student)}</p>
-                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-slate-900 dark:text-slate-100">{name(o.student)}</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {o.missing.length} outstanding: {o.missing.join(", ")}
                 </p>
               </li>

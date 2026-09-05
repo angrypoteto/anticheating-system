@@ -50,7 +50,7 @@ export function GoogleButton({
         type="button"
         onClick={go}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2.5 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
       >
         <svg viewBox="0 0 18 18" aria-hidden className="h-4.5 w-4.5" width="18" height="18">
           <path
@@ -74,7 +74,7 @@ export function GoogleButton({
       </button>
 
       {error ? (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-[13px] leading-relaxed text-rose-700 ring-1 ring-inset ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </p>
       ) : null}
@@ -86,11 +86,11 @@ export function GoogleButton({
 export function AuthDivider({ children = "or" }: { children?: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-      <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+      <span className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
         {children}
       </span>
-      <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+      <span className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
     </div>
   );
 }

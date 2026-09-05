@@ -5,18 +5,18 @@ import { PROVIDER_PRESETS, presetFor } from "@/lib/ai/providers";
 import { addKey, deleteKey, setKeyStatus, testKey, type KeyState } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
-const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100";
+const label = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900";
+  "rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900";
 const linkBtn =
-  "text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100";
+  "text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100";
 
 function Feedback({ state }: { state: KeyState }) {
   if (state.error)
-    return <p role="alert" className="text-sm text-red-600 dark:text-red-400">{state.error}</p>;
+    return <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">{state.error}</p>;
   if (state.success)
-    return <p role="status" className="text-sm text-green-700 dark:text-green-400">{state.success}</p>;
+    return <p role="status" className="text-sm text-emerald-700 dark:text-emerald-400">{state.success}</p>;
   return null;
 }
 
@@ -44,7 +44,7 @@ export function AddKeyForm() {
             ))}
           </select>
           {preset?.hint ? (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{preset.hint}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{preset.hint}</p>
           ) : null}
         </div>
 
@@ -92,7 +92,7 @@ export function AddKeyForm() {
               placeholder="https://api.example.com/v1"
               className={field}
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Must speak the OpenAI chat-completions API. Do not include
               /chat/completions.
             </p>
@@ -154,18 +154,18 @@ export function KeyRow({
   const active = status === "ACTIVE";
 
   return (
-    <li className="border-b border-gray-100 p-6 last:border-0 dark:border-gray-800">
+    <li className="border-b border-slate-100 p-6 last:border-0 dark:border-slate-800">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-medium text-gray-900 dark:text-gray-100">
+          <p className="font-medium text-slate-900 dark:text-slate-100">
             {keyLabel}{" "}
-            <span className="ml-1 font-mono text-xs text-gray-400 dark:text-gray-500">
+            <span className="ml-1 font-mono text-xs text-slate-400 dark:text-slate-500">
               ••••{hint}
             </span>
           </p>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             {provider} ·{" "}
-            <span className={active ? "text-green-700 dark:text-green-400" : "text-gray-400"}>
+            <span className={active ? "text-emerald-700 dark:text-emerald-400" : "text-slate-400"}>
               {status.toLowerCase()}
             </span>
             {lastUsed ? ` · last used ${new Date(lastUsed).toLocaleString()}` : " · never used"}
@@ -196,7 +196,7 @@ export function KeyRow({
             <button
               type="submit"
               disabled={delPending}
-              className="text-sm text-gray-600 underline underline-offset-4 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
+              className="text-sm text-slate-600 underline underline-offset-4 hover:text-rose-600 disabled:opacity-50 dark:text-slate-400 dark:hover:text-rose-400"
             >
               {delPending ? "…" : "Delete"}
             </button>

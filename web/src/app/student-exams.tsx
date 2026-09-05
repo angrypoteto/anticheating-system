@@ -40,19 +40,25 @@ const duration = (m: number) => {
 /** Pass and fail carry a mark and a word, never colour alone. */
 function Verdict({ passed }: { passed: boolean }) {
   return passed ? (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-800 ring-1 ring-green-200 dark:bg-green-950/60 dark:text-green-300 dark:ring-green-900">
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
       <span aria-hidden>✓</span> Passed
     </span>
   ) : (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800 ring-1 ring-red-200 dark:bg-red-950/60 dark:text-red-300 dark:ring-red-900">
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
       <span aria-hidden>✕</span> Failed
     </span>
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
+function Chip({ tone = "muted", children }: { tone?: "muted" | "brand" | "warn"; children: React.ReactNode }) {
+  const cls =
+    tone === "brand"
+      ? "bg-indigo-50 text-indigo-700 ring-indigo-600/20 dark:bg-indigo-500/10 dark:text-indigo-300"
+      : tone === "warn"
+        ? "bg-amber-50 text-amber-800 ring-amber-600/25 dark:bg-amber-500/10 dark:text-amber-300"
+        : "bg-slate-100 text-slate-600 ring-slate-600/10 dark:bg-slate-800 dark:text-slate-300";
   return (
-    <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${cls}`}>
       {children}
     </span>
   );
@@ -62,7 +68,7 @@ function Chevron() {
   return (
     <span
       aria-hidden
-      className="shrink-0 text-gray-400 transition group-open:rotate-90 dark:text-gray-500"
+      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition group-open:rotate-90 group-open:bg-indigo-600 group-open:text-white dark:bg-slate-800 dark:text-slate-500"
     >
       ›
     </span>
@@ -72,37 +78,37 @@ function Chevron() {
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm text-gray-900 dark:text-gray-100">{children}</dd>
+      <dd className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{children}</dd>
     </div>
   );
 }
 
 function ScoreBar({ score, passMark }: { score: number; passMark: number }) {
   return (
-    <div>
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-inset ring-slate-200/60 dark:bg-slate-800/50 dark:ring-slate-700/50">
       <div className="flex items-baseline justify-between">
-        <span className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">
+        <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">
           {score}%
         </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-slate-500 dark:text-slate-400">
           pass mark {passMark}%
         </span>
       </div>
-      {/* The bar repeats the number rather than replacing it — the figure is the
-          fact, the bar only places it against the pass mark, drawn as a tick. */}
-      <div className="relative mt-1.5 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+      <div className="relative mt-2.5 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
         <div
-          className={`h-full rounded-full ${
-            score >= passMark ? "bg-green-600 dark:bg-green-500" : "bg-red-600 dark:bg-red-500"
+          className={`h-full rounded-full transition-all ${
+            score >= passMark
+              ? "bg-gradient-to-r from-emerald-500 to-emerald-400"
+              : "bg-gradient-to-r from-rose-500 to-rose-400"
           }`}
           style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
         />
         <div
           aria-hidden
-          className="absolute inset-y-0 w-px bg-gray-500 dark:bg-gray-400"
+          className="absolute inset-y-0 w-0.5 bg-slate-900 dark:bg-white"
           style={{ left: `${Math.max(0, Math.min(100, passMark))}%` }}
         />
       </div>
@@ -111,11 +117,11 @@ function ScoreBar({ score, passMark }: { score: number; passMark: number }) {
 }
 
 const rowClass =
-  "group rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900";
+  "group overflow-hidden rounded-2xl border border-slate-200/80 bg-white transition hover:border-slate-300 hover:shadow-[0_8px_24px_-12px_rgb(15_23_42/0.2)] dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700";
 const summaryClass =
-  "flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50";
+  "flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 [&::-webkit-details-marker]:hidden";
 const panelClass =
-  "border-t border-gray-100 px-4 py-4 dark:border-gray-800";
+  "border-t border-slate-100 bg-slate-50/60 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/40";
 
 /**
  * A student's exams, as a plain list that opens.
@@ -132,7 +138,7 @@ export async function StudentExams() {
 
   if (error) {
     return (
-      <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+      <p className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-inset ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
         Could not load your exams: {error.message}
       </p>
     );
@@ -144,10 +150,12 @@ export async function StudentExams() {
 
   if (!rows.length) {
     return (
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Nothing yet. An exam appears here once your teacher publishes one for
-        you — usually by sending you a link.
-      </p>
+      <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-8 text-center dark:border-slate-700 dark:bg-slate-800/30">
+        <p className="mx-auto max-w-sm text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          Nothing yet. An exam appears here once your teacher publishes one for
+          you — usually by sending you a link.
+        </p>
+      </div>
     );
   }
 
@@ -155,10 +163,13 @@ export async function StudentExams() {
     <div className="mt-4 space-y-6">
       {todo.length ? (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            To take · {todo.length}
+          <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            To take
+            <span className="rounded-full bg-indigo-600 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white">
+              {todo.length}
+            </span>
           </h3>
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-2.5 space-y-2.5">
             {todo.map((r) => {
               const started = r.session_status === "IN_PROGRESS";
               const notYet = r.opens_at && new Date(r.opens_at).getTime() > Date.now();
@@ -167,18 +178,23 @@ export async function StudentExams() {
                 <li key={r.exam_id} className={rowClass}>
                   <details>
                     <summary className={summaryClass}>
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
-                          {r.title}
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${started ? "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300" : "bg-indigo-600/10 text-indigo-700 dark:text-indigo-300"}`}>
+                          {r.title[0]?.toUpperCase() ?? "E"}
                         </span>
-                        {r.subject ? (
-                          <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
-                            {r.subject}
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold tracking-tight text-slate-900 dark:text-white">
+                            {r.title}
                           </span>
-                        ) : null}
+                          {r.subject ? (
+                            <span className="block truncate text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                              {r.subject}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                       <span className="flex items-center gap-2">
-                        <Chip>
+                        <Chip tone={over ? "muted" : started ? "warn" : "brand"}>
                           {over
                             ? "Closed"
                             : notYet
@@ -207,12 +223,12 @@ export async function StudentExams() {
                       {r.is_open ? (
                         <Link
                           href={`/exam/${r.exam_id}`}
-                          className="mt-4 inline-block rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+                          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_-4px_rgb(79_70_229/0.6)] transition hover:bg-indigo-700"
                         >
-                          {started ? "Resume exam" : "Start exam"}
+                          {started ? "Resume exam →" : "Start exam →"}
                         </Link>
                       ) : (
-                        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                        <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
                           {over
                             ? "This exam has closed."
                             : `You can start it from ${when(r.opens_at)}.`}
@@ -229,27 +245,30 @@ export async function StudentExams() {
 
       {done.length ? (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Results · {done.length}
+          <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Results
+            <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[11px] font-bold leading-none text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              {done.length}
+            </span>
           </h3>
-          <ul className="mt-2 space-y-2">
+          <ul className="mt-2.5 space-y-2.5">
             {done.map((r) => (
               <li key={r.exam_id} className={rowClass}>
                 <details>
                   <summary className={summaryClass}>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
+                      <span className="block truncate font-semibold tracking-tight text-slate-900 dark:text-white">
                         {r.title}
                       </span>
                       {r.subject ? (
-                        <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
+                        <span className="block truncate text-xs font-medium text-indigo-600 dark:text-indigo-400">
                           {r.subject}
                         </span>
                       ) : null}
                     </span>
                     <span className="flex items-center gap-2">
                       {r.score != null ? (
-                        <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                        <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-sm font-bold tabular-nums text-slate-900 dark:bg-slate-800 dark:text-white">
                           {r.score}%
                         </span>
                       ) : null}
@@ -268,7 +287,7 @@ export async function StudentExams() {
                     </dl>
 
                     {r.session_status === "AUTO_SUBMITTED" ? (
-                      <p className="text-sm text-amber-800 dark:text-amber-300">
+                      <p className="rounded-lg bg-amber-50 px-3 py-2 text-[13px] font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300">
                         Submitted automatically when the time ran out.
                       </p>
                     ) : null}

@@ -15,7 +15,7 @@ export type Person = {
 };
 
 const control =
-  "rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+  "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-400";
 
 /**
  * The account list, filtered in the browser. Every account is already on the
@@ -69,7 +69,7 @@ export function Directory({
 
   return (
     <div>
-      <div className="flex flex-wrap items-end gap-3 border-b border-gray-200 p-6 dark:border-gray-800">
+      <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-6 dark:border-slate-800">
         <div className="min-w-56 flex-1">
           <label htmlFor="account-search" className="sr-only">
             Search by name, username or email
@@ -148,25 +148,25 @@ export function Directory({
               setStatus("ALL");
               setClassId("ALL");
             }}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-slate-500 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
           >
             Clear
           </button>
         ) : null}
       </div>
 
-      <p aria-live="polite" className="px-6 pt-4 text-sm text-gray-500 dark:text-gray-400">
+      <p aria-live="polite" className="px-6 pt-4 text-sm text-slate-500 dark:text-slate-400">
         {shown.length} of {people.length} {people.length === 1 ? "account" : "accounts"}
       </p>
 
       {shown.length === 0 ? (
-        <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+        <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
           Nobody matches that. Try a different search, or clear the filters.
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
               <tr>
                 <th className="px-6 py-3 font-medium">Person</th>
                 <th className="px-6 py-3 font-medium">Role</th>
@@ -179,28 +179,28 @@ export function Directory({
               {shown.map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-gray-100 align-top last:border-0 dark:border-gray-800"
+                  className="border-b border-slate-100 align-top last:border-0 dark:border-slate-800"
                 >
                   <td className="px-6 py-3">
-                    <span className="text-gray-900 dark:text-gray-100">
+                    <span className="text-slate-900 dark:text-slate-100">
                       {p.full_name || p.email}
                     </span>
                     {p.full_name ? (
-                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
                         {p.username ? `@${p.username}` : p.email}
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="px-6 py-3 text-slate-600 dark:text-slate-400">
                     {p.role.toLowerCase()}
                   </td>
 {useClasses ? (
                   <td className="px-6 py-3">
                     {p.role !== "STUDENT" ? (
-                      <span className="text-gray-400 dark:text-gray-600">—</span>
+                      <span className="text-slate-400 dark:text-slate-600">—</span>
                     ) : (
                       <details>
-                        <summary className="cursor-pointer text-gray-600 dark:text-gray-400">
+                        <summary className="cursor-pointer text-slate-600 dark:text-slate-400">
                           {p.classIds.length
                             ? p.classIds
                                 .map((id) => classLabel.get(id) ?? "unknown class")
@@ -219,7 +219,7 @@ export function Directory({
                               />
                             ))
                           ) : (
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
                               Create a class first.
                             </span>
                           )}
@@ -232,8 +232,8 @@ export function Directory({
                     <span
                       className={
                         p.status === "ACTIVE"
-                          ? "text-green-700 dark:text-green-400"
-                          : "text-gray-400 dark:text-gray-500"
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-slate-400 dark:text-slate-500"
                       }
                     >
                       {p.status.toLowerCase()}
@@ -241,7 +241,7 @@ export function Directory({
                   </td>
                   <td className="px-6 py-3">
                     {p.id === adminId ? (
-                      <span className="text-xs text-gray-400 dark:text-gray-600">you</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-600">you</span>
                     ) : (
                       <StatusToggle userId={p.id} status={p.status} />
                     )}

@@ -63,9 +63,9 @@ export default async function MonitorPage({
   );
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
+    <main className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
       <div className="mx-auto max-w-4xl space-y-8">
-        <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
+        <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
           <Link
             href={
               from === "list"
@@ -74,14 +74,14 @@ export default async function MonitorPage({
                   : "/teacher/exams"
                 : `/exams/${exam.id}`
             }
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-slate-500 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
           >
             {from === "list" ? "← Back to exams & quizzes" : "← Back to exam"}
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-50">
             {exam.title}
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Live monitoring and results
           </p>
         </header>
@@ -94,12 +94,12 @@ export default async function MonitorPage({
           questionLabels={questionLabels}
         />
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 p-6 dark:border-slate-800">
+            <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
               How each question went
             </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Hardest first, by the share of people who answered it correctly. A
               question nobody got is usually the question, not the class.
             </p>

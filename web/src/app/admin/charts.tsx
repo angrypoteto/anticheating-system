@@ -62,7 +62,7 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
           {ORDER.map((k) => (
             <li
               key={k}
-              className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400"
+              className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400"
             >
               <Swatch k={k} />
               {SERIES[k].label}
@@ -72,7 +72,7 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
         <button
           type="button"
           onClick={() => setTable((t) => !t)}
-          className="text-xs text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="text-xs text-slate-500 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           {table ? "Show chart" : "Show numbers"}
         </button>
@@ -80,7 +80,7 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
 
       {table ? (
         <table className="w-full text-left text-sm">
-          <thead className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <thead className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
             <tr>
               <th className="py-2 font-medium">Class</th>
               {ORDER.map((k) => (
@@ -91,12 +91,12 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={r.name} className="border-t border-gray-100 dark:border-gray-800">
-                <td className="py-2 text-gray-900 dark:text-gray-100">{r.name}</td>
+              <tr key={r.name} className="border-t border-slate-100 dark:border-slate-800">
+                <td className="py-2 text-slate-900 dark:text-slate-100">{r.name}</td>
                 {ORDER.map((k) => (
-                  <td key={k} className="py-2 text-gray-700 dark:text-gray-300">{r[k]}</td>
+                  <td key={k} className="py-2 text-slate-700 dark:text-slate-300">{r[k]}</td>
                 ))}
-                <td className="py-2 text-gray-700 dark:text-gray-300">{totals[i]}</td>
+                <td className="py-2 text-slate-700 dark:text-slate-300">{totals[i]}</td>
               </tr>
             ))}
           </tbody>
@@ -108,8 +108,8 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
             return (
               <li key={r.name}>
                 <div className="mb-1.5 flex items-baseline justify-between text-sm">
-                  <span className="text-gray-900 dark:text-gray-100">{r.name}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-slate-900 dark:text-slate-100">{r.name}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {total} student{total === 1 ? "" : "s"}
                   </span>
                 </div>
@@ -144,7 +144,7 @@ export function ClassProgressChart({ rows }: { rows: ClassRow[] }) {
                 </div>
 
                 {/* Values in ink, never in the series colour. */}
-                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                   {ORDER.filter((k) => r[k] > 0)
                     .map((k) => `${r[k]} ${SERIES[k].label.toLowerCase()}`)
                     .join(" · ") || "no students yet"}
@@ -169,8 +169,8 @@ export function ExamsByInstructorChart({ rows }: { rows: InstructorRow[] }) {
         return (
           <li key={r.name}>
             <div className="mb-1 flex items-baseline justify-between text-sm">
-              <span className="truncate text-gray-900 dark:text-gray-100">{r.name}</span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="truncate text-slate-900 dark:text-slate-100">{r.name}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {r.published} published{r.drafts ? ` · ${r.drafts} draft` : ""}
               </span>
             </div>
@@ -194,7 +194,7 @@ export function ExamsByInstructorChart({ rows }: { rows: InstructorRow[] }) {
         );
       })}
       {rows.length === 0 ? (
-        <li className="text-sm text-gray-500 dark:text-gray-400">
+        <li className="text-sm text-slate-500 dark:text-slate-400">
           No instructor has created an exam yet.
         </li>
       ) : null}

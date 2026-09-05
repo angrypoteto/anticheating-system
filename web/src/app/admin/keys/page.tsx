@@ -23,11 +23,11 @@ export default async function KeysPage() {
         subtitle={`${activeCount} active. Generation tries each active key in turn, moving to the next when one is rate-limited — which is why it is worth adding several.`}
       />
 
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
             Add a key
           </h2>
-          <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 mb-4 text-sm text-slate-500 dark:text-slate-400">
             Stored encrypted in Supabase Vault. It is never shown again after saving
             and never reaches the browser — only the last four characters are kept
             for identification.
@@ -35,9 +35,9 @@ export default async function KeysPage() {
           <AddKeyForm />
         </section>
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 p-6 dark:border-slate-800">
+            <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
               Stored keys
             </h2>
           </div>
@@ -57,7 +57,7 @@ export default async function KeysPage() {
               ))}
             </ul>
           ) : (
-            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+            <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
               No keys stored yet.
             </p>
           )}

@@ -24,7 +24,7 @@ export default async function LoginPage({
           Are you a student with a class code?{" "}
           <Link
             href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"}
-            className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="font-medium text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
           >
             Create an account
           </Link>
@@ -35,7 +35,7 @@ export default async function LoginPage({
         {error ? (
           <p
             role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            className="rounded-xl border border-rose-200/70 bg-rose-50 px-3.5 py-2.5 text-sm leading-relaxed text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
           >
             {error === "disabled"
               ? "That account is not active. If you have just registered, your address may be outside the addresses this school accepts — ask your teacher."

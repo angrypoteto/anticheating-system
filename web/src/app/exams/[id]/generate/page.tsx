@@ -35,19 +35,19 @@ export default async function GeneratePage({
     .eq("status", "ACTIVE");
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
+    <main className="min-h-screen bg-slate-50 p-8 dark:bg-slate-950">
       <div className="mx-auto max-w-3xl space-y-8">
-        <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
+        <header className="border-b border-slate-200 pb-4 dark:border-slate-800">
           <Link
             href={`/exams/${exam.id}`}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-slate-500 underline underline-offset-4 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
           >
             ← Back to exam
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-50">
             Generate questions
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {exam.title}
           </p>
         </header>

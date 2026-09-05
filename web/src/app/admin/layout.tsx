@@ -8,10 +8,10 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const useClasses = await classesEnabled();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 lg:flex-row dark:bg-gray-950">
+    <div className="flex min-h-screen flex-col bg-slate-50 lg:flex-row dark:bg-slate-950">
       <AdminNav email={admin.email} useClasses={useClasses} />
       <div className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl p-6 lg:p-10">{children}</div>
+        <div className="mx-auto max-w-6xl p-5 sm:p-8 lg:p-10">{children}</div>
       </div>
     </div>
   );

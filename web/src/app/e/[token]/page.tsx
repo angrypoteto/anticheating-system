@@ -46,13 +46,13 @@ export default async function ExamLinkPage({
         footer={
           <Link
             href="/"
-            className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="font-medium text-indigo-700 underline underline-offset-4 dark:text-indigo-400"
           >
             Go to your dashboard
           </Link>
         }
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Signed in as {user.email}.
         </p>
       </AuthShell>

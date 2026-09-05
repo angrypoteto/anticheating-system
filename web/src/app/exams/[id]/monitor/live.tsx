@@ -171,13 +171,13 @@ export function LiveMonitor({
 
       <ClearAllFlags examId={examId} open={flags.filter((f) => f.resolution == null).length} />
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">
+      <p className="text-xs text-slate-500 dark:text-slate-400">
         {connected ? "● Live — updates stream in as they happen" : "○ Connecting…"}
       </p>
 
-      <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+      <section className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="border-b border-slate-200 p-6 dark:border-slate-800">
+          <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
             Students
           </h2>
         </div>
@@ -195,7 +195,7 @@ export function LiveMonitor({
             ))}
           </ul>
         ) : (
-          <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+          <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
             No one has started this exam yet.
           </p>
         )}
@@ -206,11 +206,11 @@ export function LiveMonitor({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </p>
-      <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-50">
         {value}
       </p>
     </div>
@@ -248,11 +248,11 @@ function StudentRow({
     : null;
 
   return (
-    <li className="border-b border-gray-100 last:border-0 dark:border-gray-800">
+    <li className="border-b border-slate-100 last:border-0 dark:border-slate-800">
       <div className="flex flex-wrap items-center justify-between gap-4 p-6">
         <div className="min-w-0">
-          <p className="font-medium text-gray-900 dark:text-gray-100">{name}</p>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          <p className="font-medium text-slate-900 dark:text-slate-100">{name}</p>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
             {session.score != null ? ` · ${session.score}%` : ""}
             {elapsed != null ? ` · ${Math.round(elapsed / 60000)} min` : ""}
@@ -269,7 +269,7 @@ function StudentRow({
               {active.length} flag{active.length === 1 ? "" : "s"}
             </button>
           ) : (
-            <span className="text-sm text-gray-400 dark:text-gray-600">clean</span>
+            <span className="text-sm text-slate-400 dark:text-slate-600">clean</span>
           )}
 
           {live ? (
@@ -279,7 +279,7 @@ function StudentRow({
               <button
                 type="submit"
                 disabled={pending}
-                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                className="text-sm text-slate-600 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100"
               >
                 {pending ? "…" : "Force submit"}
               </button>
@@ -289,18 +289,18 @@ function StudentRow({
       </div>
 
       {state.error ? (
-        <p role="alert" className="px-6 pb-3 text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="px-6 pb-3 text-sm text-rose-600 dark:text-rose-400">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p role="status" className="px-6 pb-3 text-sm text-green-700 dark:text-green-400">
+        <p role="status" className="px-6 pb-3 text-sm text-emerald-700 dark:text-emerald-400">
           {state.success}
         </p>
       ) : null}
 
       {open && flags.length ? (
-        <ul className="border-t border-gray-100 bg-gray-50 px-6 py-3 dark:border-gray-800 dark:bg-gray-950">
+        <ul className="border-t border-slate-100 bg-slate-50 px-6 py-3 dark:border-slate-800 dark:bg-slate-950">
           {flags.map((f) => (
             <FlagLine key={f.id} flag={f} examId={examId} questionLabels={questionLabels} />
           ))}
@@ -327,19 +327,19 @@ function FlagLine({
 
   return (
     <li className="flex items-center justify-between gap-4 py-1.5 text-sm">
-      <span className={voided ? "text-gray-400 line-through dark:text-gray-600" : "text-gray-700 dark:text-gray-300"}>
+      <span className={voided ? "text-slate-400 line-through dark:text-slate-600" : "text-slate-700 dark:text-slate-300"}>
         #{flag.strike_number} {FLAG_LABELS[flag.type] ?? flag.type}
-        <span className="ml-2 text-xs text-gray-400 dark:text-gray-600">
+        <span className="ml-2 text-xs text-slate-400 dark:text-slate-600">
           {new Date(flag.occurred_at).toLocaleTimeString()}
         </span>
         {flag.question_id ? (
-          <span className="ml-2 block text-xs text-gray-500 dark:text-gray-500">
+          <span className="ml-2 block text-xs text-slate-500 dark:text-slate-500">
             on {questionLabels[flag.question_id] ?? "a question"}
           </span>
         ) : null}
       </span>
       {voided ? (
-        <span className="text-xs text-gray-400 dark:text-gray-600">voided</span>
+        <span className="text-xs text-slate-400 dark:text-slate-600">voided</span>
       ) : (
         <form action={submit}>
           <input type="hidden" name="flagId" value={flag.id} />
@@ -347,7 +347,7 @@ function FlagLine({
           <button
             type="submit"
             disabled={pending}
-            className="text-xs text-gray-500 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-xs text-slate-500 underline underline-offset-4 hover:text-slate-900 disabled:opacity-50 dark:text-slate-400 dark:hover:text-slate-100"
           >
             {pending ? "…" : state.error ? "retry" : "void"}
           </button>
@@ -376,15 +376,15 @@ function ClearAllFlags({ examId, open }: { examId: string; open: number }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
       >
         {pending ? "Clearing…" : `Void all ${open} open flag${open === 1 ? "" : "s"}`}
       </button>
       {state.error ? (
-        <span role="alert" className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
+        <span role="alert" className="text-sm text-rose-600 dark:text-rose-400">{state.error}</span>
       ) : null}
       {state.success ? (
-        <span role="status" className="text-sm text-green-700 dark:text-green-400">{state.success}</span>
+        <span role="status" className="text-sm text-emerald-700 dark:text-emerald-400">{state.success}</span>
       ) : null}
     </form>
   );

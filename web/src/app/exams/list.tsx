@@ -213,7 +213,10 @@ export async function ExamList() {
                       href={`/exams/${e.id}/monitor?from=list`}
                       className="text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
                     >
-                      Watch it live
+                      {/* Nothing is live once it has closed — the same page is
+                          then a record of what happened, and calling it "watch"
+                          invites a teacher to go looking for movement. */}
+                      {over ? "Records" : "Watch it live"}
                     </Link>
                   ) : null}
                 </div>

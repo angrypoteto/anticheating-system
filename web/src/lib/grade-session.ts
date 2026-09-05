@@ -3,9 +3,15 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isCorrect, scorePercentage, type QuestionType } from "@/lib/grading";
 import { parseTimer } from "@/lib/exam-config";
+import type { SubmitReason } from "@/lib/submission";
 
 export type GradeResult =
-  | { ok: true; score: number; status: "SUBMITTED" | "AUTO_SUBMITTED" }
+  | {
+      ok: true;
+      score: number;
+      status: "SUBMITTED" | "AUTO_SUBMITTED";
+      reason: SubmitReason;
+    }
   | { ok: false; error: string };
 
 /**
@@ -66,13 +72,33 @@ export async function gradeAndClose(
   const status =
     reason === "manual" && !ranOver ? "SUBMITTED" : "AUTO_SUBMITTED";
 
+  // AUTO_SUBMITTED covers three quite different endings, and a student shown
+  // only that cannot tell "you ran out of time" from "you were stopped for
+  // leaving the window". The clock is asked first because a paper that was going
+  // to end anyway was not ended by anything the student did.
+  const stored: SubmitReason =
+    reason === "instructor"
+      ? "INSTRUCTOR"
+      : pastClose
+        ? "EXAM_CLOSED"
+        : pastTimer || reason === "timeout"
+          ? "TIME_UP"
+          : reason === "strikes"
+            ? "STRIKES"
+            : "MANUAL";
+
   // The status guard makes a double submit a no-op rather than a re-grade.
   const { error } = await admin
     .from("exam_sessions")
-    .update({ status, score, submitted_at: new Date().toISOString() })
+    .update({
+      status,
+      score,
+      submitted_reason: stored,
+      submitted_at: new Date().toISOString(),
+    })
     .eq("id", sessionId)
     .eq("status", "IN_PROGRESS");
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true, score, status };
+  return { ok: true, score, status, reason: stored };
 }

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { forceSubmit, voidAllFlags, voidFlag, type MonitorState } from "./actions";
+import { allowRetake, forceSubmit, voidAllFlags, voidFlag, type MonitorState } from "./actions";
 
 export type SessionRow = {
   id: string;
@@ -235,8 +235,13 @@ function StudentRow({
     forceSubmit,
     {},
   );
+  const [reopenState, reopen, reopening] = useActionState<MonitorState, FormData>(
+    allowRetake,
+    {},
+  );
   const active = flags.filter((f) => f.resolution == null);
   const live = session.status === "IN_PROGRESS";
+  const said = reopenState.error || reopenState.success ? reopenState : state;
 
   // started_at is stamped by Postgres, submitted_at by the app server — two clocks,
   // so a fast submission can come back very slightly negative. Never show that.
@@ -284,18 +289,34 @@ function StudentRow({
                 {pending ? "…" : "Force submit"}
               </button>
             </form>
-          ) : null}
+          ) : (
+            // A paper can end for reasons that are nobody's fault — a laptop that
+            // died, a network that dropped. Without this the teacher had no remedy
+            // at all: one sitting per student, and no way to undo it.
+            <form action={reopen}>
+              <input type="hidden" name="sessionId" value={session.id} />
+              <input type="hidden" name="examId" value={examId} />
+              <button
+                type="submit"
+                disabled={reopening}
+                title="Reopens this sitting: answers kept, warnings cleared, clock restarted"
+                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                {reopening ? "…" : "Let them back in"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
-      {state.error ? (
+      {said.error ? (
         <p role="alert" className="px-6 pb-3 text-sm text-red-600 dark:text-red-400">
-          {state.error}
+          {said.error}
         </p>
       ) : null}
-      {state.success ? (
+      {said.success ? (
         <p role="status" className="px-6 pb-3 text-sm text-green-700 dark:text-green-400">
-          {state.success}
+          {said.success}
         </p>
       ) : null}
 

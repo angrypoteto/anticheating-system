@@ -199,17 +199,30 @@ enum SessionStatus {
   AUTO_SUBMITTED
 }
 
+/// Why a sitting ended. AUTO_SUBMITTED covers three quite different endings, and
+/// a student shown only that cannot tell being stopped for leaving the window
+/// from having simply run out of time.
+enum SubmitReason {
+  MANUAL
+  TIME_UP
+  EXAM_CLOSED
+  STRIKES
+  INSTRUCTOR
+}
+
 model ExamSession {
-  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId      String        @map("exam_id") @db.Uuid
-  exam        Exam          @relation(fields: [examId], references: [id])
-  studentId   String        @map("student_id") @db.Uuid
-  student     User          @relation(fields: [studentId], references: [id])
-  status      SessionStatus @default(IN_PROGRESS)
-  startedAt   DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
-  submittedAt DateTime?     @map("submitted_at") @db.Timestamptz(3)
-  score       Float?
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId          String        @map("exam_id") @db.Uuid
+  exam            Exam          @relation(fields: [examId], references: [id])
+  studentId       String        @map("student_id") @db.Uuid
+  student         User          @relation(fields: [studentId], references: [id])
+  status          SessionStatus @default(IN_PROGRESS)
+  startedAt       DateTime      @default(now()) @map("started_at") @db.Timestamptz(3)
+  submittedAt     DateTime?     @map("submitted_at") @db.Timestamptz(3)
+  /// Null only while the sitting is still in progress.
+  submittedReason SubmitReason? @map("submitted_reason")
+  score           Float?
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   answers Answer[]
   flags   Flag[]

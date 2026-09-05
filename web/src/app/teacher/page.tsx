@@ -33,7 +33,7 @@ export default async function TeacherOverview() {
     useClasses,
   ] = await Promise.all([
     supabase.from("system_settings").select("pass_threshold, institution_name").eq("id", true).maybeSingle(),
-    supabase.from("exams").select("id, title, status, section_id, published_at, created_by_id"),
+    supabase.from("exams").select("id, title, status, section_id, published_at, created_by_id, closes_at"),
     supabase.from("exam_sessions").select("id, exam_id, student_id, status, score, submitted_at"),
     supabase.from("flags").select("id, session_id").is("resolution", null),
     supabase.from("users").select("id, email, full_name, role").eq("role", "STUDENT"),
@@ -204,7 +204,10 @@ export default async function TeacherOverview() {
                       href={`/exams/${e.id}/monitor?from=list`}
                       className="shrink-0 text-xs text-teal-700 underline underline-offset-4 dark:text-teal-400"
                     >
-                      Watch live
+                      {/* Closed papers are a record, not something to watch. */}
+                      {e.closes_at && new Date(e.closes_at) <= new Date()
+                        ? "Records"
+                        : "Watch live"}
                     </Link>
                   </li>
                 ))}

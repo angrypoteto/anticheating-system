@@ -6,6 +6,7 @@ import { useActionState, useCallback, useEffect, useRef, useState } from "react"
 import { createClient } from "@/lib/supabase/client";
 import { createDepartureTracker, type FlagType } from "@/lib/departure";
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
+import { explainSubmission } from "@/lib/submission";
 import { submitExam, type SubmitState } from "./actions";
 
 export type RunnerQuestion = {
@@ -26,6 +27,7 @@ export function ExamRunner({
   lockdown,
   startedAt,
   savedAnswers,
+  initialStrikes,
 }: {
   sessionId: string;
   examTitle: string;
@@ -34,6 +36,8 @@ export function ExamRunner({
   lockdown: LockdownConfig;
   startedAt: string;
   savedAnswers: Record<string, string>;
+  /** Warnings already standing against this sitting, counted by the database. */
+  initialStrikes: number;
 }) {
   const [started, setStarted] = useState(false);
   const [index, setIndex] = useState(() => {
@@ -42,8 +46,10 @@ export function ExamRunner({
     return Math.min(answered, Math.max(questions.length - 1, 0));
   });
   const [answers, setAnswers] = useState<Record<string, string>>(savedAnswers);
-  const [strikes, setStrikes] = useState(0);
+  const [strikes, setStrikes] = useState(initialStrikes);
   const [warning, setWarning] = useState<string | null>(null);
+  // Another tab of the same sitting has taken over; this one stops proctoring.
+  const [superseded, setSuperseded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [questionRemaining, setQuestionRemaining] = useState<number | null>(null);
@@ -57,7 +63,6 @@ export function ExamRunner({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const endedRef = useRef(false);
-  const strikesRef = useRef(0);
 
   // One departure is one strike, however many events the browser fires for it.
   // The tracker holds that rule; see lib/departure.ts for why it has to.
@@ -69,17 +74,28 @@ export function ExamRunner({
 
   const done = submitState.submitted === true;
 
-  const finish = useCallback(
-    (reason: string) => {
-      if (endedRef.current) return;
-      endedRef.current = true;
+  // Whatever is typed into the question on screen but not yet saved. The save is
+  // debounced, so clicking Submit within that debounce — or being auto-submitted
+  // — used to throw the answer away.
+  const flushRef = useRef<() => Promise<void>>(async () => {});
+
+  const finish = useCallback((reason: string) => {
+    if (endedRef.current) return;
+    endedRef.current = true;
+
+    const send = () => {
       const form = formRef.current;
       if (!form) return;
       (form.elements.namedItem("reason") as HTMLInputElement).value = reason;
       form.requestSubmit();
-    },
-    [],
-  );
+    };
+
+    // Saving the last answer must not be able to hold the submission hostage.
+    void Promise.race([
+      flushRef.current(),
+      new Promise((r) => setTimeout(r, 2000)),
+    ]).then(send, send);
+  }, []);
 
   // Listeners and interval callbacks capture their first render's values, so the
   // live index, answers and current question are mirrored into refs they can read.
@@ -98,19 +114,32 @@ export function ExamRunner({
 
   const recordFlag = useCallback(
     async (type: FlagType, questionId?: string) => {
-      if (endedRef.current || !started) return;
-      const next = strikesRef.current + 1;
-      strikesRef.current = next;
-      setStrikes(next);
+      if (endedRef.current || !started || superseded) return;
 
       // Written client-direct to Supabase: a flag that waits on a serverless
       // cold start is a flag the dashboard sees late.
-      await supabase.current.from("flags").insert({
-        session_id: sessionId,
-        type,
-        strike_number: next,
-        question_id: questionId ?? currentQuestionRef.current,
+      //
+      // The count comes back from the database rather than from a counter in
+      // this tab. A tab's counter starts at zero on every mount, so a reload or
+      // a second tab used to run a tally of its own — and the limit was checked
+      // against whichever tally happened to be counting. record_flag() also
+      // decides whether this signal is a new departure or more evidence of the
+      // one already counted, which is a judgement only the whole record can make.
+      const { data, error } = await supabase.current.rpc("record_flag", {
+        p_session_id: sessionId,
+        p_type: type,
+        p_question_id: questionId ?? currentQuestionRef.current,
       });
+
+      if (error || typeof data !== "number") {
+        // Nothing was written down, so nothing has been earned. Ending a paper on
+        // a strike the record does not contain is the failure this exists to stop.
+        setWarning("Leaving the exam window is recorded — check your connection.");
+        return;
+      }
+
+      const next = data;
+      setStrikes(next);
 
       if (next >= lockdown.maxStrikes) {
         setWarning("Strike limit reached — submitting your exam.");
@@ -126,7 +155,7 @@ export function ExamRunner({
         );
       }
     },
-    [sessionId, lockdown.maxStrikes, started, finish],
+    [sessionId, lockdown.maxStrikes, started, superseded, finish],
   );
 
   useEffect(() => {
@@ -150,9 +179,26 @@ export function ExamRunner({
   // A departure still being collected when the page goes must not fire later.
   useEffect(() => () => tracker.dispose(), [tracker]);
 
+  // One sitting, one proctored tab.
+  //
+  // Two tabs on the same paper each ran their own listeners, so moving between
+  // them was recorded as leaving the exam — twice, once by each. The newest tab
+  // keeps the paper and the older ones stand down. Nothing is lost by yielding:
+  // the sitting is server-side and the new tab resumes the same saved answers.
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const channel = new BroadcastChannel(`exam-${sessionId}`);
+    const me = Math.random().toString(36).slice(2);
+    channel.onmessage = (e: MessageEvent<{ claim?: string }>) => {
+      if (e.data?.claim && e.data.claim !== me) setSuperseded(true);
+    };
+    channel.postMessage({ claim: me });
+    return () => channel.close();
+  }, [sessionId]);
+
   // --- lockdown listeners ---
   useEffect(() => {
-    if (!started || done) return;
+    if (!started || done || superseded) return;
 
     const onVisibility = () => {
       if (document.visibilityState === "hidden") noteDeparture("TAB_SWITCH");
@@ -192,6 +238,7 @@ export function ExamRunner({
   }, [
     started,
     done,
+    superseded,
     lockdown.fullscreenRequired,
     lockdown.blockCopyPaste,
     noteDeparture,
@@ -200,7 +247,7 @@ export function ExamRunner({
 
   // --- countdown ---
   useEffect(() => {
-    if (!started || done || timer.totalMinutes <= 0) return;
+    if (!started || done || superseded || timer.totalMinutes <= 0) return;
     const endsAt = new Date(startedAt).getTime() + timer.totalMinutes * 60000;
 
     const tick = () => {
@@ -211,7 +258,7 @@ export function ExamRunner({
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [started, done, timer.totalMinutes, startedAt, finish]);
+  }, [started, done, superseded, timer.totalMinutes, startedAt, finish]);
 
   const persist = useCallback(
     async (questionId: string, value: string) => {
@@ -231,25 +278,38 @@ export function ExamRunner({
     saveTimer.current = setTimeout(() => persist(questionId, value), AUTOSAVE_MS);
   };
 
+  // Save whatever is on screen now, cancelling the debounce that was going to.
+  // Held in a ref because `finish` is called from event listeners that must not
+  // close over a stale copy.
+  useEffect(() => {
+    flushRef.current = async () => {
+      const q = questions[indexRef.current];
+      if (!q) return;
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      const pending = answersRef.current[q.id];
+      if (pending != null) await persist(q.id, pending);
+    };
+  }, [questions, persist]);
+
   // Shared by the Next button and the per-question timer, so a question that runs
   // out of time is saved and left behind exactly as if the student had moved on.
   const advance = useCallback(async () => {
-    const q = questions[indexRef.current];
-    if (!q) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    const pending = answersRef.current[q.id];
-    if (pending != null) await persist(q.id, pending);
+    if (!questions[indexRef.current]) return;
+    await flushRef.current();
 
     if (indexRef.current >= questions.length - 1) {
       finish("manual");
     } else {
       setIndex((i) => i + 1);
     }
-  }, [questions, persist, finish]);
+  }, [questions, finish]);
 
   // --- per-question countdown ---
   useEffect(() => {
-    if (!started || done || !timer.perQuestionSeconds) return;
+    if (!started || done || superseded || !timer.perQuestionSeconds) return;
     const limit = timer.perQuestionSeconds * 1000;
     const startedThisQuestion = Date.now();
 
@@ -261,7 +321,7 @@ export function ExamRunner({
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, [started, done, index, timer.perQuestionSeconds, advance]);
+  }, [started, done, superseded, index, timer.perQuestionSeconds, advance]);
 
   const startExam = async () => {
     if (lockdown.fullscreenRequired) {
@@ -279,14 +339,33 @@ export function ExamRunner({
   const isLast = index === questions.length - 1;
 
   if (done) {
+    // The same words the exam page will give if they come back to it later.
+    const said = explainSubmission(submitState.reason ?? null, {
+      strikes,
+      maxStrikes: lockdown.maxStrikes,
+    });
     return (
       <Shell title={examTitle}>
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-          Exam submitted
+        <h2
+          className={`text-lg font-medium ${
+            said.blamed
+              ? "text-amber-800 dark:text-amber-300"
+              : "text-gray-900 dark:text-gray-50"
+          }`}
+        >
+          {said.headline}
         </h2>
+        {said.detail ? (
+          <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            {said.detail}
+          </p>
+        ) : null}
         {submitState.score != null ? (
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Score: {submitState.score}%
+          <p className="mt-4 border-t border-gray-200 pt-4 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-400">
+            Score:{" "}
+            <span className="text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+              {submitState.score}%
+            </span>
           </p>
         ) : null}
         <Link
@@ -295,6 +374,21 @@ export function ExamRunner({
         >
           Back to home
         </Link>
+      </Shell>
+    );
+  }
+
+  if (superseded) {
+    return (
+      <Shell title={examTitle}>
+        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+          Opened in another tab
+        </h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          This exam is now open in a newer tab or window, and is being taken
+          there. Your answers are saved — carry on in that one. Nothing you do
+          here is recorded.
+        </p>
       </Shell>
     );
   }

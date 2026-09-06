@@ -20,10 +20,13 @@ import {
   tooLarge,
 } from "../../src/lib/ai/fit.ts";
 import {
+  PAGE_LIMIT_MS,
+  RUN_BUDGET_MS,
   TYPICAL_REQUEST_MS,
   estimateTotalMs,
+  formatClock,
   humanDuration,
-  remainingMs,
+  project,
 } from "../../src/lib/ai/eta.ts";
 import { planBatches } from "../../src/lib/ai/batches.ts";
 
@@ -109,28 +112,82 @@ t(explainProviderError("groq: 503 model is overloaded").includes("busy"),
 t(explainProviderError("something nobody anticipated") === "something nobody anticipated",
   "and anything unrecognised is passed through rather than swallowed");
 
-section("How long it will take");
+section("What the order will cost, before it starts");
 
 t(planBatches(5, 2).length === 1, "a small order is one request");
 t(planBatches(40, 20).length === 4, "sixty questions is four", `${planBatches(40, 20).length}`);
-
-t(estimateTotalMs(4) === 4 * TYPICAL_REQUEST_MS, "the up-front estimate is per request");
+t(estimateTotalMs(2) === 2 * TYPICAL_REQUEST_MS, "the estimate is per request");
 t(estimateTotalMs(0) === 0, "nothing asked for takes no time");
+t(estimateTotalMs(20) === RUN_BUDGET_MS,
+  "and never promises more time than the run is allowed to take",
+  `${estimateTotalMs(20) / 1000}s`);
 
-t(remainingMs({ done: 0, total: 4, elapsedMs: 0 }) === 4 * TYPICAL_REQUEST_MS,
-  "before anything lands, the prior stands alone");
+section("Counting down, second by second");
 
-const afterOne = remainingMs({ done: 1, total: 4, elapsedMs: 30_000 });
-t(afterOne > 3 * TYPICAL_REQUEST_MS && afterOne < 3 * 30_000,
-  "one slow request moves the estimate without being believed outright",
-  `${Math.round(afterOne / 1000)}s`);
+// Nothing has landed yet, and the first request has been out for the whole run.
+const at = (s) => project({ done: 0, total: 4, elapsedMs: s * 1000, sinceLastMs: s * 1000 });
 
-const afterTwo = remainingMs({ done: 2, total: 4, elapsedMs: 60_000 });
-t(afterTwo === 60_000, "by the second, the measurement stands on its own", `${afterTwo}ms`);
+const t0 = at(0).remainingMs;
+const t5 = at(5).remainingMs;
+const t10 = at(10).remainingMs;
+t(t5 < t0 && t10 < t5, "the figure falls as the seconds pass",
+  `${Math.round(t0 / 1000)}s → ${Math.round(t5 / 1000)}s → ${Math.round(t10 / 1000)}s`);
+t(Math.abs((t0 - t5) - 5000) < 250, "by about a second a second", `${Math.round((t0 - t5) / 1000)}s in 5s`);
 
-t(remainingMs({ done: 4, total: 4, elapsedMs: 80_000 }) === 0, "nothing left when it is done");
-t(remainingMs({ done: 0, total: 0, elapsedMs: 0 }) === null,
-  "and nothing claimed when there is nothing to measure");
+section("Adjusting to how the run is actually going");
+
+// A request that has already run longer than expected is evidence about the
+// ones behind it: a slow connection, or a busy model.
+const slow = project({ done: 0, total: 4, elapsedMs: 40_000, sinceLastMs: 40_000 });
+t(slow.perRequestMs >= 40_000,
+  "a request running long raises the expectation for the rest",
+  `${Math.round(slow.perRequestMs / 1000)}s each`);
+t(slow.remainingMs === PAGE_LIMIT_MS - 40_000,
+  "but the answer is still bounded by the time the request actually has left",
+  `${Math.round(slow.remainingMs / 1000)}s left of the 60s the platform allows`);
+
+// Without that bound the same run projects a shade over two minutes onto a page
+// that will be killed in twenty seconds.
+const unbounded = 3 * slow.perRequestMs;
+t(unbounded > PAGE_LIMIT_MS,
+  "which is the difference between an estimate and a fiction",
+  `raw arithmetic said ${Math.round(unbounded / 1000)}s`);
+
+// And the other way: a fast connection should not be held to the prior.
+const quick = project({ done: 2, total: 4, elapsedMs: 12_000, sinceLastMs: 2_000 });
+t(quick.perRequestMs === 5_000, "two quick requests set a quick expectation",
+  `${quick.perRequestMs}ms each`);
+t(quick.remainingMs < 2 * TYPICAL_REQUEST_MS, "and the estimate comes down with them",
+  `${Math.round(quick.remainingMs / 1000)}s left`);
+
+const firstOne = project({ done: 1, total: 4, elapsedMs: 31_000, sinceLastMs: 1_000 });
+t(firstOne.perRequestMs > 18_000 && firstOne.perRequestMs < 30_000,
+  "one measurement is blended with the prior, not believed outright",
+  `${Math.round(firstOne.perRequestMs / 1000)}s each`);
+
+section("What it never does");
+
+t(project({ done: 3, total: 4, elapsedMs: 60_000, sinceLastMs: 30_000 }).remainingMs > 0,
+  "it never reaches zero while a request is still out");
+t(project({ done: 4, total: 4, elapsedMs: 70_000, sinceLastMs: 5_000 }).remainingMs === 0,
+  "but it is zero once they have all landed");
+t(project({ done: 0, total: 0, elapsedMs: 0, sinceLastMs: 0 }) === null,
+  "and claims nothing when there is nothing to measure");
+t(project({ done: 0, total: 4, elapsedMs: 0, sinceLastMs: -50 }).remainingMs > 0,
+  "a clock that ran backwards does not produce a negative estimate");
+
+section("The bar");
+
+const early = project({ done: 0, total: 4, elapsedMs: 1_000, sinceLastMs: 1_000 });
+const later = project({ done: 0, total: 4, elapsedMs: 9_000, sinceLastMs: 9_000 });
+t(later.fraction > early.fraction,
+  "it advances between landings, so twenty seconds does not look frozen",
+  `${Math.round(early.fraction * 100)}% → ${Math.round(later.fraction * 100)}%`);
+t(later.fraction < 1 / 4,
+  "but never finishes a request that has not landed",
+  `${(later.fraction * 100).toFixed(1)}% of a 25% segment`);
+t(project({ done: 3, total: 4, elapsedMs: 80_000, sinceLastMs: 40_000 }).fraction <= 0.97,
+  "and never shows a full bar while still waiting");
 
 section("Saying it out loud");
 
@@ -138,6 +195,10 @@ t(humanDuration(3_000) === "a few seconds", "under ten seconds is not worth a nu
 t(humanDuration(37_000) === "35 seconds", "seconds are rounded to five", humanDuration(37_000));
 t(humanDuration(125_000) === "2 minutes", "and longer waits to minutes", humanDuration(125_000));
 t(humanDuration(-5) === "a few seconds", "a negative estimate never escapes");
+
+t(formatClock(45_000) === "0:45", "the clock reads like a clock", formatClock(45_000));
+t(formatClock(65_000) === "1:05", "past a minute too", formatClock(65_000));
+t(formatClock(-1) === "0:00", "and never goes negative", formatClock(-1));
 
 console.log(`\n${checks} checks, ${bugs.length} failing`);
 for (const b of bugs) console.log(`  BUG  ${b.l}${b.d ? " — " + b.d : ""}`);

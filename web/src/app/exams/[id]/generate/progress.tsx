@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { humanDuration, remainingMs } from "@/lib/ai/eta";
+import { formatClock, project } from "@/lib/ai/eta";
 
 /**
  * How far a generation has actually got.
  *
  * A large order is several model calls in sequence and a server action cannot
  * stream, so the action records each batch as it lands and this polls for it.
- * The alternative was a bar advancing on a timer: one that reaches 90% and sits
- * there teaches a teacher to distrust the next one, which is worse than the
- * button that just said "this can take a moment".
+ *
+ * Within a request the bar does move on a clock, because a bar that only jumps
+ * when a batch arrives spends twenty seconds looking frozen. What it will not
+ * do is run ahead of the truth: a segment can creep to 95% of its own width but
+ * only completes when the request actually lands, so the bar can never claim
+ * work that has not happened — which is what makes a progress bar untrustworthy.
  *
  * Before the first batch reports — the file is still being read — there is
  * genuinely nothing to measure, so it says so rather than showing 0%.
@@ -20,13 +23,24 @@ export function GenerationProgress({ runId }: { runId: string }) {
   const [done, setDone] = useState<number | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [seconds, setSeconds] = useState(0);
+  // When the last request landed, on the same clock as `seconds`. The countdown
+  // is driven by how long the *current* request has been out, so this is what
+  // makes it fall by a second every second instead of only moving when a batch
+  // arrives.
+  const [landedAt, setLandedAt] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
     let live = true;
 
-    const tick = setInterval(() => setSeconds((s) => s + 1), 1000);
+    // Read by the poll below, which must not close over a stale second.
+    const clock = { seconds: 0 };
+    const tick = setInterval(() => {
+      clock.seconds += 1;
+      setSeconds(clock.seconds);
+    }, 1000);
 
+    let seen: number | null = null;
     const poll = async () => {
       const { data } = await supabase
         .from("generation_progress")
@@ -34,6 +48,10 @@ export function GenerationProgress({ runId }: { runId: string }) {
         .eq("run_id", runId)
         .maybeSingle();
       if (!live || !data) return;
+      if (seen !== data.done) {
+        seen = data.done;
+        setLandedAt(clock.seconds);
+      }
       setDone(data.done);
       setTotal(data.total);
     };
@@ -50,19 +68,18 @@ export function GenerationProgress({ runId }: { runId: string }) {
 
   const known = total != null && total > 0 && done != null;
 
-  // How much longer, measured rather than guessed: every request that lands is
-  // evidence about the ones that have not. Counting seconds upwards told a
-  // teacher how long they had waited and nothing about how long was left — and
-  // a number climbing past twenty is also what a hung page looks like.
-  //
-  // Elapsed comes from the ticker rather than a clock read during render: the
-  // ticker starts with this panel, so the two agree, and rendering stays pure.
-  const left = known
-    ? remainingMs({ done: done!, total: total!, elapsedMs: seconds * 1000 })
+  // Both clocks come from the ticker rather than a clock read during render:
+  // the ticker starts with this panel, so they agree, and rendering stays pure.
+  const run = known
+    ? project({
+        done: done!,
+        total: total!,
+        elapsedMs: seconds * 1000,
+        sinceLastMs: (seconds - landedAt) * 1000,
+      })
     : null;
-  // The last batch is only finished once the drafts come back, so a full bar
-  // while still waiting would be a lie. Hold just short of it.
-  const pct = known ? Math.min(97, Math.round((done! / total!) * 100)) : null;
+
+  const pct = run ? Math.round(run.fraction * 100) : null;
 
   return (
     <div
@@ -78,12 +95,12 @@ export function GenerationProgress({ runId }: { runId: string }) {
               : "Writing questions"
             : "Reading your lesson file…"}
         </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {left == null
+        <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
+          {run == null
             ? `${seconds}s`
-            : left < 8000
+            : run.remainingMs < 5_000
               ? "almost done"
-              : `about ${humanDuration(left)} left`}
+              : `${formatClock(run.remainingMs)} left`}
         </span>
       </div>
 
@@ -94,7 +111,9 @@ export function GenerationProgress({ runId }: { runId: string }) {
           <div className="h-full w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-teal-600 dark:bg-teal-500" />
         ) : (
           <div
-            className="h-full rounded-full bg-teal-600 transition-[width] duration-500 dark:bg-teal-500"
+            // Linear over the full tick, so the bar glides between updates
+            // rather than stepping once a second.
+            className="h-full rounded-full bg-teal-600 transition-[width] duration-1000 ease-linear dark:bg-teal-500"
             style={{ width: `${Math.max(4, pct)}%` }}
           />
         )}

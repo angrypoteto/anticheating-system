@@ -6,9 +6,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
 import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
-import { generateQuestions, MODEL_CALL_TIMEOUT_MS } from "@/lib/ai/generate";
+import { generateQuestions } from "@/lib/ai/generate";
 import { mergeDrafts, planBatches } from "@/lib/ai/batches";
 import { explainProviderError } from "@/lib/ai/fit";
+import { RUN_BUDGET_MS } from "@/lib/ai/eta";
 
 export type GenerateState = {
   error?: string;
@@ -172,7 +173,7 @@ export async function generateFromFile(
   // The page carries maxDuration = 60. Everything below must finish inside
   // this, so the teacher gets an answer rather than a killed request and a
   // browser error page with nothing in it.
-  const hardStop = Date.now() + 52_000;
+  const hardStop = Date.now() + RUN_BUDGET_MS;
   let ranOutOfTime = false;
   const returned: DraftQuestion[][] = [];
   let keyLabel = "";

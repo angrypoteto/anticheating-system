@@ -167,13 +167,13 @@ export function Directory({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+            <thead className="border-b border-gray-100 bg-gray-50/60 text-[11px] tracking-[0.07em] text-gray-500 uppercase">
               <tr>
-                <th className="px-6 py-3 font-medium">Person</th>
-                <th className="px-6 py-3 font-medium">Role</th>
-                {useClasses ? <th className="px-6 py-3 font-medium">Classes</th> : null}
-                <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium">Action</th>
+                <th className="px-5.5 py-3 font-medium">Person</th>
+                <th className="px-5.5 py-3 font-medium">Role</th>
+                {useClasses ? <th className="px-5.5 py-3 font-medium">Classes</th> : null}
+                <th className="px-5.5 py-3 font-medium">Status</th>
+                <th className="px-5.5 py-3 font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -182,21 +182,33 @@ export function Directory({
                   key={p.id}
                   className="border-b border-gray-100 align-top last:border-0 dark:border-gray-800"
                 >
-                  <td className="px-6 py-3">
-                    <span className="text-gray-900 dark:text-gray-100">
+                  <td className="px-5.5 py-3.5">
+                    <span className="block font-medium text-gray-900">
                       {p.full_name || p.email}
                     </span>
                     {p.full_name ? (
-                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="mt-0.5 block font-mono text-[12.5px] text-gray-500">
                         {p.username ? `@${p.username}` : p.email}
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-6 py-3 text-gray-600 dark:text-gray-400">
-                    {p.role.toLowerCase()}
+                  <td className="px-5.5 py-3.5">
+                    {/* A role is what somebody IS; a status is what their account is
+                        doing. Different shapes, so a glance never confuses them. */}
+                    <span
+                      className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium ${
+                        p.role === "ADMIN"
+                          ? "border-teal-100 bg-teal-50 text-teal-800"
+                          : p.role === "INSTRUCTOR"
+                            ? "border-accent-line bg-accent-soft text-[#0B5B57]"
+                            : "border-gray-200 bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {p.role.toLowerCase()}
+                    </span>
                   </td>
 {useClasses ? (
-                  <td className="px-6 py-3">
+                  <td className="px-5.5 py-3.5">
                     {p.role !== "STUDENT" ? (
                       <span className="text-gray-400 dark:text-gray-600">—</span>
                     ) : (
@@ -229,18 +241,17 @@ export function Directory({
                     )}
                   </td>
                   ) : null}
-                  <td className="px-6 py-3">
+                  <td className="px-5.5 py-3.5">
                     <span
-                      className={
-                        p.status === "ACTIVE"
-                          ? "text-green-700 dark:text-green-400"
-                          : "text-gray-400 dark:text-gray-500"
-                      }
+                      className={`inline-flex items-center gap-1.5 text-[13px] ${
+                        p.status === "ACTIVE" ? "text-green-700" : "text-gray-500"
+                      }`}
                     >
+                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
                       {p.status.toLowerCase()}
                     </span>
                   </td>
-                  <td className="px-6 py-3">
+                  <td className="px-5.5 py-3.5">
                     {p.id === adminId ? (
                       <span className="text-xs text-gray-400 dark:text-gray-600">you</span>
                     ) : (

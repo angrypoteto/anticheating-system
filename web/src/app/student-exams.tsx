@@ -52,7 +52,7 @@ function Verdict({ passed }: { passed: boolean }) {
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+    <span className="shrink-0 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-gray-600">
       {children}
     </span>
   );
@@ -60,19 +60,21 @@ function Chip({ children }: { children: React.ReactNode }) {
 
 function Chevron() {
   return (
-    <span
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
       aria-hidden
-      className="shrink-0 text-gray-400 transition group-open:rotate-90 dark:text-gray-500"
+      className="h-3.5 w-3.5 shrink-0 text-gray-500 transition group-open:rotate-90"
     >
-      ›
-    </span>
+      <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <dt className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
         {label}
       </dt>
       <dd className="mt-0.5 text-sm text-gray-900 dark:text-gray-100">{children}</dd>
@@ -155,7 +157,7 @@ export async function StudentExams() {
     <div className="mt-4 space-y-6">
       {todo.length ? (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <h3 className="text-[11px] font-medium tracking-[0.08em] text-gray-500 uppercase">
             To take · {todo.length}
           </h3>
           <ul className="mt-2 space-y-2">
@@ -229,7 +231,7 @@ export async function StudentExams() {
 
       {done.length ? (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <h3 className="text-[11px] font-medium tracking-[0.08em] text-gray-500 uppercase">
             Results · {done.length}
           </h3>
           <ul className="mt-2 space-y-2">
@@ -238,18 +240,18 @@ export async function StudentExams() {
                 <details>
                   <summary className={summaryClass}>
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
-                        {r.title}
-                      </span>
                       {r.subject ? (
-                        <span className="block truncate text-xs text-accent dark:text-[#5FBDB6]">
+                        <span className="block truncate text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
                           {r.subject}
                         </span>
                       ) : null}
+                      <span className="mt-0.5 block truncate text-[15px] font-medium text-gray-900">
+                        {r.title}
+                      </span>
                     </span>
                     <span className="flex items-center gap-2">
                       {r.score != null ? (
-                        <span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                        <span className="w-14 shrink-0 text-right font-mono text-[17px] font-medium tabular-nums text-gray-900">
                           {r.score}%
                         </span>
                       ) : null}

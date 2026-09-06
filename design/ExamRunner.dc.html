@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap');
+    :root{
+      --navy-900:#0A1730;--navy-800:#0F2245;--navy-700:#12315B;--navy-600:#1B4179;
+      --navy-500:#2A5799;--navy-300:#8FAAD2;--navy-100:#D3DEEE;--navy-50:#EEF3FA;
+      --paper:#F6F8FB;--card:#FFFFFF;--line:#DCE3ED;--line-soft:#EAEFF6;
+      --ink:#0D1524;--ink-2:#42506B;--ink-3:#6B7A93;
+      --accent:#0F6F6B;--good:#136F49;--good-bg:#E7F4EE;
+      --warn:#8A5A00;--warn-bg:#FBF1DC;--bad:#A81F1A;--bad-bg:#FBEAE8;
+      --sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
+      --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+      --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:var(--sans);background:var(--navy-900);color:var(--ink);
+      -webkit-font-smoothing:antialiased;}
+    a{color:var(--navy-600);} a:hover{color:var(--navy-700);}
+
+    .frame{min-height:900px;display:flex;flex-direction:column;}
+
+    .bar{background:var(--navy-800);color:#fff;padding:14px 32px;
+      display:flex;align-items:center;justify-content:space-between;gap:24px;}
+    .bar .id{display:flex;align-items:center;gap:12px;font-size:14px;}
+    .bar .id b{font-weight:500;}
+    .bar .sep{width:1px;height:18px;background:rgba(255,255,255,.18);}
+    .meta{display:flex;align-items:center;gap:20px;}
+    .warnchip{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+      background:rgba(245,190,90,.15);border:1px solid rgba(245,190,90,.4);
+      color:#F0C97A;font-size:13px;font-weight:500;}
+    .clock{display:flex;align-items:baseline;gap:7px;font-family:var(--mono);font-size:20px;
+      font-weight:500;letter-spacing:-0.01em;}
+    .clock small{font-family:var(--sans);font-size:11px;letter-spacing:.07em;
+      text-transform:uppercase;color:var(--navy-300);font-weight:500;}
+
+    .track{height:3px;background:rgba(255,255,255,.12);}
+    .track span{display:block;height:100%;background:#4E79B8;}
+
+    .stage{flex:1;display:flex;justify-content:center;padding:40px 32px 32px;background:var(--paper);}
+    .sheet{width:100%;max-width:780px;}
+
+    .alert{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:10px;
+      background:var(--warn-bg);border:1px solid #EDD9A8;margin-bottom:26px;}
+    .alert b{display:block;font-size:14px;font-weight:600;color:#6E4800;}
+    .alert p{margin:3px 0 0;font-size:13px;line-height:1.5;color:#7A5410;}
+
+    .qhead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;}
+    .qnum{font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);}
+    .saved{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--good);}
+
+    h1{font-family:var(--serif);font-size:31px;line-height:1.28;font-weight:600;margin:0 0 30px;
+      letter-spacing:-0.01em;text-wrap:pretty;}
+
+    .opts{display:flex;flex-direction:column;gap:12px;}
+    .opt{display:flex;align-items:center;gap:16px;min-height:64px;padding:14px 20px;
+      background:var(--card);border:1.5px solid var(--line);border-radius:10px;font-size:16px;}
+    .opt.sel{border-color:var(--navy-600);background:#F4F8FE;
+      box-shadow:0 0 0 3px rgba(27,65,121,.10);}
+    .key{width:30px;height:30px;flex-shrink:0;border-radius:999px;border:1.5px solid var(--line);
+      display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;
+      color:var(--ink-3);background:#FBFCFE;}
+    .opt.sel .key{background:var(--navy-700);border-color:var(--navy-700);color:#fff;}
+
+    .foot{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:34px;}
+    .count{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+    .next{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 28px;border-radius:10px;
+      background:var(--navy-700);color:#fff;font-size:15px;font-weight:500;}
+
+    .rules{padding:16px 32px;background:var(--navy-900);color:var(--navy-300);
+      font-size:12px;display:flex;align-items:center;justify-content:center;gap:10px;}
+  </style>
+</helmet>
+
+<div class="frame">
+  <div class="bar">
+    <div class="id">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2.75 4.75 5.5v6.02c0 4.34 2.94 8.4 7.25 9.73 4.31-1.33 7.25-5.39 7.25-9.73V5.5L12 2.75Z"
+          stroke="#8FAAD2" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="m8.9 12.1 2.15 2.15 4.05-4.5" stroke="#fff" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <b>Quiz #3 — Network Fundamentals</b>
+      <span class="sep"></span>
+      <span style="color:#A9C0DD;">SYSARCH</span>
+    </div>
+    <div class="meta">
+      <span class="warnchip">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 8.5v5" stroke="#F0C97A" stroke-width="1.9" stroke-linecap="round"/>
+          <circle cx="12" cy="17" r="1.15" fill="#F0C97A"/>
+          <path d="M10.6 3.9 2.9 17.4A1.6 1.6 0 0 0 4.3 19.8h15.4a1.6 1.6 0 0 0 1.4-2.4L13.4 3.9a1.6 1.6 0 0 0-2.8 0Z"
+            stroke="#F0C97A" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        Warning 1 of 3
+      </span>
+      <span class="clock"><small>Time left</small> 44:28</span>
+    </div>
+  </div>
+  <div class="track"><span style="width:20%"></span></div>
+
+  <div class="stage">
+    <div class="sheet">
+      <div class="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;margin-top:1px;" aria-hidden="true">
+          <path d="M12 8.5v5" stroke="#8A5A00" stroke-width="1.9" stroke-linecap="round"/>
+          <circle cx="12" cy="17" r="1.15" fill="#8A5A00"/>
+          <path d="M10.6 3.9 2.9 17.4A1.6 1.6 0 0 0 4.3 19.8h15.4a1.6 1.6 0 0 0 1.4-2.4L13.4 3.9a1.6 1.6 0 0 0-2.8 0Z"
+            stroke="#8A5A00" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <b>Warning 1 of 3 — you left the exam window</b>
+          <p>Leaving is recorded each time, however you leave. Two more and your exam is submitted as it stands.</p>
+        </div>
+      </div>
+
+      <div class="qhead">
+        <span class="qnum">Question 5 of 25</span>
+        <span class="saved">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m5 12.5 4.5 4.5L19 7.5" stroke="#136F49" stroke-width="2.1"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Answer saved
+        </span>
+      </div>
+
+      <h1>What is the effective transmission range between nodes in a wireless mesh topology?</h1>
+
+      <div class="opts">
+        <div class="opt"><span class="key">A</span>Limited only by the number of hops permitted by the routing protocol</div>
+        <div class="opt sel"><span class="key">B</span>The radio range of a single node, extended by each intermediate node it relays through</div>
+        <div class="opt"><span class="key">C</span>Fixed at 100 metres regardless of the hardware in use</div>
+        <div class="opt"><span class="key">D</span>Determined solely by the bandwidth allocated to the channel</div>
+      </div>
+
+      <div class="foot">
+        <span class="count">18 of 25 answered · you cannot return to a question once you move on</span>
+        <span class="next">
+          Next question
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5" stroke="#fff" stroke-width="1.9"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4.75" y="10.5" width="14.5" height="9.75" rx="2" stroke="#8FAAD2" stroke-width="1.5"/>
+      <path d="M8.25 10.5V7.75a3.75 3.75 0 0 1 7.5 0v2.75" stroke="#8FAAD2" stroke-width="1.5"/>
+    </svg>
+    Fullscreen is required · leaving this window is recorded · copy and paste are disabled
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

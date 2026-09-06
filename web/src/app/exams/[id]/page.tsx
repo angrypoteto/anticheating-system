@@ -103,11 +103,11 @@ export default async function ExamEditorPage({
           <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
             <div>
               {subjectName ? (
-                <p className="text-sm font-medium text-teal-700 dark:text-teal-400">
+                <p className="text-sm font-medium text-accent dark:text-[#5FBDB6]">
                   {subjectName}
                 </p>
               ) : null}
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
+              <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
                 {exam.title}
               </h1>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

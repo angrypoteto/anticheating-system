@@ -15,7 +15,7 @@ export default function NewExamPage() {
           >
             ← All exams &amp; quizzes
           </Link>
-          <h1 className="mt-3 text-2xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
             Generate an exam or quiz
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{BUILDER_BLURB}</p>

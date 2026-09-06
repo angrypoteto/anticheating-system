@@ -172,7 +172,7 @@ export async function StudentExams() {
                           {r.title}
                         </span>
                         {r.subject ? (
-                          <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
+                          <span className="block truncate text-xs text-accent dark:text-[#5FBDB6]">
                             {r.subject}
                           </span>
                         ) : null}
@@ -242,7 +242,7 @@ export async function StudentExams() {
                         {r.title}
                       </span>
                       {r.subject ? (
-                        <span className="block truncate text-xs text-teal-700 dark:text-teal-400">
+                        <span className="block truncate text-xs text-accent dark:text-[#5FBDB6]">
                           {r.subject}
                         </span>
                       ) : null}

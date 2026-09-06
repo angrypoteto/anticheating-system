@@ -15,7 +15,7 @@ export default async function ExamsPage() {
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
       <div className="mx-auto max-w-4xl space-y-10">
         <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
             Exams &amp; quizzes
           </h1>
           <div className="flex items-center gap-4">

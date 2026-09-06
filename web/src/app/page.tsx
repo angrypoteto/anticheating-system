@@ -80,7 +80,7 @@ export default async function Home() {
       <div className="mx-auto max-w-3xl">
         <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-50">
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
               Proctorly
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

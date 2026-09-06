@@ -1,0 +1,217 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap');
+    :root{
+      --navy-900:#0A1730;--navy-800:#0F2245;--navy-700:#12315B;--navy-600:#1B4179;
+      --navy-500:#2A5799;--navy-300:#8FAAD2;--navy-100:#D3DEEE;--navy-50:#EEF3FA;
+      --paper:#F6F8FB;--card:#FFFFFF;--line:#DCE3ED;--line-soft:#EAEFF6;
+      --ink:#0D1524;--ink-2:#42506B;--ink-3:#6B7A93;
+      --accent:#0F6F6B;--accent-bg:#E3F2F0;
+      --good:#136F49;--good-bg:#E7F4EE;--warn:#8A5A00;--warn-bg:#FBF1DC;--bad:#A81F1A;--bad-bg:#FBEAE8;
+      --sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
+      --serif:'Source Serif 4',Georgia,'Times New Roman',serif;
+      --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);
+      -webkit-font-smoothing:antialiased;}
+    a{color:var(--navy-600);text-decoration:none;}
+    a:hover{color:var(--navy-700);text-decoration:underline;text-underline-offset:3px;}
+
+    .shell{display:flex;min-height:900px;}
+    .side{width:264px;flex-shrink:0;background:var(--navy-800);color:#fff;display:flex;flex-direction:column;}
+    .brand{display:flex;align-items:center;gap:10px;padding:22px 20px 20px;font-weight:600;font-size:16px;}
+    .navgroup{padding:14px 12px 0;}
+    .navlabel{padding:0 12px 8px;font-size:11px;font-weight:500;letter-spacing:.08em;
+      text-transform:uppercase;color:var(--navy-300);}
+    .nav-a{display:flex;align-items:center;padding:9px 12px;border-radius:6px;font-size:14px;
+      color:#C6D5EA;min-height:38px;}
+    .nav-a.on{background:var(--navy-600);color:#fff;font-weight:500;}
+    .sidefoot{margin-top:auto;padding:16px 20px 20px;border-top:1px solid rgba(255,255,255,.09);
+      font-size:12px;color:var(--navy-300);line-height:1.5;}
+
+    .main{flex:1;min-width:0;padding:30px 40px 44px;}
+    .head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;
+      padding-bottom:22px;border-bottom:1px solid var(--line);}
+    h1{font-family:var(--serif);font-size:30px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+    .sub{margin:7px 0 0;font-size:14px;color:var(--ink-3);max-width:62ch;}
+    .cta{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 18px;border-radius:9px;
+      background:var(--navy-700);color:#fff;font-size:14px;font-weight:500;flex-shrink:0;}
+
+    .list{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+    .row{display:flex;align-items:center;gap:18px;padding:17px 24px;border-bottom:1px solid var(--line-soft);}
+    .row:last-child{border-bottom:0;}
+    .t{flex:1;min-width:0;}
+    .t .a{font-size:15.5px;font-weight:500;letter-spacing:-0.005em;}
+    .t .subj{margin-top:3px;font-size:12px;font-weight:500;letter-spacing:.06em;
+      text-transform:uppercase;color:var(--accent);}
+    .t .b{margin-top:4px;font-size:13px;color:var(--ink-3);}
+    .chev{color:var(--ink-3);flex-shrink:0;}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+      font-size:12px;font-weight:500;border:1px solid transparent;}
+    .p-open{background:var(--good-bg);color:var(--good);border-color:#BFE0D0;}
+    .p-closed{background:#EEF1F6;color:var(--ink-2);border-color:#D9E0EA;}
+    .p-sched{background:var(--warn-bg);color:var(--warn);border-color:#EDD9A8;}
+    .status{font-size:13px;color:var(--ink-3);width:74px;text-align:right;}
+
+    .open{background:#FBFCFE;border-bottom:1px solid var(--line-soft);padding:6px 24px 22px 24px;}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 40px;padding-top:14px;}
+    .dl .k{font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);}
+    .dl .v{margin-top:5px;font-size:14px;}
+    .link{font-family:var(--mono);font-size:12.5px;color:var(--navy-600);word-break:break-all;}
+    .acts{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:20px;
+      padding-top:16px;border-top:1px solid var(--line-soft);}
+    .act{font-size:13.5px;color:var(--navy-600);border-bottom:1px solid var(--navy-100);padding-bottom:1px;}
+    .danger{color:var(--bad);border-bottom-color:#EFC9C6;}
+
+    .confirm{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-left:auto;}
+    .confirm .say{font-size:13px;color:var(--bad);}
+    .btn-danger{height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;
+      background:var(--bad);color:#fff;font-size:13px;font-weight:500;}
+    .btn-quiet{font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--line);padding-bottom:1px;}
+  </style>
+</helmet>
+
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M12 2.75 4.75 5.5v6.02c0 4.34 2.94 8.4 7.25 9.73 4.31-1.33 7.25-5.39 7.25-9.73V5.5L12 2.75Z"
+          stroke="#8FAAD2" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="m8.9 12.1 2.15 2.15 4.05-4.5" stroke="#fff" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Proctorly
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Teaching</div>
+      <a class="nav-a" href="#">Overview</a>
+      <a class="nav-a on" href="#">Exams &amp; quizzes</a>
+      <a class="nav-a" href="#">Generate exams</a>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">People</div>
+      <a class="nav-a" href="#">Students &amp; risk</a>
+      <a class="nav-a" href="#">Classes</a>
+    </div>
+    <div class="navgroup">
+      <div class="navlabel">Account</div>
+      <a class="nav-a" href="#">My profile</a>
+    </div>
+    <div class="sidefoot">Signed in as<br><span style="color:#DCE7F5">ms.reyes@bsit4c.edu</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div>
+        <h1>Exams &amp; quizzes</h1>
+        <p class="sub">Open one to see who it went to, when it runs, and the link students follow.</p>
+      </div>
+      <span class="cta">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5.5v13M5.5 12h13" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Generate exams &amp; quizzes
+      </span>
+    </div>
+
+    <div class="list">
+      <div class="row">
+        <span class="t">
+          <span class="subj">SYSARCH</span>
+          <span class="a" style="display:block;margin-top:3px;">Quiz #3 — Network Fundamentals</span>
+          <span class="b">BSIT 4C · 25 questions · 46 sittings</span>
+        </span>
+        <span class="pill p-open"><span style="width:7px;height:7px;border-radius:999px;background:currentColor;"></span>Open</span>
+        <span class="status">published</span>
+        <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="open">
+        <div class="grid">
+          <div class="dl"><div class="k">Subject</div><div class="v">System Architecture</div></div>
+          <div class="dl"><div class="k">Set by</div><div class="v">Ms. Reyes</div></div>
+          <div class="dl"><div class="k">Given to</div><div class="v">System Architecture — BSIT 4C</div></div>
+          <div class="dl"><div class="k">Availability</div><div class="v">Open until 6 Sep 2026, 11:00 AM</div></div>
+          <div class="dl"><div class="k">Time allowed</div><div class="v">1 hour · 3 warnings before auto-submit</div></div>
+          <div class="dl"><div class="k">Given on</div><div class="v">6 Sep 2026, 8:00 AM</div></div>
+          <div class="dl" style="grid-column:1 / -1;">
+            <div class="k">Student link</div>
+            <div class="v"><span class="link">https://proctorly.live/e/R-8K4LWXr9VWeqDB</span></div>
+          </div>
+        </div>
+        <div class="acts">
+          <a class="act" href="#">Open editor</a>
+          <a class="act" href="#">Watch it live</a>
+          <a class="act" href="#">Close now</a>
+          <a class="act danger" href="#">Delete</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="t">
+          <span class="subj">DATASTRUC</span>
+          <span class="a" style="display:block;margin-top:3px;">Midterm — Data Structures</span>
+          <span class="b">BSIT 4A · 40 questions · 38 sittings</span>
+        </span>
+        <span class="pill p-closed">Closed</span>
+        <span class="status">published</span>
+        <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="transform:rotate(-90deg)">
+          <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="row" style="background:#FDF7F7;">
+        <span class="t">
+          <span class="subj">SYSARCH</span>
+          <span class="a" style="display:block;margin-top:3px;">Quiz #2 — Transport Layer</span>
+          <span class="b">BSIT 4C · 20 questions · 44 sittings</span>
+        </span>
+        <span class="confirm">
+          <span class="say">Delete this and 44 sittings with 838 answers? This cannot be undone.</span>
+          <span class="btn-danger">Yes, delete</span>
+          <span class="btn-quiet">Cancel</span>
+        </span>
+      </div>
+
+      <div class="row">
+        <span class="t">
+          <span class="subj">SYSARCH</span>
+          <span class="a" style="display:block;margin-top:3px;">Finals — Full Coverage</span>
+          <span class="b">BSIT 4C · 60 questions · not yet given</span>
+        </span>
+        <span class="pill p-sched">Scheduled</span>
+        <span class="status">published</span>
+        <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="transform:rotate(-90deg)">
+          <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="row">
+        <span class="t">
+          <span class="subj">SYSARCH</span>
+          <span class="a" style="display:block;margin-top:3px;">Practice set — Subnetting</span>
+          <span class="b">BSIT 4C · 12 questions · not published</span>
+        </span>
+        <span class="status" style="width:auto;">draft</span>
+        <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="transform:rotate(-90deg)">
+          <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

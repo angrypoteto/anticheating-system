@@ -414,7 +414,7 @@ function StudentRow({
         <div className="min-w-0">
           <p className="font-medium text-gray-900 dark:text-gray-100">{name}</p>
           {classes.length ? (
-            <p className="mt-0.5 truncate text-xs text-teal-700 dark:text-teal-400">
+            <p className="mt-0.5 truncate text-xs text-accent dark:text-[#5FBDB6]">
               {classes.join(", ")}
             </p>
           ) : null}
@@ -446,7 +446,7 @@ function StudentRow({
               <input type="hidden" name="examId" value={examId} />
               {openUntil ? (
                 <>
-                  <span className="text-xs text-teal-700 dark:text-teal-400">
+                  <span className="text-xs text-accent dark:text-[#5FBDB6]">
                     can answer until{" "}
                     {openUntil.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                   </span>

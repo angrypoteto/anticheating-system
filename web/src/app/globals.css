@@ -1,8 +1,83 @@
 @import "tailwindcss";
 
+/* The navy system.
+ *
+ * Roughly fourteen hundred colour utilities are spread across sixty files, so
+ * the palette is changed here, at the token layer, rather than by rewriting
+ * every class name. Tailwind's own `gray` and `teal` scales are redefined to
+ * the navy system's ramps, which means every `text-gray-500` and `bg-teal-700`
+ * already in the codebase now paints the redesign.
+ *
+ * The one wart worth knowing about: a class called `gray-900` renders navy.
+ * The scale keeps its MEANING at every step — 50 is the lightest surface, 950
+ * the darkest, 500 the muted ink — so the utilities still read correctly as
+ * weights; only the hue moved. New code should prefer the semantic names at
+ * the bottom of this block (`text-ink`, `border-line`, `bg-card`, `text-accent`).
+ *
+ * Status colours are deliberately untouched. Green, amber and red already mean
+ * one thing each in this product, and a redesign is no reason to make a teacher
+ * relearn what a red pill is telling them. */
+@theme {
+  /* Neutrals: navy-tinted, not grey. Cool enough to sit under navy chrome
+     without the muddy cast a true grey takes on next to it. */
+  --color-gray-50:  #F6F8FB;
+  --color-gray-100: #EEF3FA;
+  --color-gray-200: #DCE3ED;
+  --color-gray-300: #C3CEDE;
+  --color-gray-400: #93A6C0;
+  --color-gray-500: #6B7A93;
+  --color-gray-600: #55637C;
+  --color-gray-700: #42506B;
+  --color-gray-800: #1B2B47;
+  --color-gray-900: #0F2245;
+  --color-gray-950: #0A1730;
+
+  /* The brand ramp. `teal-*` is what the codebase already reaches for when it
+     means "this is Proctorly" — the primary button, the shield, a link — so
+     that is where navy goes. */
+  --color-teal-50:  #EEF3FA;
+  --color-teal-100: #D3DEEE;
+  --color-teal-200: #BACBE5;
+  --color-teal-300: #8FAAD2;
+  --color-teal-400: #4E79B8;
+  --color-teal-500: #2A5799;
+  --color-teal-600: #1B4179;
+  --color-teal-700: #12315B;
+  --color-teal-800: #0F2245;
+  --color-teal-900: #0B1A36;
+  --color-teal-950: #0A1730;
+
+  /* Named navy, for code written from here on. */
+  --color-navy-50:  #EEF3FA;
+  --color-navy-100: #D3DEEE;
+  --color-navy-300: #8FAAD2;
+  --color-navy-400: #4E79B8;
+  --color-navy-500: #2A5799;
+  --color-navy-600: #1B4179;
+  --color-navy-700: #12315B;
+  --color-navy-800: #0F2245;
+  --color-navy-900: #0A1730;
+
+  /* The single accent. Used for what a thing belongs to — a subject, a class —
+     and nothing else, so it never competes with navy for "press me". */
+  --color-accent:      #0F6F6B;
+  --color-accent-soft: #E3F2F0;
+  --color-accent-line: #BFDEDA;
+
+  /* Semantic surfaces and ink. */
+  --color-paper:  #F6F8FB;
+  --color-card:   #FFFFFF;
+  --color-line:   #DCE3ED;
+  --color-ink:    #0D1524;
+  --color-ink-2:  #42506B;
+  --color-muted:  #6B7A93;
+
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F6F8FB;
+  --foreground: #0D1524;
 }
 
 @theme inline {
@@ -14,15 +89,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0A1730;
+    --foreground: #EEF3FA;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Was `Arial, Helvetica, sans-serif`, which silently overrode the Geist face
+     the layout loads — the whole product rendered in Arial by accident. */
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Figures that sit in a column are compared down the column, so they must not
+   jitter as they update. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Printing a report should produce the report, not the whole console. */

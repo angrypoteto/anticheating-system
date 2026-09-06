@@ -140,7 +140,7 @@ export async function ExamList() {
                     {e.title}
                   </p>
                   {subject ? (
-                    <p className="mt-0.5 truncate text-xs text-teal-700 dark:text-teal-400">
+                    <p className="mt-0.5 truncate text-xs text-accent dark:text-[#5FBDB6]">
                       {subject}
                     </p>
                   ) : null}

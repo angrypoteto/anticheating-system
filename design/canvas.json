@@ -1,0 +1,59 @@
+{
+  "artboards": [
+    { "file": "Login.dc.html",         "x": 0,    "y": 0,    "w": 1440, "h": 900,  "title": "Sign in" },
+    { "file": "StudentHome.dc.html",   "x": 1560, "y": 0,    "w": 1440, "h": 900,  "title": "Student — home" },
+    { "file": "StudentPhone.dc.html",  "x": 3120, "y": 0,    "w": 390,  "h": 844,  "title": "Student — phone" },
+
+    { "file": "ExamRunner.dc.html",    "x": 0,    "y": 1060, "w": 1440, "h": 900,  "title": "Sitting an exam" },
+    { "file": "Main.dc.html",          "x": 1560, "y": 1060, "w": 1440, "h": 1200, "title": "Teacher — live monitor" },
+
+    { "file": "ExamList.dc.html",      "x": 0,    "y": 2400, "w": 1440, "h": 900,  "title": "Exams & quizzes" },
+    { "file": "AdminOverview.dc.html", "x": 1560, "y": 2400, "w": 1440, "h": 1040, "title": "Admin — overview" },
+
+    { "file": "Accounts.dc.html",      "x": 0,    "y": 3580, "w": 1440, "h": 900,  "title": "Admin — accounts" },
+    { "file": "Components.dc.html",    "x": 1560, "y": 3580, "w": 1240, "h": 1720, "title": "The navy system" }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": -380, "y": 0, "w": 300,
+      "text": "PROCTORLY — NAVY REDESIGN\n\nDeep navy chrome, cool paper surfaces, one teal accent, status colours reserved.\n\nSource Serif 4 for titles, Geist for everything else. (The live app currently overrides Geist with Arial in globals.css — worth fixing.)\n\nRead the rows top to bottom: signing in, sitting an exam, running one, administering the school, then the system sheet."
+    },
+    {
+      "id": "law-jakob",
+      "x": -380, "y": 320, "w": 300,
+      "text": "JAKOB'S LAW — sign in\n\nPeople spend most of their time on other sites, so this looks like every other sign-in they have used: provider button first, rule, then email and password. Novelty here buys nothing and costs trust."
+    },
+    {
+      "id": "law-single",
+      "x": -380, "y": 1060, "w": 300,
+      "text": "ONE DOMINANT ELEMENT — sitting an exam\n\nThe question is the largest thing on screen and nothing competes with it. No sidebar, no navigation, no product chrome.\n\nFITTS'S LAW: options are 64px tall and full width — the easiest things on the page to hit, because hitting the wrong one costs a mark.\n\nThe warning is amber, not red: it reports a state, it does not accuse."
+    },
+    {
+      "id": "law-hick",
+      "x": 3120, "y": 1060, "w": 320,
+      "text": "HICK'S LAW — the monitor\n\nForty-six rows is not a list, it is a search problem. Search, four status filters and a class filter cut it down before the teacher has to read anything.\n\nVON RESTORFF — the flagged row is the only tinted one on the page, so the two students who need attention are found without reading names.\n\nPROXIMITY — a student's flags open directly beneath them, indented, rather than in a panel elsewhere."
+    },
+    {
+      "id": "law-proximity",
+      "x": -380, "y": 2400, "w": 300,
+      "text": "PROGRESSIVE DISCLOSURE — exams list\n\nA row shows what you scan by: subject, title, class, open or closed. Everything else — the link, the window, the actions — waits until you open it.\n\nThe destructive action is quiet until pressed, then states what it will destroy in numbers before offering a red button. Cancel sits beside it."
+    },
+    {
+      "id": "law-miller",
+      "x": 3120, "y": 2400, "w": 320,
+      "text": "CHUNKING — admin navigation\n\nNine flat links became three named groups: Teaching, People, System. The eye picks a group, then a link.\n\nAn instructor never sees the System group — a menu item you may not use is a decision you should not have to make.\n\nAESTHETIC–USABILITY: the figures across the top are the first thing read, so they carry a qualifier — 'of those submitted' — rather than a number alone."
+    },
+    {
+      "id": "law-similarity",
+      "x": -380, "y": 3580, "w": 300,
+      "text": "SIMILARITY — accounts\n\nOne form per meaning: a pill is always a state, never a button. Roles are square tags so they cannot be mistaken for status.\n\nDisable sits beside Delete on purpose. It is almost always the right answer, so it is never further away than the wrong one."
+    },
+    {
+      "id": "system-note",
+      "x": 2900, "y": 3580, "w": 300,
+      "text": "THE SYSTEM SHEET\n\nEverything on this canvas is built from the palette, ramp and components on the right — including the states that only appear when something goes wrong.\n\nIf a screen needs a colour or a control that is not here, the system is wrong, not the screen."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

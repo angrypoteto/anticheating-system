@@ -24,8 +24,17 @@
   --color-gray-100: #EEF3FA;
   --color-gray-200: #DCE3ED;
   --color-gray-300: #C3CEDE;
-  --color-gray-400: #93A6C0;
-  --color-gray-500: #6B7A93;
+  /* 500 is the muted ink and it carries most of the secondary text in the
+     product, so it has to clear AA on both grounds it sits on: 5.31:1 on white
+     and 5.03:1 on the paper tint. The first navy I picked was #6B7A93, which
+     looked right and measured 4.35:1 — under the bar, on the most-repeated
+     colour in the system. 400 is the de-emphasised step, and mostly appears as
+     dark:text-gray-400 on navy (5.4:1 there); on white it is 3.2:1, which is
+     short of AA for body text but better than the 2.85:1 Tailwind's own
+     gray-400 was giving before, and it is not used for anything that must be
+     read. */
+  --color-gray-400: #7F91AC;
+  --color-gray-500: #5E6C84;
   --color-gray-600: #55637C;
   --color-gray-700: #42506B;
   --color-gray-800: #1B2B47;
@@ -70,7 +79,7 @@
   --color-line:   #DCE3ED;
   --color-ink:    #0D1524;
   --color-ink-2:  #42506B;
-  --color-muted:  #6B7A93;
+  --color-muted:  #5E6C84;
 
   --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
 }

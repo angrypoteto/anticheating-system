@@ -1,5 +1,7 @@
 import "server-only";
 
+import { lessonWindow, MAX_LESSON_CHARS } from "./fit";
+
 
 // Prompt, schema and sanitising shared by every provider. The request itself
 // lives in generate.ts, which dispatches on the key's api_style.
@@ -33,7 +35,18 @@ export function describeMix(mc: number, ident: number): string {
   return parts.join(" and ") || "questions";
 }
 
-export function buildPrompt(text: string, count: number, mix: string) {
+export function buildPrompt(
+  text: string,
+  count: number,
+  mix: string,
+  /**
+   * How much lesson this provider can take, and which part of it to read. Both
+   * matter only when the material does not fit: a provider with a small
+   * per-minute budget gets a slice, and a different slice per call, so the
+   * requests cover the material instead of repeating each other.
+   */
+  { maxChars = MAX_LESSON_CHARS, window = 0 }: { maxChars?: number; window?: number } = {},
+) {
   return [
     "You are helping a teacher write an exam from their own lesson material.",
     `Write exactly ${count} questions (${mix}) answerable purely from the material below.`,
@@ -51,7 +64,7 @@ export function buildPrompt(text: string, count: number, mix: string) {
     'Use the key "prompt" for the question text. Omit "choices" for IDENTIFICATION.',
     "",
     "--- LESSON MATERIAL ---",
-    text.slice(0, 120_000),
+    lessonWindow(text, maxChars, window),
   ].join("\n");
 }
 

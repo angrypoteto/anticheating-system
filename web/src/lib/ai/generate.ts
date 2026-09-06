@@ -3,6 +3,17 @@ import "server-only";
 import { listActiveKeys, markKeyError, markKeyUsed, revealKey, type KeyRow } from "./keys";
 import type { DraftQuestion } from "./gemini";
 import { buildPrompt, sanitize, RESPONSE_SCHEMA } from "./gemini";
+import { MAX_LESSON_CHARS, nextBudget, tooLarge } from "./fit";
+
+/**
+ * The lesson budget that last worked for a key, so the batches after the first
+ * do not each rediscover it at the cost of a wasted request.
+ *
+ * Deliberately in memory and deliberately not authoritative: a fresh serverless
+ * instance simply learns it again, and being wrong only costs the one refusal
+ * the retry below already handles.
+ */
+const fits = new Map<string, number>();
 
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
@@ -157,6 +168,8 @@ export async function generateQuestions(
    * seconds — inside a function the platform kills at sixty.
    */
   deadline = Date.now() + MODEL_CALL_TIMEOUT_MS * 2,
+  /** Which batch of a larger order this is; picks the slice of the lesson. */
+  window = 0,
 ): Promise<GenerateResult> {
   if (!text.trim()) return { ok: false, error: "The lesson file had no readable text." };
 
@@ -165,7 +178,6 @@ export async function generateQuestions(
     return { ok: false, error: "No active AI provider key. Add one in the admin console." };
   }
 
-  const prompt = buildPrompt(text, count, mix);
   let lastError = "All keys failed.";
 
   /** What one call may take now: never more than its own cap, never past the deadline. */
@@ -182,13 +194,28 @@ export async function generateQuestions(
       continue;
     }
 
+    // How much lesson this key gets. Providers differ by orders of magnitude —
+    // Gemini reads the whole thing, Groq's free tier allows 8,000 tokens a
+    // minute — so the size is per key, not per request.
+    let lessonChars = fits.get(key.id) ?? MAX_LESSON_CHARS;
+
     const call = () =>
       key.api_style === "openai"
-        ? callOpenAiCompatible(key, secret, prompt, budget())
-        : callGemini(key, secret, prompt, budget());
+        ? callOpenAiCompatible(key, secret, buildPrompt(text, count, mix, { maxChars: lessonChars, window }), budget())
+        : callGemini(key, secret, buildPrompt(text, count, mix, { maxChars: lessonChars, window }), budget());
 
     try {
       let attempt = await call();
+
+      // "Too big" is not a fault that waiting fixes and not one another key is
+      // guaranteed to share. Cut the lesson down — by the provider's own
+      // numbers where it gives them — and ask this key again.
+      for (let i = 0; i < 3 && !attempt.ok && tooLarge(attempt.status, attempt.detail); i++) {
+        const smaller = nextBudget(Math.min(text.length, lessonChars), attempt.detail);
+        if (smaller == null || budget() <= 1000) break;
+        lessonChars = smaller;
+        attempt = await call();
+      }
 
       // 5xx is usually "the model is busy" and clears on its own; another key
       // would hit the same busy model, so back off on this one first.
@@ -205,7 +232,11 @@ export async function generateQuestions(
         await markKeyError(key.id, lastError);
         // Per-key faults and a still-busy model both justify the next key;
         // anything else is a bad request that another key would hit identically.
-        if ([429, 401, 403].includes(attempt.status) || attempt.status >= 500) continue;
+        // 413 belongs here too: it says this key cannot take the request, not
+        // that the request is wrong. Returning on it ended the whole generation
+        // at the first provider with a small limit, with five working keys
+        // behind it never tried.
+        if ([429, 401, 403, 413].includes(attempt.status) || attempt.status >= 500) continue;
         return { ok: false, error: lastError };
       }
 
@@ -217,6 +248,8 @@ export async function generateQuestions(
       }
 
       await markKeyUsed(key.id);
+      // Remember what this key could actually swallow.
+      fits.set(key.id, lessonChars);
       return { ok: true, questions, keyLabel: key.label, provider: key.provider };
     } catch (e) {
       lastError = e instanceof Error ? e.message : "Request failed";

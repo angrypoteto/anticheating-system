@@ -8,6 +8,7 @@ import { extractText } from "@/lib/ai/extract";
 import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
 import { generateQuestions, MODEL_CALL_TIMEOUT_MS } from "@/lib/ai/generate";
 import { mergeDrafts, planBatches } from "@/lib/ai/batches";
+import { explainProviderError } from "@/lib/ai/fit";
 
 export type GenerateState = {
   error?: string;
@@ -178,7 +179,7 @@ export async function generateFromFile(
   let lastError = "";
   let failedCount = 0;
 
-  for (const batch of batches) {
+  for (const [index, batch] of batches.entries()) {
     // Stop starting batches once there is not time for a useful one. The first
     // batch always runs, however tight — returning "no time" without trying
     // would be absurd.
@@ -192,6 +193,10 @@ export async function generateFromFile(
       batch.mc + batch.ident,
       describeMix(batch.mc, batch.ident),
       hardStop,
+      // Which part of the lesson this request reads, when the whole of it does
+      // not fit the provider. Four requests over four sections beat four over
+      // the first one, three quarters of which are then dropped as repeats.
+      index,
     );
 
     if (!result.ok) {
@@ -216,7 +221,10 @@ export async function generateFromFile(
   if (runId) await admin.from("generation_progress").delete().eq("run_id", runId);
 
   if (!drafts.length) {
-    return { error: lastError || "The model returned nothing usable." };
+    // The provider's own words are a wall of JSON with an organisation id in
+    // it; under the form in red that reads as a broken system rather than a
+    // limit on the free tier, which is the part a teacher can act on.
+    return { error: lastError ? explainProviderError(lastError) : "The model returned nothing usable." };
   }
 
   const short = count - drafts.length;

@@ -3,6 +3,8 @@
 import { useActionState, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { GenerationProgress } from "./progress";
+import { planBatches } from "@/lib/ai/batches";
+import { estimateTotalMs, humanDuration } from "@/lib/ai/eta";
 import {
   acceptDrafts,
   generateFromFile,
@@ -42,6 +44,12 @@ export function GenerateStudio({ examId }: { examId: string }) {
     {},
   );
   const [dragging, setDragging] = useState(false);
+
+  // Kept in state only so the page can say what the order will cost before the
+  // teacher commits to waiting for it.
+  const [mcCount, setMcCount] = useState(5);
+  const [identCount, setIdentCount] = useState(2);
+  const requests = planBatches(mcCount, identCount).length;
 
   // Local copy so the instructor can edit and drop drafts before committing them.
   const [drafts, setDrafts] = useState<DraftQuestion[] | null>(null);
@@ -171,7 +179,8 @@ export function GenerateStudio({ examId }: { examId: string }) {
                 name="mcCount"
                 type="number"
                 min={0}
-                defaultValue={5}
+                value={mcCount}
+                onChange={(e) => setMcCount(Math.max(0, Number(e.target.value) || 0))}
                 className={field}
               />
             </div>
@@ -184,11 +193,21 @@ export function GenerateStudio({ examId }: { examId: string }) {
                 name="identCount"
                 type="number"
                 min={0}
-                defaultValue={2}
+                value={identCount}
+                onChange={(e) => setIdentCount(Math.max(0, Number(e.target.value) || 0))}
                 className={field}
               />
             </div>
           </div>
+
+          {/* What this order will cost, before committing to waiting for it. */}
+          {requests > 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {mcCount + identCount} question{mcCount + identCount === 1 ? "" : "s"} ·{" "}
+              {requests} request{requests === 1 ? "" : "s"} · usually about{" "}
+              {humanDuration(estimateTotalMs(requests))}
+            </p>
+          ) : null}
 
           {genState.error ? (
             <p role="alert" className="text-sm text-red-600 dark:text-red-400">

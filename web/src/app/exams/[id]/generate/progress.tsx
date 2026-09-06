@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { humanDuration, remainingMs } from "@/lib/ai/eta";
 
 /**
  * How far a generation has actually got.
@@ -48,6 +49,17 @@ export function GenerationProgress({ runId }: { runId: string }) {
   }, [runId]);
 
   const known = total != null && total > 0 && done != null;
+
+  // How much longer, measured rather than guessed: every request that lands is
+  // evidence about the ones that have not. Counting seconds upwards told a
+  // teacher how long they had waited and nothing about how long was left — and
+  // a number climbing past twenty is also what a hung page looks like.
+  //
+  // Elapsed comes from the ticker rather than a clock read during render: the
+  // ticker starts with this panel, so the two agree, and rendering stays pure.
+  const left = known
+    ? remainingMs({ done: done!, total: total!, elapsedMs: seconds * 1000 })
+    : null;
   // The last batch is only finished once the drafts come back, so a full bar
   // while still waiting would be a lie. Hold just short of it.
   const pct = known ? Math.min(97, Math.round((done! / total!) * 100)) : null;
@@ -66,8 +78,12 @@ export function GenerationProgress({ runId }: { runId: string }) {
               : "Writing questions"
             : "Reading your lesson file…"}
         </span>
-        <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
-          {seconds}s
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {left == null
+            ? `${seconds}s`
+            : left < 8000
+              ? "almost done"
+              : `about ${humanDuration(left)} left`}
         </span>
       </div>
 

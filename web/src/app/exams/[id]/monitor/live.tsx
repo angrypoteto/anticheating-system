@@ -50,12 +50,18 @@ export function LiveMonitor({
   initialSessions,
   initialFlags,
   studentNames,
+  studentClasses,
+  classOptions,
   questionLabels,
 }: {
   examId: string;
   initialSessions: SessionRow[];
   initialFlags: FlagRow[];
   studentNames: Record<string, string>;
+  /** Section ids per student — only the classes this teacher may see. */
+  studentClasses: Record<string, string[]>;
+  /** Classes somebody sitting this exam is actually in. Empty when classes are off. */
+  classOptions: { id: string; label: string }[];
   questionLabels: Record<string, string>;
 }) {
   const [sessions, setSessions] = useState(initialSessions);
@@ -64,6 +70,7 @@ export function LiveMonitor({
   const [connected, setConnected] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterId>("all");
+  const [klass, setKlass] = useState("all");
   const supabase = useRef(createClient());
 
   useEffect(() => {
@@ -165,14 +172,29 @@ export function LiveMonitor({
   const openFlags = (id: string) =>
     (flagsBySession.get(id) ?? []).filter((f) => f.resolution == null).length;
 
-  const shown = sessions.filter((s) => {
+  // Who is on screen before the status filter narrows it further, so the counts
+  // beside "Flagged" and the rest describe the class being looked at rather than
+  // the whole exam.
+  const inScope = sessions.filter((s) => {
     const who = (studentNames[s.student_id] ?? s.student_id).toLowerCase();
     if (needle && !who.includes(needle)) return false;
+    if (klass === "all") return true;
+    const mine = studentClasses[s.student_id] ?? [];
+    // Somebody reached this paper by its share link and is in no class of this
+    // teacher's; "No class" is the only honest place to put them.
+    return klass === "none" ? mine.length === 0 : mine.includes(klass);
+  });
+
+  const shown = inScope.filter((s) => {
     if (filter === "flagged") return openFlags(s.id) > 0;
     if (filter === "in-progress") return s.status === "IN_PROGRESS";
     if (filter === "submitted") return s.status !== "IN_PROGRESS";
     return true;
   });
+
+  const unplaced = classOptions.length
+    ? sessions.some((s) => (studentClasses[s.student_id] ?? []).length === 0)
+    : false;
 
   const inProgress = sessions.filter((s) => s.status === "IN_PROGRESS");
   const submitted = sessions.filter((s) => s.status !== "IN_PROGRESS");
@@ -233,16 +255,32 @@ export function LiveMonitor({
                 aria-label="Search students"
                 className="min-w-56 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
               />
+              {classOptions.length ? (
+                <select
+                  value={klass}
+                  onChange={(e) => setKlass(e.target.value)}
+                  aria-label="Filter by class"
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                >
+                  <option value="all">All classes</option>
+                  {classOptions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                  {unplaced ? <option value="none">No class</option> : null}
+                </select>
+              ) : null}
               <div className="flex flex-wrap gap-1">
                 {FILTERS.map((f) => {
                   const count =
                     f.id === "flagged"
-                      ? sessions.filter((s) => openFlags(s.id) > 0).length
+                      ? inScope.filter((s) => openFlags(s.id) > 0).length
                       : f.id === "in-progress"
-                        ? inProgress.length
+                        ? inScope.filter((s) => s.status === "IN_PROGRESS").length
                         : f.id === "submitted"
-                          ? submitted.length
-                          : sessions.length;
+                          ? inScope.filter((s) => s.status !== "IN_PROGRESS").length
+                          : inScope.length;
                   const on = filter === f.id;
                   return (
                     <button
@@ -275,6 +313,9 @@ export function LiveMonitor({
                 examId={examId}
                 session={s}
                 name={studentNames[s.student_id] ?? s.student_id}
+                classes={(studentClasses[s.student_id] ?? [])
+                  .map((id) => classOptions.find((c) => c.id === id)?.label)
+                  .filter((l): l is string => Boolean(l))}
                 flags={flagsBySession.get(s.id) ?? []}
                 questionLabels={questionLabels}
               />
@@ -309,12 +350,14 @@ function StudentRow({
   examId,
   session,
   name,
+  classes,
   flags,
   questionLabels,
 }: {
   examId: string;
   session: SessionRow;
   name: string;
+  classes: string[];
   flags: FlagRow[];
   questionLabels: Record<string, string>;
 }) {
@@ -345,6 +388,11 @@ function StudentRow({
       <div className="flex flex-wrap items-center justify-between gap-4 p-6">
         <div className="min-w-0">
           <p className="font-medium text-gray-900 dark:text-gray-100">{name}</p>
+          {classes.length ? (
+            <p className="mt-0.5 truncate text-xs text-teal-700 dark:text-teal-400">
+              {classes.join(", ")}
+            </p>
+          ) : null}
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
             {session.score != null ? ` · ${session.score}%` : ""}

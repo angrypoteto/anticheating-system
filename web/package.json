@@ -15,7 +15,8 @@
     "qa:classroom": "node scripts/qa/classroom.mjs",
     "qa:crowd": "node scripts/qa/crowd.mjs",
     "qa:strikes": "node scripts/qa/strikes.mjs",
-    "qa:ended": "node scripts/qa/ended.mjs"
+    "qa:ended": "node scripts/qa/ended.mjs",
+    "qa:onboarding": "node scripts/qa/onboarding.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

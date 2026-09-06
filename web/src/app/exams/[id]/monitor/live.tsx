@@ -23,6 +23,21 @@ export type FlagRow = {
   question_id: string | null;
 };
 
+/**
+ * The four questions a teacher actually asks of a class list, in the order they
+ * ask them. "Flagged" is first among the narrowing ones because it is the whole
+ * reason for watching: with fifty rows on screen, the four that need attention
+ * are not findable by reading.
+ */
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "flagged", label: "Flagged" },
+  { id: "in-progress", label: "In progress" },
+  { id: "submitted", label: "Submitted" },
+] as const;
+
+type FilterId = (typeof FILTERS)[number]["id"];
+
 const FLAG_LABELS: Record<string, string> = {
   TAB_SWITCH: "switched tab",
   FULLSCREEN_EXIT: "left fullscreen",
@@ -47,6 +62,8 @@ export function LiveMonitor({
   const [flags, setFlags] = useState(initialFlags);
   const [toast, setToast] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<FilterId>("all");
   const supabase = useRef(createClient());
 
   useEffect(() => {
@@ -141,6 +158,22 @@ export function LiveMonitor({
     flagsBySession.set(f.session_id, list);
   }
 
+  // Matching on the email as well as the name: an account that has not been
+  // given a name is shown by its address, and searching for what is on screen
+  // has to find it.
+  const needle = query.trim().toLowerCase();
+  const openFlags = (id: string) =>
+    (flagsBySession.get(id) ?? []).filter((f) => f.resolution == null).length;
+
+  const shown = sessions.filter((s) => {
+    const who = (studentNames[s.student_id] ?? s.student_id).toLowerCase();
+    if (needle && !who.includes(needle)) return false;
+    if (filter === "flagged") return openFlags(s.id) > 0;
+    if (filter === "in-progress") return s.status === "IN_PROGRESS";
+    if (filter === "submitted") return s.status !== "IN_PROGRESS";
+    return true;
+  });
+
   const inProgress = sessions.filter((s) => s.status === "IN_PROGRESS");
   const submitted = sessions.filter((s) => s.status !== "IN_PROGRESS");
   const scored = submitted.filter((s) => s.score != null);
@@ -176,14 +209,67 @@ export function LiveMonitor({
       </p>
 
       <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-            Students
-          </h2>
+        <div className="space-y-4 border-b border-gray-200 p-6 dark:border-gray-800">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+              Students
+            </h2>
+            {sessions.length ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {shown.length === sessions.length
+                  ? `${sessions.length} sitting${sessions.length === 1 ? "" : "s"}`
+                  : `${shown.length} of ${sessions.length}`}
+              </p>
+            ) : null}
+          </div>
+
+          {sessions.length ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by name or email"
+                aria-label="Search students"
+                className="min-w-56 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+              />
+              <div className="flex flex-wrap gap-1">
+                {FILTERS.map((f) => {
+                  const count =
+                    f.id === "flagged"
+                      ? sessions.filter((s) => openFlags(s.id) > 0).length
+                      : f.id === "in-progress"
+                        ? inProgress.length
+                        : f.id === "submitted"
+                          ? submitted.length
+                          : sessions.length;
+                  const on = filter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setFilter(f.id)}
+                      className={`rounded-full px-3 py-1.5 text-sm transition ${
+                        on
+                          ? "bg-gray-900 font-medium text-white dark:bg-gray-100 dark:text-gray-900"
+                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      {f.label}
+                      <span className={`ml-1.5 tabular-nums ${on ? "opacity-70" : "opacity-50"}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
-        {sessions.length ? (
+        {shown.length ? (
           <ul>
-            {sessions.map((s) => (
+            {shown.map((s) => (
               <StudentRow
                 key={s.id}
                 examId={examId}
@@ -196,7 +282,9 @@ export function LiveMonitor({
           </ul>
         ) : (
           <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
-            No one has started this exam yet.
+            {sessions.length
+              ? "No sitting matches that. Clear the search or pick another filter."
+              : "No one has started this exam yet."}
           </p>
         )}
       </section>

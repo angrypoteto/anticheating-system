@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isIncomplete, whatIsMissing } from "@/lib/onboarding";
 import { Landing } from "./landing";
 import { createClient } from "@/lib/supabase/server";
 import { classLabel } from "@/lib/classes";
@@ -51,6 +52,11 @@ export default async function Home() {
   const profile = await getCurrentUser();
   // Visitors get the landing page; signed-in users get their dashboard.
   if (!profile) return <Landing />;
+
+  // A student's home is rendered here rather than behind requireRole, so it has
+  // to apply the same gate itself — otherwise the one page everybody lands on
+  // after signing in with Google would be the one that never asks their name.
+  if (isIncomplete(await whatIsMissing(profile))) redirect("/welcome");
 
   const role = profile.role as string;
 

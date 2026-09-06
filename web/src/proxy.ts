@@ -4,7 +4,18 @@ import { NextResponse, type NextRequest } from "next/server";
 // Next.js 16 renamed the `middleware` convention to `proxy` — same behaviour,
 // different file and export name.
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const path = request.nextUrl.pathname;
+
+  // A server component cannot see the URL it is rendering for, and the
+  // onboarding gate has to send people back where they were going. Rebuilt
+  // rather than captured, because refreshing the token rewrites the cookies.
+  const forwarded = () => {
+    const h = new Headers(request.headers);
+    h.set("x-pathname", path + request.nextUrl.search);
+    return h;
+  };
+
+  let response = NextResponse.next({ request: { headers: forwarded() } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +29,7 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
+          response = NextResponse.next({ request: { headers: forwarded() } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
@@ -32,7 +43,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   // "/" serves the public landing page to visitors and the dashboard once signed
   // in, so it is reachable either way; the page itself decides what to render.
   const isPublic =

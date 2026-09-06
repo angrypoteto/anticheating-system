@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { AuthShell } from "@/components/auth-shell";
 import { SignupForm } from "./form";
 import { classesEnabled, classSelfJoinAllowed } from "@/lib/settings";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { classLabel } from "@/lib/classes";
 import { AuthDivider, GoogleButton } from "@/components/google-button";
 
 export default async function SignupPage({
@@ -20,16 +22,38 @@ export default async function SignupPage({
     classesEnabled(),
     classSelfJoinAllowed(),
   ]);
-  // A class code is only asked for when classes exist *and* students are the
-  // ones who join them. Otherwise they register now and an admin enrols them.
-  const askForCode = classesOn && selfJoin;
+  // A section is only asked for when classes exist *and* students are the ones
+  // who join them. Otherwise they register now and an admin enrols them.
+  const askForSection = classesOn && selfJoin;
+
+  // Nobody is signed in yet, so the list cannot come from selectable_sections()
+  // — that answers about a caller. Read it directly, and only when it is going
+  // to be offered, so a school that assigns classes itself publishes nothing.
+  const { data: rows } = askForSection
+    ? await createAdminClient()
+        .from("sections")
+        .select("id, subject, name, users!sections_instructor_id_fkey(full_name)")
+        .order("subject")
+        .order("name")
+    : { data: [] };
+
+  type Row = {
+    id: string;
+    subject: string | null;
+    name: string;
+    users: { full_name: string | null } | { full_name: string | null }[] | null;
+  };
+  const sections = ((rows ?? []) as Row[]).map((s) => {
+    const teacher = Array.isArray(s.users) ? s.users[0] : s.users;
+    return { id: s.id, label: classLabel(s), instructor: teacher?.full_name ?? null };
+  });
 
   return (
     <AuthShell
       title="Create your student account"
       subtitle={
-        askForCode
-          ? "You'll need the class code from your instructor."
+        sections.length
+          ? "Pick your section as you go, and its exams will be waiting."
           : "Sign up and your exams will appear once your teacher adds you."
       }
       footer={
@@ -45,14 +69,14 @@ export default async function SignupPage({
       }
     >
       <div className="space-y-4">
-        <GoogleButton next={next} label="Sign up with Google" />
-        {askForCode ? (
+        <GoogleButton next={next} label="Sign up with Google" intent="signup" />
+        {sections.length ? (
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            You will be asked for your class code once you are in.
+            You will be asked for your section once you are in.
           </p>
         ) : null}
         <AuthDivider>or use your email</AuthDivider>
-        <SignupForm useClasses={askForCode} next={next} />
+        <SignupForm sections={sections} next={next} />
       </div>
     </AuthShell>
   );

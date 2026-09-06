@@ -4,7 +4,16 @@ import { useActionState } from "react";
 import { signup, type SignupState } from "./actions";
 import { authButton, authField, authLabel } from "@/components/auth-shell";
 
-export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: string }) {
+export type PickableSection = { id: string; label: string; instructor: string | null };
+
+export function SignupForm({
+  sections,
+  next,
+}: {
+  /** Empty when the school assigns classes itself, or has none yet. */
+  sections: PickableSection[];
+  next?: string;
+}) {
   const [state, action, pending] = useActionState<SignupState, FormData>(signup, {});
 
   return (
@@ -24,21 +33,27 @@ export function SignupForm({ useClasses, next }: { useClasses: boolean; next?: s
         />
       </div>
 
-      {useClasses ? (
+      {sections.length ? (
         <div>
-          <label htmlFor="code" className={authLabel}>
-            Class code
+          <label htmlFor="sectionId" className={authLabel}>
+            Your section
           </label>
-          <input
-            id="code"
-            name="code"
-            required
-            placeholder="e.g. EE7D24"
-            autoCapitalize="characters"
-            className={`${authField} font-mono uppercase tracking-widest`}
-          />
+          {/* The list an admin set up, rather than a code read off a
+              whiteboard: nobody is stood next to you saying one out loud at the
+              moment you register. */}
+          <select id="sectionId" name="sectionId" required defaultValue="" className={authField}>
+            <option value="" disabled>
+              Choose your section…
+            </option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+                {s.instructor ? ` — ${s.instructor}` : ""}
+              </option>
+            ))}
+          </select>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Your instructor gives you this. It puts you in the right class.
+            Pick the one you are enrolled in. Your teacher can move you later.
           </p>
         </div>
       ) : null}

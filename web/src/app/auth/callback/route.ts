@@ -31,12 +31,33 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     return NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(error.message)}`,
     );
+  }
+
+  // Someone who pressed "Sign up with Google" on an account that already
+  // exists is told so, rather than quietly signed in. Google will not say
+  // whether an account is new — signing in and signing up are one round trip —
+  // so this asks how old the account is instead. Only one made in the last few
+  // minutes is this registration; anything older was already here.
+  //
+  // Erring is cheap either way: an account misread as new lands on the welcome
+  // step it would have reached anyway, and one misread as old is told to sign
+  // in, where the same button signs them straight in.
+  const born = Date.parse(data.user?.created_at ?? "");
+  const isNew = Number.isFinite(born) && Date.now() - born < 5 * 60_000;
+
+  if (searchParams.get("intent") === "signup" && !isNew) {
+    // Not signed in: they asked to register, and they did not.
+    await supabase.auth.signOut();
+    const back = new URL(`${origin}/login`);
+    back.searchParams.set("error", "already_registered");
+    if (next !== "/") back.searchParams.set("next", next);
+    return NextResponse.redirect(back);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

@@ -22,38 +22,48 @@ export async function signup(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
-  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
   const rawNext = String(formData.get("next") ?? "");
   const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
 
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };
   if (password !== confirm) return { error: "Those passwords don't match." };
-  // Registration is always open. The class code is only part of it when classes
-  // exist and students are the ones who join them; otherwise anything typed
-  // there is ignored, and an admin enrols them afterwards.
+  // Registration is always open. A section is only part of it when classes
+  // exist and students are the ones who join them; otherwise anything sent is
+  // ignored, and an admin enrols them afterwards.
   const [classesOn, selfJoin] = await Promise.all([
     classesEnabled(),
     classSelfJoinAllowed(),
   ]);
   const useClasses = classesOn && selfJoin;
 
-  if (useClasses && !code) {
-    return { error: "Enter the class code your instructor gave you." };
-  }
-
   const admin = createAdminClient();
 
-  const { data: section } = useClasses
+  // Whether there is anything to pick decides whether one is demanded: a school
+  // with classes switched on but none entered yet must not be a school where
+  // nobody can register.
+  const { data: available } = useClasses
+    ? await admin.from("sections").select("id").limit(1)
+    : { data: [] };
+  const needsSection = useClasses && (available ?? []).length > 0;
+
+  if (needsSection && !sectionId) {
+    return { error: "Choose your section from the list." };
+  }
+
+  // The form sends an id, so it is checked against the table rather than
+  // trusted — a request can be made by hand.
+  const { data: section } = needsSection
     ? await admin
         .from("sections")
         .select("id, name, subject")
-        .eq("join_code", code)
+        .eq("id", sectionId)
         .maybeSingle()
     : { data: null };
 
-  if (useClasses && !section) {
-    return { error: "That class code doesn't match any class. Check it with your instructor." };
+  if (needsSection && !section) {
+    return { error: "That section is no longer available. Choose another." };
   }
 
   const { data: created, error } = await admin.auth.admin.createUser({

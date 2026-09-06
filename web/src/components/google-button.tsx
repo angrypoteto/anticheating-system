@@ -13,9 +13,16 @@ import { createClient } from "@/lib/supabase/client";
 export function GoogleButton({
   next,
   label = "Continue with Google",
+  intent,
 }: {
   next?: string;
   label?: string;
+  /**
+   * "signup" says this button was pressed on the registration page. Google
+   * cannot tell us whether an account is new — signing in and signing up are
+   * the same round trip — so the callback has to know which one was asked for.
+   */
+  intent?: "signup";
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +34,7 @@ export function GoogleButton({
     const supabase = createClient();
     const callback = new URL("/auth/callback", window.location.origin);
     if (next) callback.searchParams.set("next", next);
+    if (intent) callback.searchParams.set("intent", intent);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

@@ -141,6 +141,24 @@ try {
     "a student with no section is not stopped — it is not theirs to choose",
     free.to || `${free.status}`);
 
+  section("The sign-up page itself");
+
+  await settings({ classes_enabled: true, allow_class_self_join: true });
+  const open = await fetch(`${BASE}/signup`);
+  const openHtml = await open.text();
+  t(open.status === 200, "it renders to somebody with no account", `HTTP ${open.status}`);
+  t(/Your section/.test(openHtml), "and offers the section list there, not only after signing up");
+  t(!/Class code/.test(openHtml), "the code field is gone");
+  t(openHtml.includes(`OB Section ${S}`),
+    "the list is what an admin created", `looking for OB Section ${S}`);
+
+  await settings({ classes_enabled: true, allow_class_self_join: false });
+  const assigned = await (await fetch(`${BASE}/signup`)).text();
+  t(!/Your section/.test(assigned),
+    "and nothing is offered where the school assigns classes itself");
+  t(!assigned.includes(`OB Section ${S}`),
+    "so a school that assigns classes publishes no list of them");
+
   section("Staff");
 
   await settings({ classes_enabled: true, allow_class_self_join: true });

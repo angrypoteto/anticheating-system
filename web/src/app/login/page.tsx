@@ -35,9 +35,16 @@ export default async function LoginPage({
         {error ? (
           <p
             role="alert"
-            className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            className={
+              // Having an account already is not a fault, and red says it is.
+              error === "already_registered"
+                ? "rounded-md border border-teal-300 bg-teal-50 px-3 py-2 text-sm text-teal-800 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200"
+                : "rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            }
           >
-            {error === "disabled"
+            {error === "already_registered"
+              ? "You already have an account with that Google address. Sign in below — the same button will do it."
+              : error === "disabled"
               ? "That account is not active. If you have just registered, your address may be outside the addresses this school accepts — ask your teacher."
               : error === "missing_code"
                 ? "Google did not complete the sign-in. Please try again."

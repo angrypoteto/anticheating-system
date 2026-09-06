@@ -87,8 +87,8 @@ try {
   const welcome = await hop(nameless, "/welcome");
   t(welcome.status === 200 && /Your full name/.test(welcome.body),
     "the page asks for a name", `${welcome.status}`);
-  t(!/Class code/.test(welcome.body),
-    "and does not ask for a class while classes are switched off");
+  t(!/Your section/.test(welcome.body),
+    "and does not ask for a section while classes are switched off");
 
   section("Once they answer");
 
@@ -104,7 +104,7 @@ try {
   t(bounce.to === "/" || bounce.to.endsWith("/"),
     "revisiting the gate just sends them on", bounce.to || `${bounce.status}`);
 
-  section("A class, where students join their own");
+  section("A section, chosen from the list an admin set up");
 
   await settings({ classes_enabled: true, allow_class_self_join: true });
   const { data: sec } = await svc.from("sections")
@@ -113,16 +113,24 @@ try {
 
   const classless = await mk("c", "STUDENT", "Has A Name");
   const gated = await hop(classless, "/");
-  t(gated.to.includes("/welcome"), "a student in no class is stopped too", gated.to || `${gated.status}`);
+  t(gated.to.includes("/welcome"), "a student in no section is stopped", gated.to || `${gated.status}`);
 
   const asked = await hop(classless, "/welcome");
-  t(/Class code/.test(asked.body), "and is asked for the code");
-  t(!/Your full name/.test(asked.body), "but not for a name they already gave");
+  t(/Your section/.test(asked.body), "and is asked to choose one");
+  t(!/Class code/.test(asked.body), "never for a code off a whiteboard");
+  t(!/Your full name/.test(asked.body), "nor for a name they already gave");
+  t(asked.body.includes(`OB Section ${S}`),
+    "the list is what the admin created", `looking for OB Section ${S}`);
 
-  const { error: joinErr } = await classless.client.rpc("join_class", { code: sec.join_code });
-  t(!joinErr, "the code enrols them", joinErr?.message);
-  const joined = await hop(classless, "/");
-  t(!joined.to.includes("/welcome"), "and the gate lets them through", joined.to || `${joined.status}`);
+  const { data: joined, error: joinErr } = await classless.client
+    .rpc("join_section", { p_section_id: sec.id });
+  t(!joinErr && joined === sec.id, "choosing it enrols them", joinErr?.message);
+  const through = await hop(classless, "/");
+  t(!through.to.includes("/welcome"), "and the gate lets them through", through.to || `${through.status}`);
+
+  const { data: again } = await classless.client.rpc("selectable_sections");
+  t(!(again ?? []).some((r) => r.id === sec.id),
+    "a section already joined is not offered again", `${(again ?? []).length} left to pick`);
 
   section("Where an admin does the enrolling");
 
@@ -130,7 +138,7 @@ try {
   const admins = await mk("a", "STUDENT", "Admin Enrols Me");
   const free = await hop(admins, "/");
   t(!free.to.includes("/welcome"),
-    "a student with no class is not stopped — there is no code for them to give",
+    "a student with no section is not stopped — it is not theirs to choose",
     free.to || `${free.status}`);
 
   section("Staff");
@@ -142,7 +150,7 @@ try {
     staffGate.to || `${staffGate.status}`);
 
   const staffAsk = await hop(teacher, "/welcome");
-  t(!/Class code/.test(staffAsk.body), "and is never asked for a class code");
+  t(!/Your section/.test(staffAsk.body), "and is never asked for a section");
 } catch (e) {
   bug("the run itself fell over", e.message);
 } finally {

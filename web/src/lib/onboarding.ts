@@ -38,14 +38,23 @@ export async function whatIsMissing(profile: {
       classSelfJoinAllowed(),
     ]);
     if (on && selfJoin) {
-      // Read past RLS: the count is about the asker themselves, and the answer
-      // decides whether to stop them, so it must not depend on their own policy.
+      // Read past RLS: the counts are about the asker themselves, and the
+      // answer decides whether to stop them, so it must not depend on their own
+      // policy.
       const admin = createAdminClient();
-      const { count } = await admin
-        .from("enrollments")
-        .select("student_id", { count: "exact", head: true })
-        .eq("student_id", profile.id);
-      className = (count ?? 0) === 0;
+      const [{ count: mine }, { count: available }] = await Promise.all([
+        admin
+          .from("enrollments")
+          .select("student_id", { count: "exact", head: true })
+          .eq("student_id", profile.id),
+        admin.from("sections").select("id", { count: "exact", head: true }),
+      ]);
+      // Nobody is stopped for not having picked from a list that is empty. A
+      // school that has not entered its sections yet is not a school where
+      // students cannot sign in — and since the gate redirects to the page that
+      // asks, and the page would have nothing to ask, the two would have sent
+      // the student back and forth between them for ever.
+      className = (mine ?? 0) === 0 && (available ?? 0) > 0;
     }
   }
 

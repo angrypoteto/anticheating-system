@@ -19,6 +19,16 @@ async function MyClasses() {
     .order("subject")
     .order("name");
 
+  // What an admin has set up that this student is not already on. Read through
+  // a function rather than the table: the policy shows a student only the
+  // classes they are in, which is no use for choosing another.
+  const { data: pickable } = selfJoin
+    ? await supabase.rpc("selectable_sections")
+    : { data: [] };
+  const options = (
+    (pickable ?? []) as { id: string; subject: string | null; name: string; instructor: string | null }[]
+  ).map((c) => ({ id: c.id, label: classLabel(c), instructor: c.instructor }));
+
   return (
     <div className="mt-2">
       {sections?.length ? (
@@ -35,13 +45,13 @@ async function MyClasses() {
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {selfJoin
-            ? "You have not joined a class yet. Enter a class code below."
+            ? "You have not joined a class yet. Choose your section below."
             : "You are not in a class yet. Your teacher will add you — exams appear here once they do."}
         </p>
       )}
       {selfJoin ? (
         <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
-          <JoinClassForm />
+          <JoinClassForm sections={options} />
         </div>
       ) : null}
     </div>

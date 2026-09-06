@@ -14,23 +14,23 @@ export type JoinState = { error?: string; success?: string };
  * table for a student. There is deliberately no student INSERT policy, so a
  * crafted request cannot enrol someone into a class whose code they never had.
  */
-export async function joinClass(
+export async function joinSection(
   _prev: JoinState,
   formData: FormData,
 ): Promise<JoinState> {
   await requireRole("STUDENT");
 
-  const code = String(formData.get("code") ?? "").trim().toUpperCase();
-  if (!code) return { error: "Enter the class code your teacher gave you." };
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  if (!sectionId) return { error: "Choose a section from the list." };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("join_class", { code });
+  const { error } = await supabase.rpc("join_section", { p_section_id: sectionId });
 
   if (error) {
-    // join_class() is the authority — it refuses a bad code, an inactive
-    // account, and a school that assigns classes itself.
-    if (/does not match/i.test(error.message)) {
-      return { error: "That code doesn't match any class. Check it with your teacher." };
+    // join_section() is the authority — it refuses a section that has gone, an
+    // inactive account, and a school that assigns classes itself.
+    if (/no longer exists/i.test(error.message)) {
+      return { error: "That section has been removed. Ask your teacher." };
     }
     return { error: error.message };
   }

@@ -22,21 +22,27 @@ export async function completeProfile(
   if (profile.status !== "ACTIVE") redirect("/login?error=disabled");
 
   const fullName = String(formData.get("fullName") ?? "").replace(/\s+/g, " ").trim();
-  const code = String(formData.get("code") ?? "").trim().toUpperCase();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
   const rawNext = String(formData.get("next") ?? "");
   const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
 
   const missing = await whatIsMissing(profile);
+  const supabase = await createClient();
+
+  // The same question the page asked when it drew the form: a student is never
+  // held to a list that has nothing on it.
+  const { data: pickable } = missing.className
+    ? await supabase.rpc("selectable_sections")
+    : { data: [] };
+  const askSection = missing.className && ((pickable ?? []) as unknown[]).length > 0;
 
   if (missing.name) {
     if (fullName.length < 2) return { error: "Please enter your full name." };
     if (fullName.length > 80) return { error: "That name is too long." };
   }
-  if (missing.className && !code) {
-    return { error: "Enter the class code your teacher gave you." };
+  if (askSection && !sectionId) {
+    return { error: "Choose your section from the list." };
   }
-
-  const supabase = await createClient();
 
   if (missing.name) {
     // Written as the person themselves: a database trigger allows the name and
@@ -48,14 +54,16 @@ export async function completeProfile(
     if (error) return { error: "Could not save your name. Try again." };
   }
 
-  if (missing.className) {
-    // join_class() is the authority — it refuses a bad code, a disabled
-    // account, and a school that assigns classes itself.
-    const { error } = await supabase.rpc("join_class", { code });
+  if (askSection) {
+    // join_section() is the authority — it refuses a section that has since
+    // been deleted, a disabled account, and a school that assigns classes
+    // itself. There is still no student INSERT policy on enrollments, so a
+    // crafted request cannot reach the table any other way.
+    const { error } = await supabase.rpc("join_section", { p_section_id: sectionId });
     if (error) {
       return {
-        error: /does not match/i.test(error.message)
-          ? "That code doesn't match any class. Check it with your teacher."
+        error: /no longer exists/i.test(error.message)
+          ? "That section has been removed. Pick another, or ask your teacher."
           : error.message,
       };
     }

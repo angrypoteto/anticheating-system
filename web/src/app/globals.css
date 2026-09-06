@@ -18,15 +18,25 @@
  * one thing each in this product, and a redesign is no reason to make a teacher
  * relearn what a red pill is telling them. */
 @theme {
-  /* Neutrals: navy-tinted, not grey. Cool enough to sit under navy chrome
-     without the muddy cast a true grey takes on next to it. */
-  --color-gray-50:  #F6F8FB;
-  --color-gray-100: #EEF3FA;
-  --color-gray-200: #DCE3ED;
-  --color-gray-300: #C3CEDE;
+  /* Warm ivory, not white and not grey.
+   *
+   * Navy's oldest partner is cream. A cool blue-white beside navy reads as one
+   * colour slightly out of focus; a warm ground makes the navy look deeper than
+   * it is, because the eye judges it against the warmth rather than against more
+   * of itself. It is the difference between a screen that looks unfinished and
+   * one that looks bound.
+   *
+   * The white token moves with them. Every card in the product is bg-white, so a
+   * card left at #FFFFFF on an ivory page would be the one cold rectangle on the
+   * screen. */
+  --color-white:    #FFFDF8;
+  --color-gray-50:  #F7F4ED;
+  --color-gray-100: #F0EBE0;
+  --color-gray-200: #E4DED2;
+  --color-gray-300: #CFC7B8;
   /* 500 is the muted ink and it carries most of the secondary text in the
-     product, so it has to clear AA on both grounds it sits on: 5.31:1 on white
-     and 5.03:1 on the paper tint. The first navy I picked was #6B7A93, which
+     product, so it has to clear AA on both grounds it sits on: 5.26:1 on the
+     ivory card and 4.84:1 on the ivory page. The first navy I picked was #6B7A93, which
      looked right and measured 4.35:1 — under the bar, on the most-repeated
      colour in the system. 400 is the de-emphasised step, and mostly appears as
      dark:text-gray-400 on navy (5.4:1 there); on white it is 3.2:1, which is
@@ -74,9 +84,9 @@
   --color-accent-line: #BFDEDA;
 
   /* Semantic surfaces and ink. */
-  --color-paper:  #F6F8FB;
-  --color-card:   #FFFFFF;
-  --color-line:   #DCE3ED;
+  --color-paper:  #F7F4ED;
+  --color-card:   #FFFDF8;
+  --color-line:   #E4DED2;
   --color-ink:    #0D1524;
   --color-ink-2:  #42506B;
   --color-muted:  #5E6C84;
@@ -85,7 +95,7 @@
 }
 
 :root {
-  --background: #F6F8FB;
+  --background: #F7F4ED;
   --foreground: #0D1524;
 }
 

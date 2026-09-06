@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { isIncomplete, whatIsMissing } from "@/lib/onboarding";
 import { Landing } from "./landing";
+import { ShieldMark } from "@/components/auth-shell";
 import { createClient } from "@/lib/supabase/server";
 import { classLabel } from "@/lib/classes";
 import { JoinClassForm } from "./join-class";
@@ -75,26 +76,39 @@ export default async function Home() {
   if (role === "ADMIN") redirect("/admin");
   if (role === "INSTRUCTOR") redirect("/teacher");
 
+  // A student has one destination and one action, so there is no rail here —
+  // navigation would be furniture around an empty room. The bar carries the
+  // mark and who they are; the page opens on the thing they came for.
+  const firstName = (profile.full_name ?? "").trim().split(/\s+/)[0];
+
   return (
-    <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-      <div className="mx-auto max-w-3xl">
-        <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
-          <div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
-              Proctorly
-            </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Signed in as {profile.email} · {role.toLowerCase()}
-            </p>
-          </div>
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="flex items-center justify-between bg-gray-900 px-6 py-3.5 text-white sm:px-10">
+        <div className="flex items-center gap-2.5">
+          <ShieldMark className="h-5 w-5" />
+          <span className="font-semibold tracking-tight">Proctorly</span>
+        </div>
+        <div className="flex items-center gap-3.5 text-[13px] text-teal-200">
+          <span className="hidden truncate sm:inline">{profile.email}</span>
           <form action="/auth/signout" method="post">
             <button
               type="submit"
-              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              className="text-[13px] text-teal-200 underline underline-offset-4 transition hover:text-white"
             >
               Sign out
             </button>
           </form>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-4xl px-6 py-9 sm:px-10">
+        <header>
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+            {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+          </h1>
+          <p className="mt-1.5 text-[15px] text-gray-500 dark:text-gray-400">
+            Everything set for you is below. Anything open right now comes first.
+          </p>
         </header>
 
         {role === "STUDENT" && (await classesEnabled()) ? (

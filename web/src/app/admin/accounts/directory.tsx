@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { EnrollmentToggle, StatusToggle } from "../forms";
+import { DeleteAccount } from "../delete-account";
 
 export type ClassOption = { id: string; label: string };
 export type Person = {
@@ -243,7 +244,10 @@ export function Directory({
                     {p.id === adminId ? (
                       <span className="text-xs text-gray-400 dark:text-gray-600">you</span>
                     ) : (
-                      <StatusToggle userId={p.id} status={p.status} />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <StatusToggle userId={p.id} status={p.status} />
+                        <DeleteAccount userId={p.id} />
+                      </div>
                     )}
                   </td>
                 </tr>

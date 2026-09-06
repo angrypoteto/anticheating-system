@@ -18,7 +18,8 @@
     "qa:ended": "node scripts/qa/ended.mjs",
     "qa:onboarding": "node scripts/qa/onboarding.mjs",
     "qa:roll": "node scripts/qa/roll.mjs",
-    "qa:generation": "node scripts/qa/generation.mjs"
+    "qa:generation": "node scripts/qa/generation.mjs",
+    "qa:deleting": "node scripts/qa/deleting.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

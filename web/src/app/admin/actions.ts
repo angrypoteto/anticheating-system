@@ -2,10 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { auditServerAction } from "@/lib/audit";
 
 export type ActionState = { error?: string; success?: string };
+
+/**
+ * Deleting an account is asked twice, like deleting an exam: once for what
+ * would go, once to go through with it. `blocked` is the interesting answer —
+ * an account that wrote exams or teaches a class cannot be removed at all, and
+ * the summary says which so the message can say what to do instead.
+ */
+export type DeleteAccountState = {
+  error?: string;
+  success?: string;
+  confirm?: {
+    email: string;
+    role: string;
+    exams: number;
+    sections: number;
+    sittings: number;
+    blocked_by: string | null;
+  };
+};
 
 const ROLES = ["INSTRUCTOR", "STUDENT"] as const;
 
@@ -219,4 +239,62 @@ export async function setEnrollment(
   revalidatePath("/admin/accounts");
   revalidatePath("/admin/students");
   return { success: enrol ? "Enrolled." : "Removed from the class." };
+}
+
+/**
+ * Remove an account and everything in this schema that points at it.
+ *
+ * Disabling is the usual answer and stays where it was: it keeps the person's
+ * results and stops them signing in. This is for accounts that should not have
+ * existed — a test account, a wrong address, somebody who never enrolled — and
+ * it destroys their sittings, which is why it says how many first.
+ */
+export async function deleteAccount(
+  _prev: DeleteAccountState,
+  formData: FormData,
+): Promise<DeleteAccountState> {
+  const actor = await requireRole("ADMIN");
+  const userId = String(formData.get("userId") ?? "");
+  const confirmed = formData.get("confirm") === "yes";
+
+  if (!userId) return { error: "Which account?" };
+
+  // Read as the administrator, not the service role: the function decides who
+  // may ask, and asking is itself something only an administrator may do.
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("account_delete_summary", {
+    p_user_id: userId,
+  });
+  if (error) return { error: error.message };
+
+  const summary = (data ?? [])[0];
+  if (!summary) return { error: "That account has already been deleted." };
+
+  if (!confirmed || summary.blocked_by) return { confirm: summary };
+
+  const { error: purgeError } = await supabase.rpc("purge_account", { p_user_id: userId });
+  if (purgeError) return { error: purgeError.message };
+
+  // The login itself belongs to the auth schema, which only the admin API
+  // reaches. Everything pointing at it has just gone, so this is the step that
+  // used to fail with "Database error deleting user" and no reason given.
+  const admin = createAdminClient();
+  const { error: authError } = await admin.auth.admin.deleteUser(userId);
+  if (authError) {
+    return {
+      error:
+        `The account's data was removed, but the login itself would not delete: ${authError.message}. ` +
+        "Disable it and try again.",
+    };
+  }
+
+  await auditServerAction(actor.id, "delete_account", "users", userId, {
+    email: summary.email,
+    role: summary.role,
+    sittings: summary.sittings,
+  });
+
+  revalidatePath("/admin/accounts");
+  revalidatePath("/admin/students");
+  return { success: `${summary.email} deleted.` };
 }

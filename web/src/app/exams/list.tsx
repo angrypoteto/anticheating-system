@@ -5,6 +5,7 @@ import { parseTimer } from "@/lib/exam-config";
 import { classLabel } from "@/lib/classes";
 import { classesEnabled } from "@/lib/settings";
 import { siteUrl } from "@/lib/site-url";
+import { DeleteExam } from "./delete-exam";
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: "text-amber-700 dark:text-amber-400",
@@ -252,6 +253,9 @@ export async function ExamList() {
                       {over ? "Records" : "Watch it live"}
                     </Link>
                   ) : null}
+                  <span className="ml-auto">
+                    <DeleteExam examId={e.id} title={e.title} stay />
+                  </span>
                 </div>
               </div>
             </details>

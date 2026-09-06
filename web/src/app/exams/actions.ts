@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
+import { auditServerAction } from "@/lib/audit";
 import { classesEnabled } from "@/lib/settings";
 import {
   DEFAULT_LOCKDOWN,
@@ -13,6 +15,17 @@ import {
 } from "@/lib/exam-config";
 
 export type ActionState = { error?: string; success?: string };
+
+/**
+ * Deleting an exam is asked twice: once to find out what would go, and once to
+ * go through with it. The first answer carries the numbers, because "and the 47
+ * sittings on it" is the fact that ought to change somebody's mind and the one
+ * a confirmation dialogue usually leaves out.
+ */
+export type DeleteExamState = {
+  error?: string;
+  confirm?: { title: string; status: string; questions: number; sittings: number; answers: number };
+};
 
 const QUESTION_TYPES = ["MULTIPLE_CHOICE", "IDENTIFICATION"] as const;
 type QuestionType = (typeof QUESTION_TYPES)[number];
@@ -224,25 +237,60 @@ export async function setExamStatus(
 }
 
 export async function deleteExam(
-  _prev: ActionState,
+  _prev: DeleteExamState,
   formData: FormData,
-): Promise<ActionState> {
-  await requireRole("INSTRUCTOR", "ADMIN");
+): Promise<DeleteExamState> {
+  const me = await requireRole("INSTRUCTOR", "ADMIN");
   const examId = String(formData.get("examId") ?? "");
+  const confirmed = formData.get("confirm") === "yes";
+  const stay = formData.get("stay") === "yes";
+
+  if (!examId) return { error: "Which exam?" };
 
   const supabase = await createClient();
 
-  // Questions reference the exam with ON DELETE RESTRICT, so clear them first.
-  const { error: qError } = await supabase
-    .from("questions")
-    .delete()
-    .eq("exam_id", examId);
-  if (qError) return { error: qError.message };
+  // Both calls are authorised inside the database, against the same rule, so
+  // asking what would go cannot become a way of finding out about somebody
+  // else's exam.
+  if (!confirmed) {
+    const { data, error } = await supabase.rpc("exam_delete_summary", { p_exam_id: examId });
+    if (error) return { error: explainDeleteError(error.message) };
+    const summary = (data ?? [])[0];
+    if (!summary) return { error: "That exam has already been deleted." };
+    return { confirm: summary };
+  }
 
-  const { error } = await supabase.from("exams").delete().eq("id", examId);
-  if (error) return { error: error.message };
+  const { data: title, error } = await supabase.rpc("delete_exam", { p_exam_id: examId });
+  if (error) return { error: explainDeleteError(error.message) };
 
-  redirect("/exams");
+  // The lesson file's bytes are in Storage, which the database cannot reach.
+  // Best effort: a leftover file is swept later and is not worth failing a
+  // completed deletion over.
+  try {
+    const admin = createAdminClient();
+    const { data: left } = await admin.storage.from("lesson-files").list(examId);
+    const paths = (left ?? []).map((x) => `${examId}/${x.name}`);
+    if (paths.length) await admin.storage.from("lesson-files").remove(paths);
+  } catch {
+    // Nothing the teacher can do about it, and the exam is already gone.
+  }
+
+  await auditServerAction(me.id, "delete_exam", "exams", examId, { title });
+
+  revalidatePath("/exams");
+  revalidatePath("/admin/exams");
+  revalidatePath("/teacher/exams");
+  // Deleting from the list leaves you on the list; deleting from the editor
+  // leaves you on a page for something that no longer exists.
+  if (!stay) redirect(me.role === "ADMIN" ? "/admin/exams" : "/teacher/exams");
+  return {};
+}
+
+/** The database says why in words a teacher can act on; keep them. */
+function explainDeleteError(message: string): string {
+  if (/not yours/i.test(message)) return "That exam is not yours to delete.";
+  if (/already been deleted/i.test(message)) return "That exam has already been deleted.";
+  return message;
 }
 
 function parseChoices(raw: string): string[] {

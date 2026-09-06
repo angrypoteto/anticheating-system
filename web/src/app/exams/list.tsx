@@ -136,14 +136,16 @@ export async function ExamList() {
             <details className="group">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-gray-900 dark:text-gray-100">
-                    {e.title}
-                  </p>
+                  {/* The subject is a kicker: it says what this belongs to, so it
+                      is read before the name and not mistaken for part of it. */}
                   {subject ? (
-                    <p className="mt-0.5 truncate text-xs text-accent dark:text-[#5FBDB6]">
+                    <p className="truncate text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
                       {subject}
                     </p>
                   ) : null}
+                  <p className="mt-0.5 truncate text-[15px] font-medium tracking-[-0.005em] text-gray-900">
+                    {e.title}
+                  </p>
                   {useClasses ? (
                     <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
                       {classes.length ? classes.join(", ") : "No class assigned"}
@@ -154,7 +156,7 @@ export async function ExamList() {
                   {windowState ? (
                     <span
                       title={availability ?? undefined}
-                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${WINDOW_STYLES[windowState]}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${WINDOW_STYLES[windowState]}`}
                     >
                       {windowState}
                     </span>

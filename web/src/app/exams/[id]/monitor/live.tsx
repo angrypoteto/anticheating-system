@@ -206,6 +206,14 @@ export function LiveMonitor({
     : false;
 
   const inProgress = sessions.filter((s) => s.status === "IN_PROGRESS");
+  const autoSubmitted = sessions.filter((s) => s.status === "AUTO_SUBMITTED").length;
+  const openFlagCount = flags.filter((f) => f.resolution == null).length;
+  const flaggedStudents = new Set(
+    flags
+      .filter((f) => f.resolution == null)
+      .map((f) => sessions.find((x) => x.id === f.session_id)?.student_id)
+      .filter(Boolean),
+  ).size;
   const submitted = sessions.filter((s) => s.status !== "IN_PROGRESS");
   const scored = submitted.filter((s) => s.score != null);
   const average = scored.length
@@ -224,13 +232,35 @@ export function LiveMonitor({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label="In progress" value={String(inProgress.length)} />
-        <Stat label="Submitted" value={String(submitted.length)} />
         <Stat
-          label="Flags"
-          value={String(flags.filter((f) => f.resolution == null).length)}
+          label="In progress"
+          value={String(inProgress.length)}
+          note={`of ${sessions.length} sitting${sessions.length === 1 ? "" : "s"}`}
         />
-        <Stat label="Average" value={average != null ? `${average}%` : "—"} />
+        <Stat
+          label="Submitted"
+          value={String(submitted.length)}
+          note={
+            autoSubmitted
+              ? `${autoSubmitted} auto-submitted`
+              : undefined
+          }
+        />
+        <Stat
+          label="Open flags"
+          value={String(openFlagCount)}
+          tone={openFlagCount ? "warn" : undefined}
+          note={
+            openFlagCount
+              ? `across ${flaggedStudents} student${flaggedStudents === 1 ? "" : "s"}`
+              : undefined
+          }
+        />
+        <Stat
+          label="Average"
+          value={average != null ? `${average}%` : "—"}
+          note={scored.length ? "of those submitted" : undefined}
+        />
       </div>
 
       <ClearAllFlags examId={examId} open={flags.filter((f) => f.resolution == null).length} />
@@ -239,7 +269,7 @@ export function LiveMonitor({
         {connected ? "● Live — updates stream in as they happen" : "○ Connecting…"}
       </p>
 
-      <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="space-y-4 border-b border-gray-200 p-6 dark:border-gray-800">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
@@ -342,15 +372,30 @@ export function LiveMonitor({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  tone?: "warn";
+}) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4.5">
+      <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
         {label}
       </p>
-      <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <p
+        className={`mt-2 text-3xl font-semibold tracking-tight tabular-nums ${
+          tone === "warn" ? "text-amber-700" : "text-gray-900"
+        }`}
+      >
         {value}
       </p>
+      {note ? <p className="mt-1 text-xs text-gray-500">{note}</p> : null}
     </div>
   );
 }

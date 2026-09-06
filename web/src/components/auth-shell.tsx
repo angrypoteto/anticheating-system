@@ -1,6 +1,12 @@
 import Link from "next/link";
 
-/** Shared chrome for the sign-in and sign-up screens. */
+/**
+ * Shared chrome for the sign-in and sign-up screens.
+ *
+ * A split: the case for the product on the left, the form on the right. The
+ * left half is hidden below `lg` so a phone gets the form and nothing else —
+ * somebody signing in on a phone has already decided.
+ */
 export function AuthShell({
   title,
   subtitle,
@@ -14,80 +20,109 @@ export function AuthShell({
 }) {
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      {/* Left: the pitch. Hidden on small screens so the form leads on a phone. */}
-      <section className="hidden flex-col justify-between bg-teal-800 p-12 text-teal-50 lg:flex">
-        <Link href="/" className="flex items-center gap-3 font-semibold text-white">
-          <ShieldMark className="h-8 w-8" />
+      <section className="relative hidden flex-col justify-between overflow-hidden bg-gray-900 p-11 text-white lg:flex">
+        {/* A single soft light behind the type, so the panel has depth without
+            becoming a gradient wash. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-40 -bottom-50 h-[520px] w-[520px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle at 30% 30%, rgba(78,121,184,0.30), transparent 68%)",
+          }}
+        />
+
+        <Link
+          href="/"
+          className="relative z-10 flex items-center gap-3 text-[17px] font-semibold tracking-tight text-white"
+        >
+          <ShieldMark className="h-7 w-7" />
           Proctorly
         </Link>
 
-        <div className="max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight text-white">
-            Exams your students can&apos;t quietly game.
+        <div className="relative z-10 max-w-md">
+          <h2 className="font-serif text-[38px] leading-[1.18] font-semibold tracking-tight text-pretty text-white">
+            Exams your students can&rsquo;t quietly game.
           </h2>
-          <p className="mt-4 text-teal-100">
-            Lockdown mode, live proctoring and question sets drafted from your own
-            lesson files — with every flag on the record.
+          <p className="mt-4.5 text-[15px] leading-relaxed text-teal-100">
+            Lockdown sittings, proctoring that reaches you in under a second, and
+            question sets drafted from your own lesson files.
           </p>
-          <ul className="mt-8 space-y-3 text-sm text-teal-100">
+          <ul className="mt-8 flex flex-col gap-3.5">
             {[
-              "Fullscreen exams with tab-switch detection",
-              "Flags reach the instructor in under a second",
+              "Fullscreen papers that pause the moment a student leaves them",
+              "One departure is one warning — never three for the same glance away",
               "Answer keys unreadable to students by design",
             ].map((t) => (
-              <li key={t} className="flex gap-3">
-                <span aria-hidden className="mt-1 text-teal-300">
-                  ✓
-                </span>
+              <li key={t} className="flex gap-3 text-sm leading-relaxed text-teal-100">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                  className="mt-0.5 h-4 w-4 shrink-0 text-teal-400"
+                >
+                  <path
+                    d="m5 12.5 4.5 4.5L19 7.5"
+                    stroke="currentColor"
+                    strokeWidth="2.1"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 {t}
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="text-xs text-teal-200/70">
+        <p className="relative z-10 text-[12.5px] text-teal-300">
           BSIT 4C · Group 2 — System Administration project
         </p>
       </section>
 
-      {/* Right: the form. */}
-      <section className="flex items-center justify-center bg-gray-50 p-6 dark:bg-gray-950">
-        <div className="w-full max-w-sm">
+      <section className="flex items-center justify-center bg-gray-50 p-6 sm:p-11">
+        <div className="w-full max-w-[392px]">
           <Link
             href="/"
-            className="mb-8 flex items-center gap-2 font-semibold text-gray-900 lg:hidden dark:text-gray-50"
+            className="mb-8 flex items-center gap-2.5 font-semibold text-gray-900 lg:hidden"
           >
             <ShieldMark className="h-7 w-7" />
             Proctorly
           </Link>
 
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
             {title}
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
+          <p className="mt-2 text-[14.5px] text-gray-500">{subtitle}</p>
 
-          <div className="mt-8">{children}</div>
+          <div className="mt-7.5">{children}</div>
 
-          <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">{footer}</div>
+          <div className="mt-6 text-sm text-gray-500">{footer}</div>
         </div>
       </section>
     </main>
   );
 }
 
+/**
+ * The mark. Drawn in currentColor rather than a fixed brand hex, because it
+ * sits on navy chrome as often as on ivory — it used to be a hardcoded teal
+ * square, which was the one thing on the console that had not been redesigned.
+ */
 export function ShieldMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect width="32" height="32" rx="7" fill="#0d9488" />
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <path
-        d="M16 5.2 25 9.1v6.8c0 5.4-3.8 9.4-9 10.9-5.2-1.5-9-5.5-9-10.9V9.1z"
-        fill="#fff"
+        d="M12 2.75 4.75 5.5v6.02c0 4.34 2.94 8.4 7.25 9.73 4.31-1.33 7.25-5.39 7.25-9.73V5.5L12 2.75Z"
+        stroke="currentColor"
+        strokeOpacity="0.55"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
       />
       <path
-        d="M11.4 16.1 14.6 19.3 20.6 13.2"
-        fill="none"
-        stroke="#0d9488"
-        strokeWidth="2.8"
+        d="m8.9 12.1 2.15 2.15 4.05-4.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -96,8 +131,7 @@ export function ShieldMark({ className }: { className?: string }) {
 }
 
 export const authField =
-  "mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-teal-500";
-export const authLabel =
-  "block text-sm font-medium text-gray-700 dark:text-gray-300";
+  "mt-1.5 h-[46px] w-full rounded-[10px] border-[1.5px] border-gray-200 bg-white px-3.5 text-[14.5px] text-gray-900 outline-none transition focus:border-teal-600 focus:shadow-[0_0_0_3px_rgba(27,65,121,0.12)]";
+export const authLabel = "block text-[13.5px] font-medium text-gray-700";
 export const authButton =
-  "w-full rounded-md bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600/40 disabled:opacity-50 dark:bg-teal-600 dark:hover:bg-teal-500";
+  "h-12 w-full rounded-[10px] bg-teal-700 text-[15px] font-medium text-white transition hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/40 disabled:opacity-50";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { deleteAccount, type DeleteAccountState } from "./actions";
 
 const WHY_NOT: Record<string, string> = {
@@ -25,7 +25,12 @@ export function DeleteAccount({ userId }: { userId: string }) {
     deleteAccount,
     {},
   );
-  const asked = state.confirm;
+
+  // Backing out has to be as easy as going on. The answer lives in the action's
+  // state, which persists, so cancelling records *which* answer was dismissed —
+  // a later one is a new object and asks again.
+  const [dismissed, setDismissed] = useState<DeleteAccountState | null>(null);
+  const asked = state !== dismissed ? state.confirm : undefined;
   const blocked = asked?.blocked_by ? WHY_NOT[asked.blocked_by] ?? asked.blocked_by : null;
 
   return (
@@ -50,6 +55,14 @@ export function DeleteAccount({ userId }: { userId: string }) {
           >
             {pending ? "Deleting…" : "Yes, delete"}
           </button>
+          <button
+            type="button"
+            onClick={() => setDismissed(state)}
+            disabled={pending}
+            className="text-xs text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+          >
+            Cancel
+          </button>
         </>
       ) : (
         <button
@@ -62,9 +75,18 @@ export function DeleteAccount({ userId }: { userId: string }) {
       )}
 
       {blocked ? (
-        <span role="alert" className="text-xs text-amber-700 dark:text-amber-400">
-          {blocked}
-        </span>
+        <>
+          <span role="alert" className="text-xs text-amber-700 dark:text-amber-400">
+            {blocked}
+          </span>
+          <button
+            type="button"
+            onClick={() => setDismissed(state)}
+            className="text-xs text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          >
+            Dismiss
+          </button>
+        </>
       ) : null}
       {state.error ? (
         <span role="alert" className="text-xs text-red-600 dark:text-red-400">

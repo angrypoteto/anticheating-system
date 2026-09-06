@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { deleteExam, type DeleteExamState } from "./actions";
 
 /**
@@ -22,7 +22,12 @@ export function DeleteExam({
   stay?: boolean;
 }) {
   const [state, submit, pending] = useActionState<DeleteExamState, FormData>(deleteExam, {});
-  const asked = state.confirm;
+
+  // Backing out has to be as easy as going on. The answer lives in the action's
+  // state, which persists, so cancelling records *which* answer was dismissed —
+  // a later one is a new object and asks again.
+  const [dismissed, setDismissed] = useState<DeleteExamState | null>(null);
+  const asked = state !== dismissed ? state.confirm : undefined;
 
   return (
     <form action={submit} className="inline">
@@ -46,6 +51,14 @@ export function DeleteExam({
             className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
           >
             {pending ? "Deleting…" : "Yes, delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDismissed(state)}
+            disabled={pending}
+            className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+          >
+            Cancel
           </button>
         </span>
       ) : (

@@ -95,12 +95,25 @@ export function nextKeyLabel(provider: string, existing: string[]): string {
       : provider.charAt(0).toUpperCase() + provider.slice(1);
 
   const prefix = `${name.toLowerCase()} key `;
+
+  // A label that *starts* "Gemini key 1" reserves 1, whatever it says after it.
+  // Requiring an exact match missed "Gemini key 1 (from chat — rotate me)" and
+  // handed the number straight back out, so the console ended up showing two
+  // keys both called Gemini key 1 — which is precisely what a label is for
+  // preventing.
   const highest = existing.reduce((n, label) => {
     const seen = label.trim().toLowerCase();
     if (!seen.startsWith(prefix)) return n;
-    const tail = seen.slice(prefix.length);
-    return /^\d+$/.test(tail) ? Math.max(n, Number(tail)) : n;
+    const digits = seen.slice(prefix.length).match(/^\d+/);
+    return digits ? Math.max(n, Number(digits[0])) : n;
   }, 0);
 
-  return `${name} key ${highest + 1}`;
+  // Counting from the highest is still not quite enough on its own: a name
+  // already in use verbatim must never be handed out a second time, however it
+  // came to be there.
+  const taken = new Set(existing.map((l) => l.trim().toLowerCase()));
+  let next = highest + 1;
+  while (taken.has(`${prefix}${next}`)) next += 1;
+
+  return `${name} key ${next}`;
 }

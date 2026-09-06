@@ -123,7 +123,27 @@ t(nextKeyLabel("groq", ["Groq key 1", "Groq key 3"]) === "Groq key 4",
   "it counts from the highest taken, not from how many there are",
   "so deleting key 2 does not hand its name to the next one");
 t(nextKeyLabel("groq", ["habanajoshua.f@gmail.com"]) === "Groq key 1",
-  "labels typed by hand before this existed are left alone and not counted");
+  "a label that is not a number at all reserves nothing");
+
+// The real table, as it stood when naming became automatic.
+const REAL_GEMINI = [
+  "Gemini key 1 (from chat — rotate me)",
+  "habanajoshua.f@gmail.com",
+  "habanajoshua.f@gmail.com",
+  "gemini",
+  "gemini",
+];
+t(nextKeyLabel("gemini", REAL_GEMINI) === "Gemini key 2",
+  "a number with a note after it still reserves the number",
+  nextKeyLabel("gemini", REAL_GEMINI));
+t(nextKeyLabel("gemini", [...REAL_GEMINI, "Gemini key 2"]) === "Gemini key 3",
+  "and the one after that follows on");
+t(nextKeyLabel("groq", ["Groq key 1", "groq"]) === "Groq key 2",
+  "an unnamed key alongside a numbered one changes nothing");
+
+// Belt and braces: whatever the counting says, never hand out a name in use.
+t(nextKeyLabel("groq", ["Groq key 1", "Groq key 2", "Groq key 2"]) === "Groq key 3",
+  "a name already in use is never handed out twice");
 t(nextKeyLabel("openrouter", []) === "OpenRouter key 1", "each provider reads as itself");
 t(nextKeyLabel("mistral", []) === "Mistral key 1",
   "including one we have no preset for", nextKeyLabel("mistral", []));

@@ -32,7 +32,7 @@ export default async function MonitorPage({
 
   const { data: sessions } = await supabase
     .from("exam_sessions")
-    .select("id, student_id, status, started_at, submitted_at, score")
+    .select("id, student_id, status, started_at, submitted_at, score, reopened_until")
     .eq("exam_id", id)
     .order("started_at");
 

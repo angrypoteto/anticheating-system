@@ -29,7 +29,7 @@ export async function gradeAndClose(
 
   const { data: session } = await admin
     .from("exam_sessions")
-    .select("id, exam_id, status, started_at")
+    .select("id, exam_id, status, started_at, reopened_until")
     .eq("id", sessionId)
     .maybeSingle();
 
@@ -66,7 +66,14 @@ export async function gradeAndClose(
   const timer = parseTimer(exam?.timer_config);
   const elapsedMinutes = (Date.now() - new Date(session.started_at).getTime()) / 60000;
   const pastTimer = timer.totalMinutes > 0 && elapsedMinutes > timer.totalMinutes;
-  const pastClose = Boolean(exam?.closes_at) && Date.now() > new Date(exam!.closes_at).getTime();
+  // A student working under an allowance is not working past the close: the
+  // exam shut for the class, and this sitting was deliberately left open. Saying
+  // "the exam closed while you were working" to somebody who was given the time
+  // would be blaming them for their teacher's kindness.
+  const excused =
+    Boolean(session.reopened_until) && Date.now() < new Date(session.reopened_until!).getTime();
+  const pastClose =
+    !excused && Boolean(exam?.closes_at) && Date.now() > new Date(exam!.closes_at).getTime();
   const ranOver = pastTimer || pastClose;
 
   const status =

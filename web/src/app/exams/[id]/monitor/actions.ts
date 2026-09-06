@@ -9,6 +9,70 @@ import { auditServerAction } from "@/lib/audit";
 
 export type MonitorState = { error?: string; success?: string };
 
+/** Long enough to finish a paper, short enough that forgetting it costs little. */
+const DEFAULT_EXTENSION_MINUTES = 60;
+
+function minutesFor(formData: FormData): number | null {
+  const raw = Number(formData.get("minutes"));
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : null;
+}
+
+/** The time of day a teacher would say out loud, in the school's own timezone. */
+function clockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Manila",
+  });
+}
+
+/**
+ * Let one student answer a paper that is closed to everybody else.
+ *
+ * The alternative was reopening the exam's window, which reopens it for the
+ * class — not what anybody means when they are making an allowance for the one
+ * person whose laptop died. The allowance expires by itself, because an
+ * exception nobody has to remember to withdraw is one nobody withdraws.
+ */
+export async function extendSitting(
+  _prev: MonitorState,
+  formData: FormData,
+): Promise<MonitorState> {
+  const actor = await requireRole("INSTRUCTOR", "ADMIN");
+  const sessionId = String(formData.get("sessionId") ?? "");
+  const examId = String(formData.get("examId") ?? "");
+  const ending = formData.get("end") === "yes";
+
+  if (!sessionId) return { error: "Which sitting?" };
+
+  const supabase = await createClient();
+
+  if (ending) {
+    const { error } = await supabase.rpc("end_extension", { p_session_id: sessionId });
+    if (error) return { error: error.message };
+    await auditServerAction(actor.id, "end_extension", "exam_sessions", sessionId, {});
+    revalidatePath(`/exams/${examId}/monitor`);
+    return { success: "Extra time taken back." };
+  }
+
+  const minutes = minutesFor(formData) ?? DEFAULT_EXTENSION_MINUTES;
+  const { data: until, error } = await supabase.rpc("extend_sitting", {
+    p_session_id: sessionId,
+    p_minutes: minutes,
+  });
+  if (error) return { error: error.message };
+
+  await auditServerAction(actor.id, "extend_sitting", "exam_sessions", sessionId, {
+    minutes,
+    until,
+  });
+
+  revalidatePath(`/exams/${examId}/monitor`);
+  return {
+    success: `They can answer until ${clockTime(String(until))}, whatever the exam's own window says.`,
+  };
+}
+
 /** Marks a flag as a false positive. RLS limits this to the owning instructor. */
 export async function voidFlag(
   _prev: MonitorState,
@@ -97,25 +161,29 @@ export async function allowRetake(
   });
 
   // Reopening the sitting is not enough on its own: answering also asks whether
-  // the exam itself is open, so a teacher who forgets the window would send the
-  // student to a page that refuses their answers without saying why.
-  const { data: exam } = await admin
-    .from("exams")
-    .select("opens_at, closes_at, status")
-    .eq("id", session.exam_id)
-    .maybeSingle();
-
-  const now = Date.now();
-  const shut =
-    exam?.status !== "PUBLISHED" ||
-    (exam?.opens_at && new Date(exam.opens_at).getTime() > now) ||
-    (exam?.closes_at && new Date(exam.closes_at).getTime() <= now);
+  // the exam is open, and it usually is not — that is generally why somebody is
+  // being let back in. So the sitting gets its own allowance, for this student
+  // and no one else, which expires on its own.
+  const { data: until, error: extendError } = await supabase.rpc("extend_sitting", {
+    p_session_id: sessionId,
+    p_minutes: minutesFor(formData) ?? DEFAULT_EXTENSION_MINUTES,
+  });
 
   revalidatePath(`/exams/${examId}/monitor`);
+
+  const cleared_n = cleared?.length ?? 0;
+  const warnings = `${cleared_n} warning${cleared_n === 1 ? "" : "s"} cleared`;
+
+  if (extendError || typeof until !== "string") {
+    return {
+      success:
+        `Sitting reopened. Answers kept, ${warnings}, clock restarted — but the exam is closed ` +
+        "and giving them time on it failed, so they still cannot answer.",
+    };
+  }
+
   return {
-    success: shut
-      ? "Sitting reopened, but this exam is closed — reopen its window too or they still cannot answer."
-      : `Sitting reopened. Answers kept, ${cleared?.length ?? 0} warning${(cleared?.length ?? 0) === 1 ? "" : "s"} cleared, clock restarted.`,
+    success: `Sitting reopened. Answers kept, ${warnings}, and they can answer until ${clockTime(until)} even though the exam is closed.`,
   };
 }
 

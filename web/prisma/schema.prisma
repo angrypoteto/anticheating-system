@@ -221,6 +221,9 @@ model ExamSession {
   submittedAt     DateTime?     @map("submitted_at") @db.Timestamptz(3)
   /// Null only while the sitting is still in progress.
   submittedReason SubmitReason? @map("submitted_reason")
+  /// While this is in the future, this one sitting may be answered even though
+  /// the exam's own window has closed — an allowance made for one student.
+  reopenedUntil   DateTime?     @map("reopened_until") @db.Timestamptz(3)
   score           Float?
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 

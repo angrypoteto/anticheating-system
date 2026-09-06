@@ -2,7 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { allowRetake, forceSubmit, voidAllFlags, voidFlag, type MonitorState } from "./actions";
+import {
+  allowRetake,
+  extendSitting,
+  forceSubmit,
+  voidAllFlags,
+  voidFlag,
+  type MonitorState,
+} from "./actions";
 
 export type SessionRow = {
   id: string;
@@ -11,6 +18,8 @@ export type SessionRow = {
   started_at: string;
   submitted_at: string | null;
   score: number | null;
+  /** While this is in the future, this student may answer a closed exam. */
+  reopened_until: string | null;
 };
 
 export type FlagRow = {
@@ -128,7 +137,7 @@ export function LiveMonitor({
     async function reconcile() {
       const { data: freshSessions } = await client
         .from("exam_sessions")
-        .select("id, student_id, status, started_at, submitted_at, score")
+        .select("id, student_id, status, started_at, submitted_at, score, reopened_until")
         .eq("exam_id", examId)
         .order("started_at");
       if (!freshSessions) return;
@@ -370,9 +379,25 @@ function StudentRow({
     allowRetake,
     {},
   );
+  const [extendState, extend, extending] = useActionState<MonitorState, FormData>(
+    extendSitting,
+    {},
+  );
   const active = flags.filter((f) => f.resolution == null);
   const live = session.status === "IN_PROGRESS";
-  const said = reopenState.error || reopenState.success ? reopenState : state;
+  const said =
+    extendState.error || extendState.success
+      ? extendState
+      : reopenState.error || reopenState.success
+        ? reopenState
+        : state;
+
+  // An allowance that has run out is not one. Compared against the render, so
+  // it stops being offered as soon as the page next paints after it expires.
+  const openUntil =
+    session.reopened_until && new Date(session.reopened_until) > new Date()
+      ? new Date(session.reopened_until)
+      : null;
 
   // started_at is stamped by Postgres, submitted_at by the app server — two clocks,
   // so a fast submission can come back very slightly negative. Never show that.
@@ -412,6 +437,41 @@ function StudentRow({
           ) : (
             <span className="text-sm text-gray-400 dark:text-gray-600">clean</span>
           )}
+
+          {live ? (
+            // Only worth offering while they are still in the paper: an
+            // allowance on a submitted sitting is an allowance to do nothing.
+            <form action={extend} className="flex items-center gap-2">
+              <input type="hidden" name="sessionId" value={session.id} />
+              <input type="hidden" name="examId" value={examId} />
+              {openUntil ? (
+                <>
+                  <span className="text-xs text-teal-700 dark:text-teal-400">
+                    can answer until{" "}
+                    {openUntil.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                  <button
+                    type="submit"
+                    name="end"
+                    value="yes"
+                    disabled={extending}
+                    className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                  >
+                    {extending ? "…" : "Take it back"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={extending}
+                  title="Lets this student answer even after the exam closes"
+                  className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  {extending ? "…" : "Give an hour"}
+                </button>
+              )}
+            </form>
+          ) : null}
 
           {live ? (
             <form action={submit}>

@@ -50,6 +50,10 @@ export function ExamRunner({
   const [warning, setWarning] = useState<string | null>(null);
   // Another tab of the same sitting has taken over; this one stops proctoring.
   const [superseded, setSuperseded] = useState(false);
+  // Alt-tabbing out of a fullscreen window ends fullscreen, and nothing put it
+  // back: the warning was recorded and the paper then simply carried on in a
+  // window, with "fullscreen required" quietly unenforced for the rest of it.
+  const [fullscreen, setFullscreen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [questionRemaining, setQuestionRemaining] = useState<number | null>(null);
@@ -73,6 +77,17 @@ export function ExamRunner({
   const [tracker] = useState(() => createDepartureTracker({}));
 
   const done = submitState.submitted === true;
+
+  // Out of fullscreen where fullscreen is required: the paper is hidden until
+  // they are back. Leaving used to cost one warning and then buy an unwatched
+  // window over the questions for the rest of the exam — worth a great deal
+  // more than the warning cost.
+  const paused =
+    started && !done && !superseded && lockdown.fullscreenRequired && !fullscreen;
+  const pausedRef = useRef(false);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
 
   // Whatever is typed into the question on screen but not yet saved. The save is
   // debounced, so clicking Submit within that debounce — or being auto-submitted
@@ -207,8 +222,10 @@ export function ExamRunner({
     const onBlur = () => noteDeparture("WINDOW_BLUR");
     const onFocus = () => noteReturn();
     const onFullscreenChange = () => {
+      const inside = Boolean(document.fullscreenElement);
+      setFullscreen(inside);
       if (!lockdown.fullscreenRequired) return;
-      if (!document.fullscreenElement) noteDeparture("FULLSCREEN_EXIT");
+      if (!inside) noteDeparture("FULLSCREEN_EXIT");
       else noteReturn();
     };
     const block = (e: Event) => e.preventDefault();
@@ -316,22 +333,35 @@ export function ExamRunner({
     const tick = () => {
       const left = Math.max(0, limit - (Date.now() - startedThisQuestion));
       setQuestionRemaining(left);
-      if (left <= 0) void advance();
+      if (left <= 0 && !pausedRef.current) void advance();
     };
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
   }, [started, done, superseded, index, timer.perQuestionSeconds, advance]);
 
-  const startExam = async () => {
-    if (lockdown.fullscreenRequired) {
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch {
-        setWarning("Fullscreen was blocked — allow it to begin.");
-        return;
-      }
+  /**
+   * Ask for fullscreen. Only ever from a click.
+   *
+   * A browser will not grant fullscreen without a gesture behind it, so the
+   * paper cannot put itself back on its own however much it would like to —
+   * which is why leaving is met with a button rather than a silent recovery.
+   */
+  const enterFullscreen = useCallback(async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+      setFullscreen(true);
+      return true;
+    } catch {
+      setWarning(
+        "Your browser would not go fullscreen. Allow it, or press F11, to carry on.",
+      );
+      return false;
     }
+  }, []);
+
+  const startExam = async () => {
+    if (lockdown.fullscreenRequired && !(await enterFullscreen())) return;
     setStarted(true);
   };
 
@@ -486,7 +516,25 @@ export function ExamRunner({
         </p>
       ) : null}
 
-      {question ? (
+      {paused ? (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950">
+          <h2 className="text-lg font-medium text-amber-900 dark:text-amber-200">
+            Fullscreen ended — your exam is paused
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-amber-800 dark:text-amber-300">
+            The questions are hidden until you are back in fullscreen. This has
+            already been recorded as one warning; going back now does not cost
+            another. The clock keeps running.
+          </p>
+          <button
+            type="button"
+            onClick={() => void enterFullscreen()}
+            className="mt-5 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          >
+            Return to fullscreen
+          </button>
+        </div>
+      ) : question ? (
         <div className="select-none">
           <p className="text-gray-900 dark:text-gray-100">{question.prompt}</p>
 

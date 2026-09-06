@@ -7,7 +7,7 @@ import { requireRole } from "@/lib/auth";
 import { extractText } from "@/lib/ai/extract";
 import { describeMix, type DraftQuestion } from "@/lib/ai/gemini";
 import { generateQuestions } from "@/lib/ai/generate";
-import { mergeDrafts, planBatches } from "@/lib/ai/batches";
+import { MAX_PARALLEL, mergeDrafts, planBatches } from "@/lib/ai/batches";
 import { explainProviderError } from "@/lib/ai/fit";
 import { RUN_BUDGET_MS } from "@/lib/ai/eta";
 
@@ -16,6 +16,8 @@ export type GenerateState = {
   notice?: string;
   drafts?: DraftQuestion[];
   sourceChars?: number;
+  /** Drafts came back, but fewer than were asked for. */
+  partial?: boolean;
 };
 
 /**
@@ -180,15 +182,12 @@ export async function generateFromFile(
   let lastError = "";
   let failedCount = 0;
 
-  for (const [index, batch] of batches.entries()) {
-    // Stop starting batches once there is not time for a useful one. The first
-    // batch always runs, however tight — returning "no time" without trying
-    // would be absurd.
-    if (returned.length && hardStop - Date.now() < 6000) {
-      ranOutOfTime = true;
-      break;
-    }
-
+  // The requests are independent, so they go out together. One after another, a
+  // fifty-question order needed four times what one request costs, inside a
+  // function the platform kills at sixty seconds — it could not finish, and did
+  // not. Four at once cost what one costs.
+  let settled = 0;
+  const run = async (index: number, batch: (typeof batches)[number]) => {
     const result = await generateQuestions(
       text,
       batch.mc + batch.ident,
@@ -199,20 +198,37 @@ export async function generateFromFile(
       // the first one, three quarters of which are then dropped as repeats.
       index,
     );
+    settled += 1;
+    await say(settled);
+    return result;
+  };
 
-    if (!result.ok) {
-      // Every batch uses the same keys and the same material, so a provider
-      // failure on one is a provider failure on all of them. Carrying on would
-      // spend the whole budget rediscovering that.
-      lastError = result.error;
-      failedCount++;
-      await say(returned.length + failedCount);
+  for (let start = 0; start < batches.length; start += MAX_PARALLEL) {
+    // Stop starting work once there is not time for it to be useful. The first
+    // wave always runs, however tight — returning "no time" without trying
+    // would be absurd.
+    if (start > 0 && hardStop - Date.now() < 6000) {
+      ranOutOfTime = true;
       break;
     }
 
-    keyLabel = result.keyLabel;
-    returned.push(result.questions);
-    await say(returned.length + failedCount);
+    const wave = batches.slice(start, start + MAX_PARALLEL);
+    const results = await Promise.all(wave.map((b, i) => run(start + i, b)));
+
+    for (const result of results) {
+      if (result.ok) {
+        keyLabel = result.keyLabel;
+        returned.push(result.questions);
+      } else {
+        lastError = result.error;
+        failedCount += 1;
+      }
+    }
+
+    // Every request uses the same keys and the same material, so a wave in
+    // which none succeeded is a provider failure rather than bad luck. Sending
+    // another would spend the rest of the budget rediscovering that.
+    if (!results.some((r) => r.ok)) break;
   }
 
   const drafts = mergeDrafts(returned);
@@ -230,21 +246,28 @@ export async function generateFromFile(
 
   const short = count - drafts.length;
   const why = ranOutOfTime
-    ? " There was not time for the rest — generate again to add more."
-    : lastError
-      ? ` The rest stopped at: ${lastError}`
-      : " Generate again for the rest.";
+    ? "There was not time for the rest — generate again to add more."
+    : failedCount
+      ? // The provider's own words, translated. "The operation was aborted due
+        // to timeout" names a mechanism, not a cause, and a teacher cannot act
+        // on a mechanism.
+        `${failedCount} of the ${batches.length} requests did not come back. ` +
+        explainProviderError(lastError)
+      : "Repeats between requests were dropped. Generate again for the rest.";
 
   return {
     drafts,
     sourceChars: chars,
+    // A short order is not a success, and showing it in green next to a tick
+    // told a teacher everything had worked when a third of it had not.
+    partial: short > 0,
     notice:
       `${drafts.length} draft${drafts.length === 1 ? "" : "s"} from ` +
       `${chars.toLocaleString()} characters` +
       (batches.length > 1 ? ` across ${batches.length} requests` : "") +
-      (keyLabel ? `, using key “${keyLabel}”` : "") +
+      (keyLabel ? `, using ${keyLabel}` : "") +
       "." +
-      (short > 0 ? ` You asked for ${count}; ${short} did not arrive.${why}` : ""),
+      (short > 0 ? ` You asked for ${count}; ${short} did not arrive. ${why}` : ""),
   };
 }
 

@@ -29,7 +29,10 @@ export function AddKeyForm() {
 
   return (
     <form action={action} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Two columns, not three: the label used to sit here and be typed, and
+          what got typed was an email address, which then appeared beside every
+          exam it generated. It is named automatically now. */}
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="preset" className={label}>Provider</label>
           <select
@@ -46,11 +49,6 @@ export function AddKeyForm() {
           {preset?.hint ? (
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{preset.hint}</p>
           ) : null}
-        </div>
-
-        <div>
-          <label htmlFor="label" className={label}>Label</label>
-          <input id="label" name="label" placeholder="Key 1" required className={field} />
         </div>
 
         <div>

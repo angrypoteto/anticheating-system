@@ -31,8 +31,13 @@ type Attempt = { ok: true; text: string } | { ok: false; status: number; detail:
  * carries maxDuration = 60, and a call allowed to run for two minutes could
  * never fail gracefully: the platform killed the whole request first and the
  * teacher got a browser error page with no message in it at all.
+ *
+ * It was 25 seconds, which was right while requests ran one after another and
+ * four of them had to share the window. They now go out together, so each has
+ * most of the window to itself — and the failure a teacher actually saw was
+ * this timeout firing on a model that would have answered.
  */
-export const MODEL_CALL_TIMEOUT_MS = 25_000;
+export const MODEL_CALL_TIMEOUT_MS = 38_000;
 
 async function callGemini(
   key: KeyRow,

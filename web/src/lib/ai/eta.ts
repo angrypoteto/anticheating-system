@@ -42,8 +42,13 @@ export const RUN_BUDGET_MS = 52_000;
 export const PAGE_LIMIT_MS = 60_000;
 
 /** Up-front: what to tell someone before they press the button. */
-export function estimateTotalMs(requests: number, perRequestMs = TYPICAL_REQUEST_MS): number {
-  const wanted = Math.max(0, Math.floor(requests)) * perRequestMs;
+export function estimateTotalMs(
+  requests: number,
+  concurrency = 1,
+  perRequestMs = TYPICAL_REQUEST_MS,
+): number {
+  const atOnce = Math.max(1, Math.floor(concurrency));
+  const wanted = Math.ceil(Math.max(0, Math.floor(requests)) / atOnce) * perRequestMs;
   // A long order does not take longer than the run is allowed to last; it comes
   // back short instead, which the form says.
   return Math.min(wanted, RUN_BUDGET_MS);
@@ -58,6 +63,8 @@ export type RunShape = {
   elapsedMs: number;
   /** Since the last request landed — or since the start, if none has. */
   sinceLastMs: number;
+  /** How many requests are in the air at once. */
+  concurrency?: number;
   perRequestMs?: number;
 };
 
@@ -75,6 +82,7 @@ export function project({
   total,
   elapsedMs,
   sinceLastMs,
+  concurrency = 1,
   perRequestMs = TYPICAL_REQUEST_MS,
 }: RunShape): Projection | null {
   if (!Number.isFinite(total) || total <= 0) return null;
@@ -84,9 +92,16 @@ export function project({
 
   const since = Math.max(0, sinceLastMs);
 
-  // What the finished requests cost: everything except the one still out.
+  // Requests go out together, so the unit of time is a wave, not a request:
+  // four at once cost what one costs, and counting them separately would
+  // promise four times the wait.
+  const atOnce = Math.max(1, Math.floor(concurrency));
+  const waves = Math.ceil(total / atOnce);
+  const wavesDone = Math.floor(finished / atOnce);
+
+  // What the finished waves cost: everything except the one still out.
   const completedMs = Math.max(0, elapsedMs - since);
-  const measured = finished > 0 ? completedMs / finished : null;
+  const measured = wavesDone > 0 ? completedMs / wavesDone : null;
 
   // One measurement is thin — the first request is usually the slowest, since
   // it is the one that reads the lesson — so it is averaged with the prior
@@ -94,7 +109,7 @@ export function project({
   const baseline =
     measured == null
       ? perRequestMs
-      : finished >= 2
+      : wavesDone >= 2
         ? measured
         : (measured + perRequestMs) / 2;
 
@@ -107,7 +122,7 @@ export function project({
   // sits there is the same lie as a bar stuck at 100%.
   const floor = Math.min(3_000, per * 0.1);
   const inFlight = Math.max(per - since, floor);
-  const queued = Math.max(0, total - finished - 1) * per;
+  const queued = Math.max(0, waves - wavesDone - 1) * per;
 
   // Whatever the arithmetic says, the run cannot outlive the request carrying
   // it. Without this, four slow requests projected two minutes onto a page that
@@ -121,7 +136,7 @@ export function project({
     remainingMs: Math.min(inFlight + queued, ceiling),
     // Held short of the end: the last request is only finished once the drafts
     // are back, and this cannot see that.
-    fraction: Math.min(0.97, (finished + within) / total),
+    fraction: Math.min(0.97, (wavesDone + within) / waves),
   };
 }
 

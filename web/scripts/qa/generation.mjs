@@ -28,7 +28,8 @@ import {
   humanDuration,
   project,
 } from "../../src/lib/ai/eta.ts";
-import { planBatches } from "../../src/lib/ai/batches.ts";
+import { MAX_PARALLEL, planBatches } from "../../src/lib/ai/batches.ts";
+import { nextKeyLabel } from "../../src/lib/ai/providers.ts";
 
 const bugs = [];
 let checks = 0;
@@ -112,15 +113,61 @@ t(explainProviderError("groq: 503 model is overloaded").includes("busy"),
 t(explainProviderError("something nobody anticipated") === "something nobody anticipated",
   "and anything unrecognised is passed through rather than swallowed");
 
+section("Naming a key so nobody has to");
+
+t(nextKeyLabel("groq", []) === "Groq key 1", "the first is key 1", nextKeyLabel("groq", []));
+t(nextKeyLabel("groq", ["Groq key 1"]) === "Groq key 2", "and the next follows on");
+t(nextKeyLabel("gemini", ["Groq key 1", "Groq key 2"]) === "Gemini key 1",
+  "numbering is per provider", nextKeyLabel("gemini", ["Groq key 1", "Groq key 2"]));
+t(nextKeyLabel("groq", ["Groq key 1", "Groq key 3"]) === "Groq key 4",
+  "it counts from the highest taken, not from how many there are",
+  "so deleting key 2 does not hand its name to the next one");
+t(nextKeyLabel("groq", ["habanajoshua.f@gmail.com"]) === "Groq key 1",
+  "labels typed by hand before this existed are left alone and not counted");
+t(nextKeyLabel("openrouter", []) === "OpenRouter key 1", "each provider reads as itself");
+t(nextKeyLabel("mistral", []) === "Mistral key 1",
+  "including one we have no preset for", nextKeyLabel("mistral", []));
+
 section("What the order will cost, before it starts");
 
 t(planBatches(5, 2).length === 1, "a small order is one request");
-t(planBatches(40, 20).length === 4, "sixty questions is four", `${planBatches(40, 20).length}`);
-t(estimateTotalMs(2) === 2 * TYPICAL_REQUEST_MS, "the estimate is per request");
+t(planBatches(30, 20).length === 4, "fifty questions is four", `${planBatches(30, 20).length}`);
+t(estimateTotalMs(2) === 2 * TYPICAL_REQUEST_MS, "sent one at a time, the cost is per request");
+
+// The fifty-question order that timed out: four requests, run together.
+t(estimateTotalMs(4, MAX_PARALLEL) === TYPICAL_REQUEST_MS,
+  "sent together, four requests cost what one costs",
+  `${estimateTotalMs(4, MAX_PARALLEL) / 1000}s, and the run has ${RUN_BUDGET_MS / 1000}s`);
+t(estimateTotalMs(4, MAX_PARALLEL) < RUN_BUDGET_MS,
+  "which is the difference between finishing and being cut off",
+  "four sequential requests could not fit and did not");
 t(estimateTotalMs(0) === 0, "nothing asked for takes no time");
-t(estimateTotalMs(20) === RUN_BUDGET_MS,
+t(estimateTotalMs(60) === RUN_BUDGET_MS,
   "and never promises more time than the run is allowed to take",
-  `${estimateTotalMs(20) / 1000}s`);
+  `${estimateTotalMs(60) / 1000}s`);
+
+section("Requests that overlap");
+
+// Four in the air at once: nothing lands until they all do, so the countdown
+// must be for one wave, not four requests.
+const wave = project({ done: 0, total: 4, elapsedMs: 2_000, sinceLastMs: 2_000, concurrency: 4 });
+t(wave.remainingMs < 1.5 * TYPICAL_REQUEST_MS,
+  "the wait is one request's, not four",
+  `${Math.round(wave.remainingMs / 1000)}s`);
+
+const sequential = project({ done: 0, total: 4, elapsedMs: 2_000, sinceLastMs: 2_000 });
+t(sequential.remainingMs > 3 * wave.remainingMs,
+  "which is what it would have said before",
+  `${Math.round(sequential.remainingMs / 1000)}s one at a time`);
+
+t(wave.fraction > 0 && wave.fraction < 1,
+  "and the bar still moves while they are all out", `${Math.round(wave.fraction * 100)}%`);
+
+// Seven requests at a cap of six is two waves, and the second has not started.
+const twoWaves = project({ done: 6, total: 7, elapsedMs: 20_000, sinceLastMs: 0, concurrency: 6 });
+t(twoWaves.fraction >= 0.5 && twoWaves.fraction < 1,
+  "an order too big for one wave is halfway when the first lands",
+  `${Math.round(twoWaves.fraction * 100)}%`);
 
 section("Counting down, second by second");
 

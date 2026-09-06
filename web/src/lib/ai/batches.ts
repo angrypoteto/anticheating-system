@@ -9,6 +9,21 @@
  */
 export const PER_CALL = 15;
 
+/**
+ * How many of those calls to have in the air at once.
+ *
+ * They were run one after another, so a fifty-question order needed four times
+ * as long as a single request — and the function that runs it is killed at
+ * sixty seconds. It could not finish, and did not: fifteen drafts of fifty
+ * arrived and the teacher was shown a timeout.
+ *
+ * The requests do not depend on each other. Four at once cost what one costs,
+ * which is the difference between an order that completes and one that asks the
+ * teacher to press the button again. The cap is here so a very large order does
+ * not open thirty connections to a free-tier provider at once.
+ */
+export const MAX_PARALLEL = 6;
+
 export type Batch = { mc: number; ident: number };
 
 /**

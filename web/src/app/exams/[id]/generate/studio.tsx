@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { GenerationProgress } from "./progress";
-import { planBatches } from "@/lib/ai/batches";
+import { MAX_PARALLEL, planBatches } from "@/lib/ai/batches";
 import { estimateTotalMs, humanDuration } from "@/lib/ai/eta";
 import {
   acceptDrafts,
@@ -163,10 +163,9 @@ export function GenerateStudio({ examId }: { examId: string }) {
           <input type="hidden" name="runId" value={runId} />
 
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Ask for as many as you need. Large orders are split into several
-            requests and merged, so they take longer — and repeats between
-            requests are dropped, which can leave you a few short. Generate
-            again for the rest.
+            Ask for as many as you need. Large orders go out as several requests
+            at once and are merged, with repeats between them dropped — so a big
+            order can come back a few short. Generate again for the rest.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -205,7 +204,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {mcCount + identCount} question{mcCount + identCount === 1 ? "" : "s"} ·{" "}
               {requests} request{requests === 1 ? "" : "s"} · usually about{" "}
-              {humanDuration(estimateTotalMs(requests))}
+              {humanDuration(estimateTotalMs(requests, MAX_PARALLEL))}
             </p>
           ) : null}
 
@@ -215,7 +214,16 @@ export function GenerateStudio({ examId }: { examId: string }) {
             </p>
           ) : null}
           {genState.notice ? (
-            <p role="status" className="text-sm text-green-700 dark:text-green-400">
+            <p
+              role="status"
+              className={
+                // A short order in green beside a tick reads as "all done" when
+                // a third of it did not arrive.
+                genState.partial
+                  ? "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                  : "text-sm text-green-700 dark:text-green-400"
+              }
+            >
               {genState.notice}
             </p>
           ) : null}

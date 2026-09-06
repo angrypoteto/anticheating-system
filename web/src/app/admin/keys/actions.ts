@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { pingModel } from "@/lib/ai/generate";
 import { auditServerAction } from "@/lib/audit";
-import { presetFor } from "@/lib/ai/providers";
+import { nextKeyLabel, presetFor } from "@/lib/ai/providers";
 
 export type KeyState = { error?: string; success?: string };
 
@@ -25,11 +25,9 @@ export async function addKey(
   const apiStyle = preset?.apiStyle ?? "openai";
   const baseUrl = String(formData.get("baseUrl") ?? "").trim() || preset?.baseUrl || "";
   const model = String(formData.get("model") ?? "").trim() || preset?.defaultModel || "";
-  const label = String(formData.get("label") ?? "").trim();
   const secret = String(formData.get("secret") ?? "").trim();
 
   if (!provider) return { error: "Name the provider." };
-  if (!label) return { error: "Give the key a label so you can tell them apart." };
   if (secret.length < 8) return { error: "That doesn't look like a valid key." };
   if (apiStyle === "openai" && !baseUrl) {
     return { error: "An OpenAI-compatible provider needs a base URL." };
@@ -41,6 +39,18 @@ export async function addKey(
   // ai_key_store writes the secret into Supabase Vault and keeps only a pointer
   // plus the last four characters on the row.
   const client = createAdminClient();
+
+  // Named rather than asked for. Every key of this provider is read, including
+  // disabled ones, so a number is never reused while the row that had it is
+  // still there to be confused with.
+  const { data: siblings } = await client
+    .from("ai_provider_keys")
+    .select("label")
+    .eq("provider", provider);
+  const label = nextKeyLabel(
+    provider,
+    (siblings ?? []).map((k: { label: string }) => k.label),
+  );
   const { data: keyId, error } = await client.rpc("ai_key_store", {
     p_provider: provider,
     p_label: label,

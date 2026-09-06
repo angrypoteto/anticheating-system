@@ -116,5 +116,14 @@ export function explainProviderError(raw: string): string {
   if (/401|403|api key|unauthor|permission denied/.test(s)) {
     return "That provider key was refused. Check it in the admin console.";
   }
+  // "The operation was aborted due to timeout" is what an abandoned fetch says.
+  // It is true and it is useless: it names a mechanism, not a cause.
+  if (/abort|timed out|timeout|etimedout/.test(s)) {
+    return (
+      "The model took too long to answer and the request was given up on. Ask " +
+      "for fewer questions at a time — a smaller order comes back faster and is " +
+      "more likely to arrive whole."
+    );
+  }
   return raw;
 }

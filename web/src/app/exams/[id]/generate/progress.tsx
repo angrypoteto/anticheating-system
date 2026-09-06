@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatClock, project } from "@/lib/ai/eta";
+import { MAX_PARALLEL } from "@/lib/ai/batches";
 
 /**
  * How far a generation has actually got.
  *
- * A large order is several model calls in sequence and a server action cannot
- * stream, so the action records each batch as it lands and this polls for it.
+ * A large order is several model calls, sent together, and a server action
+ * cannot stream — so the action records each one as it lands and this polls for
+ * it.
  *
  * Within a request the bar does move on a clock, because a bar that only jumps
  * when a batch arrives spends twenty seconds looking frozen. What it will not
@@ -70,12 +72,14 @@ export function GenerationProgress({ runId }: { runId: string }) {
 
   // Both clocks come from the ticker rather than a clock read during render:
   // the ticker starts with this panel, so they agree, and rendering stays pure.
+  const atOnce = known ? Math.min(total!, MAX_PARALLEL) : 1;
   const run = known
     ? project({
         done: done!,
         total: total!,
         elapsedMs: seconds * 1000,
         sinceLastMs: (seconds - landedAt) * 1000,
+        concurrency: atOnce,
       })
     : null;
 
@@ -91,7 +95,9 @@ export function GenerationProgress({ runId }: { runId: string }) {
         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {known
             ? total! > 1
-              ? `Writing questions — request ${Math.min(done! + 1, total!)} of ${total!}`
+              ? // They are in the air together, so "request 2 of 4" would be a
+                // fiction — there is no current one.
+                `Writing questions — ${total} requests at once`
               : "Writing questions"
             : "Reading your lesson file…"}
         </span>
@@ -121,7 +127,7 @@ export function GenerationProgress({ runId }: { runId: string }) {
 
       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
         {known && total! > 1
-          ? "Large orders are split into several requests and merged. Leave this page open."
+          ? "Large orders go out as several requests at once and are merged. Leave this page open."
           : "Leave this page open — the model is writing from your material."}
       </p>
 

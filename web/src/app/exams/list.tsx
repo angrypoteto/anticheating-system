@@ -12,6 +12,21 @@ const STATUS_STYLES: Record<string, string> = {
   ARCHIVED: "text-gray-400 dark:text-gray-500",
 };
 
+/**
+ * Whether a published exam can be sat *right now*.
+ *
+ * "Published" and "open" are not the same thing, and the row only ever said
+ * "published" — so an exam that closed hours ago looked identical to one a class
+ * was sitting, and the only way to tell was to expand it and read a date. This
+ * is the state a teacher actually acts on, so it belongs where they can see it
+ * without opening anything.
+ */
+const WINDOW_STYLES: Record<string, string> = {
+  open: "border-green-600/40 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-950/60 dark:text-green-300",
+  closed: "border-gray-400/40 bg-gray-100 text-gray-700 dark:border-gray-600/40 dark:bg-gray-800 dark:text-gray-300",
+  scheduled: "border-amber-500/40 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/60 dark:text-amber-300",
+};
+
 /** Manila time, since that is where the exams are actually sat. */
 const when = (iso: string | null | undefined) =>
   iso
@@ -94,6 +109,16 @@ export async function ExamList() {
         // PostgREST types a to-one embed as an array; accept either.
         const subjectEmbed = e.subjects as { name: string } | { name: string }[] | null;
         const subject = (Array.isArray(subjectEmbed) ? subjectEmbed[0] : subjectEmbed)?.name ?? null;
+        // Only a published exam has a window worth reporting; a draft is not
+        // closed, it simply has not started existing yet.
+        const windowState =
+          e.status !== "PUBLISHED"
+            ? null
+            : over
+              ? "closed"
+              : notYet
+                ? "scheduled"
+                : "open";
         const availability =
           e.status !== "PUBLISHED"
             ? null
@@ -125,6 +150,14 @@ export async function ExamList() {
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
+                  {windowState ? (
+                    <span
+                      title={availability ?? undefined}
+                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${WINDOW_STYLES[windowState]}`}
+                    >
+                      {windowState}
+                    </span>
+                  ) : null}
                   <span className={`text-sm ${STATUS_STYLES[e.status] ?? ""}`}>
                     {e.status.toLowerCase()}
                   </span>

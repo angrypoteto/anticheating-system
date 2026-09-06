@@ -170,6 +170,11 @@ try {
 } finally {
   section("Cleanup");
   for (const id of made.exams) {
+    // A published exam's questions are frozen, so deleting them fails and the
+    // exam then fails its foreign key — which is how four test papers ended up
+    // sitting in the real exam list. Archive it first; only PUBLISHED is frozen.
+    await svc.from("exams").update({ status: "ARCHIVED" }).eq("id", id);
+    await svc.from("exam_access").delete().eq("exam_id", id);
     const { data: ss } = await svc.from("exam_sessions").select("id").eq("exam_id", id);
     for (const s of ss ?? []) {
       await svc.from("flags").delete().eq("session_id", s.id);
@@ -181,8 +186,20 @@ try {
     await svc.from("questions").delete().eq("exam_id", id);
     await svc.from("exams").delete().eq("id", id);
   }
-  for (const id of made.users) await svc.auth.admin.deleteUser(id).catch(() => {});
-  ok("test data removed");
+  // Sitting an exam writes an audit row naming the student as the actor, and
+  // audit_log.actor_id has no cascade — so the account cannot go until it does.
+  // Swallowing that error left ten test accounts sitting in the real accounts
+  // list, so failures are reported rather than hidden.
+  let stuck = 0;
+  for (const id of made.users) {
+    await svc.from("audit_log").delete().eq("actor_id", id);
+    await svc.from("enrollments").delete().eq("student_id", id);
+    await svc.from("exam_access").delete().eq("student_id", id);
+    await svc.from("flags").update({ resolved_by_id: null }).eq("resolved_by_id", id);
+    const { error } = await svc.auth.admin.deleteUser(id);
+    if (error) stuck++;
+  }
+  t(stuck === 0, "test data removed", stuck ? `${stuck} account(s) left behind` : "");
 
   console.log(`\n${checks} checks, ${bugs.length} failing`);
   for (const b of bugs) console.log(`  BUG  ${b.l}${b.d ? " — " + b.d : ""}`);

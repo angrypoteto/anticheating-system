@@ -29,7 +29,7 @@ export default async function TeacherLayout({ children }: LayoutProps<"/teacher"
         useClasses={useClasses}
       />
       <div className="min-w-0 flex-1">
-        <div className="mx-auto max-w-5xl p-6 lg:p-10">{children}</div>
+        <div className="p-6 lg:px-10 lg:pt-7.5 lg:pb-11">{children}</div>
       </div>
     </div>
   );

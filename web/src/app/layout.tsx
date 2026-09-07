@@ -21,7 +21,19 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Proctorly — Anti-Cheating Exam System",
+  /**
+   * The tab says where you are, and whose product it is.
+   *
+   * Every page used to carry the same forty-character title, so six tabs open
+   * on six different screens were six identical tabs — and the part that told
+   * them apart was the part the browser truncates away first. The template
+   * puts the page first, where a narrow tab still shows it, and keeps the
+   * product name behind it for the tab that is wide enough.
+   */
+  title: {
+    default: "Proctorly — Anti-Cheating Exam System",
+    template: "%s · Proctorly",
+  },
   description:
     "Monitored online exams with lockdown mode, live proctoring and AI-assisted question generation.",
 };

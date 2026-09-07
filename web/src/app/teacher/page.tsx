@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +20,8 @@ const since = (hours: number) => new Date(Date.now() - hours * 3600_000).toISOSt
  * role, so row-level security decides what counts as "theirs" — the same rules
  * that protect the data protect this page from over-reporting it.
  */
+export const metadata: Metadata = { title: "Overview" };
+
 export default async function TeacherOverview() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();

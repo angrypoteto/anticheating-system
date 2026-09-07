@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { LoginForm } from "./form";
 import { AuthDivider, GoogleButton } from "@/components/google-button";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 export default async function LoginPage({
   searchParams,

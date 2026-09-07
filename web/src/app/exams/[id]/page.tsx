@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
@@ -18,6 +19,25 @@ import { classesEnabled } from "@/lib/settings";
 function readAnswerKey(embed: unknown): unknown {
   const row = Array.isArray(embed) ? embed[0] : embed;
   return (row as { correct_answer?: unknown } | null | undefined)?.correct_answer ?? null;
+}
+
+/**
+ * The tab says which paper this is, so half a dozen open at once are telling
+ * them apart by name rather than by position.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+  return { title: data?.title ? `${data.title}` : "Exam" };
 }
 
 export default async function ExamEditorPage({

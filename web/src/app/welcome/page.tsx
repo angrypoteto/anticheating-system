@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,8 @@ type PickableRow = {
  * anyone still owing either of those here, and deliberately is not called *by*
  * this page: that is what would make it a loop.
  */
+export const metadata: Metadata = { title: "Finish setting up" };
+
 export default async function WelcomePage({
   searchParams,
 }: {

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageHeader } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +8,8 @@ export const dynamic = "force-dynamic";
 function since(hours: number) {
   return new Date(Date.now() - hours * 3600_000).toISOString();
 }
+
+export const metadata: Metadata = { title: "System health" };
 
 export default async function HealthPage() {
   await requireRole("ADMIN");

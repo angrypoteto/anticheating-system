@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ExamBuilder, BUILDER_BLURB } from "@/app/exams/builder";
 import { Card, PageHeader } from "../../ui";
 
@@ -8,6 +9,8 @@ export const dynamic = "force-dynamic";
  * layout — clicking it in the sidebar shouldn't throw an admin out of the
  * dashboard.
  */
+export const metadata: Metadata = { title: "Generate exams" };
+
 export default function AdminNewExamPage() {
   return (
     <div className="space-y-6">

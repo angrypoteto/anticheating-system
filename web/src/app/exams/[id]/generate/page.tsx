@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
@@ -8,6 +9,25 @@ import { GenerateStudio } from "./studio";
 // Model calls are slow; give the action room rather than letting the platform
 // default cut a generation off mid-flight.
 export const maxDuration = 60;
+
+/**
+ * The tab says which paper this is, so half a dozen open at once are telling
+ * them apart by name rather than by position.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+  return { title: data?.title ? `${data.title} — generating` : "Generating questions" };
+}
 
 export default async function GeneratePage({
   params,

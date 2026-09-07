@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
@@ -33,6 +34,25 @@ const length = (minutes: number) => {
   const m = minutes % 60;
   return m ? `${h}h ${m}m` : `${h} hour${h === 1 ? "" : "s"}`;
 };
+
+/**
+ * The tab says which paper this is, so half a dozen open at once are telling
+ * them apart by name rather than by position.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+  return { title: data?.title ? `${data.title} — live monitor` : "Live monitor" };
+}
 
 export default async function MonitorPage({
   params,

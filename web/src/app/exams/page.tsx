@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { ExamList } from "./list";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Exams & quizzes" };
 
 export default async function ExamsPage() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");

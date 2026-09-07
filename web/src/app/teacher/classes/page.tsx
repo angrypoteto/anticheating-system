@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,8 @@ import { Card, Empty, PageHeader } from "@/app/admin/ui";
 export const dynamic = "force-dynamic";
 
 /** The classes this teacher holds, with the join code to hand out. */
+export const metadata: Metadata = { title: "My classes" };
+
 export default async function TeacherClassesPage() {
   await requireRole("INSTRUCTOR", "ADMIN");
   if (!(await classesEnabled())) redirect("/teacher");

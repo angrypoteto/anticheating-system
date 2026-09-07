@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -7,6 +8,8 @@ import { classesEnabled, classSelfJoinAllowed } from "@/lib/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classLabel } from "@/lib/classes";
 import { AuthDivider, GoogleButton } from "@/components/google-button";
+
+export const metadata: Metadata = { title: "Create an account" };
 
 export default async function SignupPage({
   searchParams,

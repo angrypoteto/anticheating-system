@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { ExamList } from "@/app/exams/list";
 import { Card, PageHeader } from "../ui";
 
 export const dynamic = "force-dynamic";
 
 /** The same list as /exams, kept inside the console so the sidebar stays put. */
+export const metadata: Metadata = { title: "Exams & quizzes" };
+
 export default function AdminExamsPage() {
   return (
     <div className="space-y-6">

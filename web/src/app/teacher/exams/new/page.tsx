@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { ExamBuilder, BUILDER_BLURB } from "@/app/exams/builder";
 import { Card, PageHeader } from "@/app/admin/ui";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Generate exams" };
 
 export default function TeacherNewExamPage() {
   return (

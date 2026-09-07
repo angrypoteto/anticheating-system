@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadEnrolment } from "@/lib/enrolment";
@@ -23,6 +24,8 @@ const BAND_TONE = {
  * same assessStudent/assessSection the admin report uses, so the two cannot
  * disagree about who is in trouble.
  */
+export const metadata: Metadata = { title: "Students & risk" };
+
 export default async function TeacherStudentsPage() {
   await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();

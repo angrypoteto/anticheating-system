@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, PageHeader } from "../ui";
 import { SettingsForm, type Settings } from "./form";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const admin = createAdminClient();

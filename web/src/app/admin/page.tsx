@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
 import { readAllRows } from "@/lib/read-all";
@@ -59,6 +60,8 @@ type SessionRow = {
   submitted_at: string | null;
   submitted_reason: string | null;
 };
+
+export const metadata: Metadata = { title: "Overview" };
 
 export default async function AdminOverview() {
   const admin = createAdminClient();

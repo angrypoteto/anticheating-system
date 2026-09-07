@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ExamBuilder, BUILDER_BLURB } from "../builder";
 
 export const dynamic = "force-dynamic";
 
 /** Building a new exam is its own screen; /exams is the list of existing ones. */
+export const metadata: Metadata = { title: "New exam" };
+
 export default function NewExamPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6 lg:p-8 dark:bg-gray-950">

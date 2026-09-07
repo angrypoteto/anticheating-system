@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { classLabel } from "@/lib/classes";
@@ -8,6 +9,8 @@ import { Directory, type Person } from "./directory";
 import { Tabs } from "./tabs";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Accounts & classes" };
 
 export default async function AccountsPage() {
   const admin = await getCurrentUser();

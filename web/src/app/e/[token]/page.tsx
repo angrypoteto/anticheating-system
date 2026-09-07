@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,8 @@ export const dynamic = "force-dynamic";
  * Signed out, we bounce through the login page and come straight back here,
  * because the grant has to attach to a person.
  */
+export const metadata: Metadata = { title: "Opening your exam" };
+
 export default async function ExamLinkPage({
   params,
 }: {

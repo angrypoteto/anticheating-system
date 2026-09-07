@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { Card, PageHeader, Pill } from "../ui";
 import { ProfileForm } from "./form";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "My profile" };
 
 export default async function ProfilePage() {
   const me = await getCurrentUser();

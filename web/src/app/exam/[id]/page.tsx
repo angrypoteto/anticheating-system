@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
@@ -7,6 +8,25 @@ import { choiceOrderSeed, questionOrderSeed, seededShuffle } from "@/lib/shuffle
 import { describeFlag, explainSubmission, parseReason } from "@/lib/submission";
 import { StudentBar } from "@/components/student-bar";
 import { ExamRunner, type RunnerQuestion } from "./runner";
+
+/**
+ * The tab says which paper this is, so half a dozen open at once are telling
+ * them apart by name rather than by position.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("exams")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+  return { title: data?.title ? `${data.title}` : "Exam" };
+}
 
 export default async function TakeExamPage({
   params,

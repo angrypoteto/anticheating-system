@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, PageHeader, Pill } from "@/app/admin/ui";
@@ -6,6 +7,8 @@ import { ProfileForm } from "@/app/admin/profile/form";
 export const dynamic = "force-dynamic";
 
 /** Your own details. The form writes through your session, not the service role. */
+export const metadata: Metadata = { title: "My profile" };
+
 export default async function TeacherProfilePage() {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();

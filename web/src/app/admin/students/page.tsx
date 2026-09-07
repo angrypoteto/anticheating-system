@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { loadEnrolment } from "@/lib/enrolment";
 import { readAllRows } from "@/lib/read-all";
@@ -14,6 +15,8 @@ const BAND_TONE = {
   "at-risk": "bad",
   "no-data": "muted",
 } as const;
+
+export const metadata: Metadata = { title: "Students & risk" };
 
 export default async function StudentsPage() {
   const admin = createAdminClient();

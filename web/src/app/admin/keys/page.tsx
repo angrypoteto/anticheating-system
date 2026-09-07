@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { PageHeader } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AddKeyForm, KeyRow } from "./forms";
+
+export const metadata: Metadata = { title: "AI provider keys" };
 
 export default async function KeysPage() {
   await requireRole("ADMIN");

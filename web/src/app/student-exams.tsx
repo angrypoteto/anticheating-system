@@ -176,7 +176,7 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
               return (
                 <div
                   key={r.exam_id}
-                  className="flex flex-wrap items-center justify-between gap-7 rounded-[14px] border border-teal-100 bg-white px-7 py-6.5 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)]"
+                  className="flex flex-col gap-5 rounded-[14px] border border-teal-100 bg-white px-5.5 py-5.5 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)] sm:flex-row sm:items-center sm:justify-between sm:gap-7 sm:px-7 sm:py-6.5"
                 >
                   <div className="min-w-0">
                     <span className="mb-1.75 block text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
@@ -185,11 +185,19 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                     <p className="font-serif text-[23px] font-semibold tracking-tight text-gray-900">
                       {r.title}
                     </p>
-                    <p className="mt-2 text-sm text-gray-500">{facts.join(" · ")}</p>
+                    <p className="mt-2 text-sm text-gray-500">
+                      {facts.slice(0, 2).join(" · ")}
+                      {closes ? (
+                        <>
+                          <span className="hidden sm:inline"> · </span>
+                          <span className="block sm:inline">{closes}</span>
+                        </>
+                      ) : null}
+                    </p>
                   </div>
                   <Link
                     href={`/exam/${r.exam_id}`}
-                    className="inline-flex h-12.5 shrink-0 items-center gap-2.25 rounded-[10px] bg-teal-700 px-6.5 text-[15px] font-medium text-white transition hover:bg-teal-800"
+                    className="inline-flex h-12.5 shrink-0 items-center justify-center gap-2.25 rounded-[10px] bg-teal-700 px-6.5 text-[15px] font-medium text-white transition hover:bg-teal-800"
                   >
                     {started ? "Resume exam" : "Start exam"}
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -271,15 +279,17 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                           .join(" · ")}
                       </span>
                     </span>
-                    <span className="w-14 shrink-0 text-right font-mono text-[17px] font-medium tabular-nums text-gray-900">
-                      {r.score != null ? `${r.score}%` : "—"}
-                    </span>
-                    <span className="flex w-[78px] shrink-0 justify-end">
-                      {r.passed == null ? (
-                        <span className="text-[13px] text-gray-500">not marked</span>
-                      ) : (
-                        <Verdict passed={r.passed} />
-                      )}
+                    <span className="flex shrink-0 flex-col items-end gap-1.25 sm:flex-row sm:items-center sm:gap-4.5">
+                      <span className="font-mono text-[15px] font-medium tabular-nums text-gray-900 sm:w-14 sm:text-right sm:text-[17px]">
+                        {r.score != null ? `${r.score}%` : "—"}
+                      </span>
+                      <span className="flex justify-end sm:w-[78px]">
+                        {r.passed == null ? (
+                          <span className="text-[13px] text-gray-500">not marked</span>
+                        ) : (
+                          <Verdict passed={r.passed} />
+                        )}
+                      </span>
                     </span>
                   </summary>
 

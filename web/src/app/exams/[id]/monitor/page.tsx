@@ -67,7 +67,8 @@ export default async function MonitorPage({
   const sessionIds = (sessions ?? []).map((s) => s.id);
   const studentIds = [...new Set((sessions ?? []).map((s) => s.student_id))];
 
-  const [{ data: flags }, { data: students }, { data: questions }] = await Promise.all([
+  const [{ data: flags }, { data: students }, { data: questions }, { data: given }] =
+    await Promise.all([
     sessionIds.length
       ? supabase
           .from("flags")
@@ -86,7 +87,18 @@ export default async function MonitorPage({
       ? createAdminClient().from("users").select("id, email, full_name").in("id", studentIds)
       : Promise.resolve({ data: [] as { id: string; email: string; full_name: string | null }[] }),
     supabase.from("questions").select("id, prompt").eq("exam_id", id).order("order"),
+    // How many questions each sitting has answered so far. Counted here rather
+    // than in the browser: an answer row is not readable by the teacher's
+    // client, and the monitor only needs the tally.
+    sessionIds.length
+      ? supabase.from("answers").select("session_id").in("session_id", sessionIds)
+      : Promise.resolve({ data: [] as { session_id: string }[] }),
   ]);
+
+  const answeredBySession: Record<string, number> = {};
+  for (const a of (given ?? []) as { session_id: string }[]) {
+    answeredBySession[a.session_id] = (answeredBySession[a.session_id] ?? 0) + 1;
+  }
 
   // Which class each of these students is in, so the roll can be filtered down
   // to one section. Read through the caller's own client on purpose: an
@@ -237,6 +249,8 @@ export default async function MonitorPage({
           studentClasses={studentClasses}
           classOptions={classOptions}
           questionLabels={questionLabels}
+          answeredBySession={answeredBySession}
+          askedCount={(questions ?? []).length}
         />
 
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">

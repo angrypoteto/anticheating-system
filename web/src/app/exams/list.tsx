@@ -6,6 +6,7 @@ import { classLabel } from "@/lib/classes";
 import { classesEnabled } from "@/lib/settings";
 import { siteUrl } from "@/lib/site-url";
 import { DeleteExam } from "./delete-exam";
+import { CloseExam } from "./close-exam";
 
 /**
  * The publishing state is a word, not a colour.
@@ -301,6 +302,7 @@ export async function ExamList() {
                       {over ? "Records" : "Watch it live"}
                     </Link>
                   ) : null}
+                  {windowState === "open" ? <CloseExam examId={e.id} /> : null}
                   <span className="ml-auto">
                     <DeleteExam examId={e.id} title={e.title} stay />
                   </span>

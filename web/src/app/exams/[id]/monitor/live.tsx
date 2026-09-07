@@ -62,6 +62,8 @@ export function LiveMonitor({
   studentClasses,
   classOptions,
   questionLabels,
+  answeredBySession,
+  askedCount,
 }: {
   examId: string;
   initialSessions: SessionRow[];
@@ -72,6 +74,9 @@ export function LiveMonitor({
   /** Classes somebody sitting this exam is actually in. Empty when classes are off. */
   classOptions: { id: string; label: string }[];
   questionLabels: Record<string, string>;
+  /** Answers recorded per sitting, so a live row can say how far through it is. */
+  answeredBySession: Record<string, number>;
+  askedCount: number;
 }) {
   const [sessions, setSessions] = useState(initialSessions);
   const [flags, setFlags] = useState(initialFlags);
@@ -363,6 +368,8 @@ export function LiveMonitor({
                   .filter((l): l is string => Boolean(l))}
                 flags={flagsBySession.get(s.id) ?? []}
                 questionLabels={questionLabels}
+                answered={answeredBySession[s.id] ?? 0}
+                asked={askedCount}
               />
             ))}
           </ul>
@@ -413,6 +420,8 @@ function StudentRow({
   classes,
   flags,
   questionLabels,
+  answered,
+  asked,
 }: {
   examId: string;
   session: SessionRow;
@@ -420,6 +429,8 @@ function StudentRow({
   classes: string[];
   flags: FlagRow[];
   questionLabels: Record<string, string>;
+  answered: number;
+  asked: number;
 }) {
   const [open, setOpen] = useState(false);
   const [state, submit, pending] = useActionState<MonitorState, FormData>(
@@ -459,6 +470,29 @@ function StudentRow({
       )
     : null;
 
+  // A sitting still in progress has no submitted_at, so it had no elapsed time
+  // and no progress — the rows a teacher is actually watching were the only
+  // ones saying nothing. This ticks from the browser's clock, which is the
+  // only one available while the paper is open.
+  const [sinceStart, setSinceStart] = useState<number | null>(null);
+  useEffect(() => {
+    // No reset when it stops being live: `minutes` already picks the recorded
+    // elapsed time in that case, so clearing this would be a write for nothing.
+    if (!live) return;
+    const started = new Date(session.started_at).getTime();
+    const tick = () => setSinceStart(Math.max(0, Date.now() - started));
+    // Scheduled rather than called straight away: reading the clock and
+    // setting state inside the effect body is a render-phase write.
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 30_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, [live, session.started_at]);
+
+  const minutes = live ? sinceStart : elapsed;
+
   return (
     <li className="border-b border-gray-100 last:border-0 dark:border-gray-800">
       <div className="flex flex-wrap items-center justify-between gap-5 px-6 py-4">
@@ -470,7 +504,8 @@ function StudentRow({
           <p className="mt-[3px] text-[13px] tabular-nums text-gray-500">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
             {session.score != null ? ` · ${session.score}%` : ""}
-            {elapsed != null ? ` · ${Math.round(elapsed / 60000)} min` : ""}
+            {minutes != null ? ` · ${Math.round(minutes / 60000)} min` : ""}
+            {live && asked ? ` · ${answered} of ${asked} answered` : ""}
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
-type Row = {
+export type Row = {
   exam_id: string;
   title: string;
   subject: string | null;
@@ -19,6 +19,19 @@ type Row = {
   is_open: boolean;
 };
 
+/**
+ * Everything this student has been set, from my_exams().
+ *
+ * It answers only for the caller, which is how the teacher's name reaches this
+ * page at all — a student cannot read the users table, and opening a policy
+ * wide enough to show a name would have shown the whole row.
+ */
+export async function loadMyExams(): Promise<{ rows: Row[]; error: string | null }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("my_exams");
+  return { rows: (data ?? []) as Row[], error: error?.message ?? null };
+}
+
 /** Manila time, since that is where these exams are sat. */
 const when = (iso: string | null) =>
   iso
@@ -29,6 +42,32 @@ const when = (iso: string | null) =>
       })
     : null;
 
+/** Just the clock, for a window that closes today. */
+const clock = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleTimeString("en-PH", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "Asia/Manila",
+      })
+    : null;
+
+/** The day, spelled out, for a line a student reads rather than scans. */
+const longDay = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-PH", {
+        day: "numeric",
+        month: "long",
+        timeZone: "Asia/Manila",
+      })
+    : null;
+
+const isToday = (iso: string | null) => {
+  if (!iso) return false;
+  const fmt = new Intl.DateTimeFormat("en-PH", { dateStyle: "short", timeZone: "Asia/Manila" });
+  return fmt.format(new Date(iso)) === fmt.format(new Date());
+};
+
 const duration = (m: number) => {
   if (!m) return "no time limit";
   if (m < 60) return `${m} minutes`;
@@ -37,23 +76,26 @@ const duration = (m: number) => {
   return r ? `${h}h ${r}m` : `${h} hour${h === 1 ? "" : "s"}`;
 };
 
-/** Pass and fail carry a mark and a word, never colour alone. */
-function Verdict({ passed }: { passed: boolean }) {
-  return passed ? (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-800 ring-1 ring-green-200 dark:bg-green-950/60 dark:text-green-300 dark:ring-green-900">
-      <span aria-hidden>✓</span> Passed
-    </span>
-  ) : (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-800 ring-1 ring-red-200 dark:bg-red-950/60 dark:text-red-300 dark:ring-red-900">
-      <span aria-hidden>✕</span> Failed
-    </span>
+/** The heading over a band of the page. Small, spaced, and not a title. */
+function Band({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+      {children}
+    </h2>
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
+/** Pass and fail carry a word as well as a colour, so neither stands alone. */
+function Verdict({ passed }: { passed: boolean }) {
   return (
-    <span className="shrink-0 rounded-full border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-gray-600">
-      {children}
+    <span
+      className={`inline-flex items-center rounded-full border px-2.75 py-1 text-xs font-medium whitespace-nowrap ${
+        passed
+          ? "border-green-200 bg-green-50 text-green-800"
+          : "border-red-200 bg-red-50 text-red-800"
+      }`}
+    >
+      {passed ? "Passed" : "Did not pass"}
     </span>
   );
 }
@@ -64,9 +106,9 @@ function Chevron() {
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden
-      className="h-3.5 w-3.5 shrink-0 text-gray-500 transition group-open:rotate-90"
+      className="h-3.75 w-3.75 shrink-0 -rotate-90 text-gray-500 transition group-open:rotate-0"
     >
-      <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -77,212 +119,193 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
       <dt className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm text-gray-900 dark:text-gray-100">{children}</dd>
+      <dd className="mt-1.25 text-sm text-gray-900">{children}</dd>
     </div>
   );
 }
-
-function ScoreBar({ score, passMark }: { score: number; passMark: number }) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between">
-        <span className="text-2xl font-semibold tabular-nums text-gray-900 dark:text-gray-50">
-          {score}%
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          pass mark {passMark}%
-        </span>
-      </div>
-      {/* The bar repeats the number rather than replacing it — the figure is the
-          fact, the bar only places it against the pass mark, drawn as a tick. */}
-      <div className="relative mt-1.5 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
-        <div
-          className={`h-full rounded-full ${
-            score >= passMark ? "bg-green-600 dark:bg-green-500" : "bg-red-600 dark:bg-red-500"
-          }`}
-          style={{ width: `${Math.max(0, Math.min(100, score))}%` }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-y-0 w-px bg-gray-500 dark:bg-gray-400"
-          style={{ left: `${Math.max(0, Math.min(100, passMark))}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-const rowClass =
-  "group rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900";
-const summaryClass =
-  "flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50";
-const panelClass =
-  "border-t border-gray-100 px-4 py-4 dark:border-gray-800";
 
 /**
- * A student's exams, as a plain list that opens.
+ * A student's exams: the one that is open, then everything already sat.
  *
- * Collapsed, a row is the title and where it stands; the teacher, the timing
- * and the score live inside, so a term's worth of exams stays readable. All of
- * it comes from my_exams(), which answers only for the caller — the teacher's
- * name is not otherwise readable by a student, and reaching it through a policy
- * would have exposed the teacher's whole row.
+ * The open exam is not a row in a list. It is the reason the page was opened,
+ * so it is a card of its own with the button on it — a student who has to
+ * expand something to find "Start" is being asked to work out where the exam
+ * is, which is not a question worth making them answer under time pressure.
  */
-export async function StudentExams() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("my_exams");
-
+export function StudentExams({ rows, error }: { rows: Row[]; error: string | null }) {
   if (error) {
-    return (
-      <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-        Could not load your exams: {error.message}
-      </p>
-    );
+    return <p className="text-sm text-red-700">Could not load your exams: {error}</p>;
   }
-
-  const rows = (data ?? []) as Row[];
-  const done = rows.filter((r) => r.session_status && r.session_status !== "IN_PROGRESS");
-  const todo = rows.filter((r) => !r.session_status || r.session_status === "IN_PROGRESS");
 
   if (!rows.length) {
     return (
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+      <p className="text-sm text-gray-500">
         Nothing yet. An exam appears here once your teacher publishes one for
         you — usually by sending you a link.
       </p>
     );
   }
 
-  return (
-    <div className="mt-4 space-y-6">
-      {todo.length ? (
-        <section>
-          <h3 className="text-[11px] font-medium tracking-[0.08em] text-gray-500 uppercase">
-            To take · {todo.length}
-          </h3>
-          <ul className="mt-2 space-y-2">
-            {todo.map((r) => {
-              const started = r.session_status === "IN_PROGRESS";
-              const notYet = r.opens_at && new Date(r.opens_at).getTime() > Date.now();
-              const over = r.closes_at && new Date(r.closes_at).getTime() <= Date.now();
-              return (
-                <li key={r.exam_id} className={rowClass}>
-                  <details>
-                    <summary className={summaryClass}>
-                      <span className="min-w-0">
-                        <span className="block truncate font-medium text-gray-900 dark:text-gray-100">
-                          {r.title}
-                        </span>
-                        {r.subject ? (
-                          <span className="block truncate text-xs text-accent dark:text-[#5FBDB6]">
-                            {r.subject}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Chip>
-                          {over
-                            ? "Closed"
-                            : notYet
-                              ? "Opens later"
-                              : started
-                                ? "In progress"
-                                : "Not started"}
-                        </Chip>
-                        <Chevron />
-                      </span>
-                    </summary>
+  const sat = rows.filter((r) => r.session_status && r.session_status !== "IN_PROGRESS");
+  const open = rows.filter(
+    (r) => r.is_open && (!r.session_status || r.session_status === "IN_PROGRESS"),
+  );
+  const waiting = rows.filter(
+    (r) => !r.is_open && (!r.session_status || r.session_status === "IN_PROGRESS"),
+  );
 
-                    <div className={panelClass}>
-                      <dl className="grid gap-4 sm:grid-cols-3">
-                        {r.subject ? <Detail label="Subject">{r.subject}</Detail> : null}
-                        <Detail label="Set by">{r.teacher}</Detail>
-                        <Detail label="Questions">{r.question_count}</Detail>
-                        <Detail label="Time allowed">{duration(r.total_minutes)}</Detail>
-                        {r.opens_at ? (
-                          <Detail label="Opens">{when(r.opens_at)}</Detail>
-                        ) : null}
-                        {r.closes_at ? (
-                          <Detail label="Closes">{when(r.closes_at)}</Detail>
-                        ) : null}
-                      </dl>
-                      {r.is_open ? (
-                        <Link
-                          href={`/exam/${r.exam_id}`}
-                          className="mt-4 inline-block rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
-                        >
-                          {started ? "Resume exam" : "Start exam"}
-                        </Link>
-                      ) : (
-                        <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                          {over
-                            ? "This exam has closed."
-                            : `You can start it from ${when(r.opens_at)}.`}
-                        </p>
-                      )}
-                    </div>
-                  </details>
-                </li>
+  return (
+    <div>
+      {open.length ? (
+        <section>
+          <Band>Open now</Band>
+          <div className="space-y-3.5">
+            {open.map((r) => {
+              const started = r.session_status === "IN_PROGRESS";
+              const closes = r.closes_at
+                ? isToday(r.closes_at)
+                  ? `closes ${clock(r.closes_at)} today`
+                  : `closes ${longDay(r.closes_at)}, ${clock(r.closes_at)}`
+                : null;
+              const facts = [
+                `${r.question_count} question${r.question_count === 1 ? "" : "s"}`,
+                duration(r.total_minutes),
+                closes,
+              ].filter(Boolean);
+
+              return (
+                <div
+                  key={r.exam_id}
+                  className="flex flex-wrap items-center justify-between gap-7 rounded-[14px] border border-teal-100 bg-white px-7 py-6.5 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)]"
+                >
+                  <div className="min-w-0">
+                    <span className="mb-1.75 block text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
+                      {[r.subject, r.teacher].filter(Boolean).join(" · ")}
+                    </span>
+                    <p className="font-serif text-[23px] font-semibold tracking-tight text-gray-900">
+                      {r.title}
+                    </p>
+                    <p className="mt-2 text-sm text-gray-500">{facts.join(" · ")}</p>
+                  </div>
+                  <Link
+                    href={`/exam/${r.exam_id}`}
+                    className="inline-flex h-12.5 shrink-0 items-center gap-2.25 rounded-[10px] bg-teal-700 px-6.5 text-[15px] font-medium text-white transition hover:bg-teal-800"
+                  >
+                    {started ? "Resume exam" : "Start exam"}
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5"
+                        stroke="currentColor"
+                        strokeWidth="1.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </Link>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </section>
       ) : null}
 
-      {done.length ? (
-        <section>
-          <h3 className="text-[11px] font-medium tracking-[0.08em] text-gray-500 uppercase">
-            Results · {done.length}
-          </h3>
-          <ul className="mt-2 space-y-2">
-            {done.map((r) => (
-              <li key={r.exam_id} className={rowClass}>
-                <details>
-                  <summary className={summaryClass}>
-                    <span className="min-w-0">
-                      {r.subject ? (
-                        <span className="block truncate text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
-                          {r.subject}
-                        </span>
-                      ) : null}
-                      <span className="mt-0.5 block truncate text-[15px] font-medium text-gray-900">
+      {waiting.length ? (
+        <section className={open.length ? "mt-9.5" : ""}>
+          <Band>Not open yet</Band>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            {waiting.map((r) => (
+              <div
+                key={r.exam_id}
+                className="flex items-center gap-4.5 border-b border-gray-100 px-5.5 py-4 last:border-b-0"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-medium text-gray-900">{r.title}</span>
+                  <span className="mt-[3px] block text-[12.5px] text-gray-500">
+                    {[r.subject, r.teacher].filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[13px] text-gray-500">
+                  {r.opens_at && new Date(r.opens_at) > new Date()
+                    ? `opens ${when(r.opens_at)}`
+                    : "closed"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {sat.length ? (
+        <section className={open.length || waiting.length ? "mt-9.5" : ""}>
+          <Band>Your results</Band>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            {sat.map((r) => {
+              const takenAt = r.submitted_at ?? r.started_at;
+              const minutes =
+                r.submitted_at && r.started_at
+                  ? Math.max(
+                      0,
+                      Math.round(
+                        (new Date(r.submitted_at).getTime() -
+                          new Date(r.started_at).getTime()) /
+                          60000,
+                      ),
+                    )
+                  : null;
+
+              return (
+                <details key={r.exam_id} className="group border-b border-gray-100 last:border-b-0">
+                  <summary className="flex cursor-pointer list-none items-center gap-4.5 px-5.5 py-4 hover:bg-gray-50">
+                    <Chevron />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-medium text-gray-900">
                         {r.title}
                       </span>
+                      <span className="mt-[3px] block truncate text-[12.5px] text-gray-500">
+                        {[
+                          r.subject,
+                          r.teacher,
+                          takenAt ? `taken ${longDay(takenAt)}, ${clock(takenAt)}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
                     </span>
-                    <span className="flex items-center gap-2">
-                      {r.score != null ? (
-                        <span className="w-14 shrink-0 text-right font-mono text-[17px] font-medium tabular-nums text-gray-900">
-                          {r.score}%
-                        </span>
-                      ) : null}
-                      {r.passed == null ? <Chip>Not marked yet</Chip> : <Verdict passed={r.passed} />}
-                      <Chevron />
+                    <span className="w-14 shrink-0 text-right font-mono text-[17px] font-medium tabular-nums text-gray-900">
+                      {r.score != null ? `${r.score}%` : "—"}
+                    </span>
+                    <span className="flex w-[78px] shrink-0 justify-end">
+                      {r.passed == null ? (
+                        <span className="text-[13px] text-gray-500">not marked</span>
+                      ) : (
+                        <Verdict passed={r.passed} />
+                      )}
                     </span>
                   </summary>
 
-                  <div className={`${panelClass} space-y-4`}>
-                    <dl className="grid gap-4 sm:grid-cols-2">
-                      {r.subject ? <Detail label="Subject">{r.subject}</Detail> : null}
-                      <Detail label="Set by">{r.teacher}</Detail>
-                      <Detail label="Taken">
-                        {when(r.submitted_at) ?? when(r.started_at) ?? "—"}
-                      </Detail>
-                    </dl>
-
-                    {r.session_status === "AUTO_SUBMITTED" ? (
-                      <p className="text-sm text-amber-800 dark:text-amber-300">
-                        Submitted automatically when the time ran out.
-                      </p>
-                    ) : null}
-
-                    {r.score != null ? (
-                      <ScoreBar score={r.score} passMark={Number(r.pass_mark)} />
-                    ) : null}
+                  <div className="grid grid-cols-2 gap-5 border-t border-gray-100 bg-gray-50/60 py-4.5 pr-5.5 pb-5 pl-14 sm:grid-cols-4">
+                    <Detail label="Date taken">{when(takenAt) ?? "—"}</Detail>
+                    <Detail label="Set by">{r.teacher}</Detail>
+                    <Detail label="Score">
+                      {r.score != null ? (
+                        <>
+                          {r.score}%{" "}
+                          <span className="text-gray-500">· pass mark {Number(r.pass_mark)}%</span>
+                        </>
+                      ) : (
+                        "Not marked yet"
+                      )}
+                    </Detail>
+                    <Detail label="Time taken">
+                      {minutes != null
+                        ? `${minutes} of ${r.total_minutes || "—"} minutes`
+                        : "—"}
+                    </Detail>
                   </div>
                 </details>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </section>
       ) : null}
     </div>

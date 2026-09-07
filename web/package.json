@@ -20,7 +20,8 @@
     "qa:roll": "node scripts/qa/roll.mjs",
     "qa:generation": "node scripts/qa/generation.mjs",
     "qa:deleting": "node scripts/qa/deleting.mjs",
-    "qa:extension": "node scripts/qa/extension.mjs"
+    "qa:extension": "node scripts/qa/extension.mjs",
+    "qa:exam-day": "node scripts/qa/exam-day.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

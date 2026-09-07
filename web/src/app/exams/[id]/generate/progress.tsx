@@ -85,50 +85,62 @@ export function GenerationProgress({ runId }: { runId: string }) {
 
   const pct = run ? Math.round(run.fraction * 100) : null;
 
+  // Doherty threshold: above about 400ms a wait has to be narrated or it is
+  // read as a fault. Ninety seconds of a spinner is the product looking broken
+  // while working perfectly — so the biggest thing here is the answer to the
+  // question actually being asked, which is "how much longer".
+  const remaining =
+    run == null
+      ? null
+      : run.remainingMs < 5_000
+        ? "Almost done"
+        : `About ${formatClock(run.remainingMs)} left`;
+
   return (
     <div
       role="status"
       aria-live="polite"
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-950/60"
+      className="rounded-xl border border-gray-200 bg-white px-6 py-5.5"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          {known
-            ? total! > 1
-              ? // They are in the air together, so "request 2 of 4" would be a
-                // fiction — there is no current one.
-                `Writing questions — ${total} requests at once`
-              : "Writing questions"
-            : "Reading your lesson file…"}
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <span className="font-serif text-[23px] font-semibold tracking-tight text-gray-900">
+          {remaining ?? "Reading your lesson file…"}
         </span>
-        <span className="text-xs tabular-nums text-gray-500 dark:text-gray-400">
-          {run == null
-            ? `${seconds}s`
-            : run.remainingMs < 5_000
-              ? "almost done"
-              : `${formatClock(run.remainingMs)} left`}
-        </span>
+        {known ? (
+          <span className="font-mono text-sm tabular-nums text-gray-500">
+            {done} of {total} written
+          </span>
+        ) : null}
       </div>
 
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-teal-50">
         {pct == null ? (
           // Nothing to measure yet: a stripe that moves says "working" without
           // claiming a number it does not have.
-          <div className="h-full w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-teal-600 dark:bg-teal-500" />
+          <div className="h-full w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-teal-600" />
         ) : (
           <div
             // Linear over the full tick, so the bar glides between updates
             // rather than stepping once a second.
-            className="h-full rounded-full bg-teal-600 transition-[width] duration-1000 ease-linear dark:bg-teal-500"
+            className="h-full rounded-full bg-teal-600 transition-[width] duration-1000 ease-linear"
             style={{ width: `${Math.max(4, pct)}%` }}
           />
         )}
       </div>
 
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-2.75 flex flex-wrap items-center justify-between gap-4 text-[13px] text-gray-500">
+        <span>
+          {known
+            ? "Re-estimated from the batches already done, not from a fixed guess."
+            : "Working out how much there is to read."}
+        </span>
+        <span className="font-mono text-xs tabular-nums">elapsed {formatClock(seconds * 1000)}</span>
+      </div>
+
+      <p className="mt-4 border-t border-gray-100 pt-4 text-[13px] leading-relaxed text-gray-600">
         {known && total! > 1
-          ? "Large orders go out as several requests at once and are merged. Leave this page open."
-          : "Leave this page open — the model is writing from your material."}
+          ? `${atOnce} requests go out at once and are merged as they land. You can leave this page — the paper is saved as a draft as it is written.`
+          : "You can leave this page — the paper is saved as a draft as it is written."}
       </p>
 
       <style>{`

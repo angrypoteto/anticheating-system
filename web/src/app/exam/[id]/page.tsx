@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseLockdown, parseTimer } from "@/lib/exam-config";
 import { choiceOrderSeed, questionOrderSeed, seededShuffle } from "@/lib/shuffle";
 import { describeFlag, explainSubmission, parseReason } from "@/lib/submission";
+import { StudentBar } from "@/components/student-bar";
 import { ExamRunner, type RunnerQuestion } from "./runner";
 
 export default async function TakeExamPage({
@@ -36,7 +38,7 @@ export default async function TakeExamPage({
 
   const { data: existing } = await supabase
     .from("exam_sessions")
-    .select("id, status, started_at, score, submitted_reason")
+    .select("id, status, started_at, submitted_at, score, submitted_reason")
     .eq("exam_id", id)
     .eq("student_id", user.id)
     .maybeSingle();
@@ -45,22 +47,23 @@ export default async function TakeExamPage({
   // sentence instead of a failed insert.
   if ((notYet || over) && !existing) {
     return (
-      <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <main className="min-h-screen bg-gray-50">
+        <StudentBar email={user.email} name={user.full_name} />
+        <div className="mx-auto max-w-[800px] px-6 pt-9 pb-12 sm:px-10">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
             {exam.title}
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2.5 max-w-[62ch] text-[15px] leading-relaxed text-gray-500">
             {notYet
               ? `This exam opens ${when(exam.opens_at!)}. Come back then — the link will still work.`
               : `This exam closed ${when(exam.closes_at!)} and can no longer be taken.`}
           </p>
-          <a
+          <Link
             href="/"
-            className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
+            className="mt-7 inline-block border-b border-gray-200 pb-px text-sm text-gray-700 hover:border-gray-400"
           >
-            Back to home
-          </a>
+            Back to my exams
+          </Link>
         </div>
       </main>
     );
@@ -86,62 +89,187 @@ export default async function TakeExamPage({
     });
     const warnings = (log ?? []) as { kind: string; at: string }[];
 
+    // What the figures are made of. A percentage on its own is not a result:
+    // "32%" and "32%, pass mark 75%, seven left blank" are different claims,
+    // and only the second one can be acted on.
+    const [{ count: askedCount }, { count: answeredCount }, { data: marks }] =
+      await Promise.all([
+        supabase
+          .from("questions")
+          .select("id", { count: "exact", head: true })
+          .eq("exam_id", id),
+        supabase
+          .from("answers")
+          .select("id", { count: "exact", head: true })
+          .eq("session_id", existing.id),
+        supabase
+          .from("system_settings")
+          .select("pass_threshold")
+          .eq("id", true)
+          .maybeSingle(),
+      ]);
+
+    const asked = askedCount ?? 0;
+    const answered = answeredCount ?? 0;
+    const blank = Math.max(0, asked - answered);
+    const passMark = Number(marks?.pass_threshold ?? 75);
+    const timer = parseTimer(exam.timer_config);
+
+    const minutes =
+      existing.submitted_at && existing.started_at
+        ? Math.max(
+            0,
+            Math.round(
+              (new Date(existing.submitted_at).getTime() -
+                new Date(existing.started_at).getTime()) /
+                60000,
+            ),
+          )
+        : null;
+
     return (
-      <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
-        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
+      <main className="min-h-screen bg-gray-50">
+        <StudentBar email={user.email} name={user.full_name} />
+
+        <div className="mx-auto max-w-[800px] px-6 pt-9.5 pb-12 sm:px-10">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
             {exam.title}
           </h1>
 
-          <p
-            className={`mt-4 text-base font-medium ${
-              said.blamed
-                ? "text-amber-800 dark:text-amber-300"
-                : "text-gray-900 dark:text-gray-100"
-            }`}
-          >
-            {said.headline}
-          </p>
-          {said.detail ? (
-            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-              {said.detail}
-            </p>
-          ) : null}
+          <div className="mt-6 overflow-hidden rounded-[14px] border border-gray-200 bg-white">
+            {/* The one coloured thing on the page, and it reports what the
+                system saw rather than what the student is. */}
+            <div
+              className={`flex items-start gap-3.5 border-b px-6.5 py-5 ${
+                said.blamed
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-gray-100 bg-gray-50/60"
+              }`}
+            >
+              {said.blamed ? (
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                  className="mt-0.5 shrink-0"
+                >
+                  <path d="M12 8.5v5" stroke="#8A5A00" strokeWidth="1.9" strokeLinecap="round" />
+                  <circle cx="12" cy="17" r="1.15" fill="#8A5A00" />
+                  <path
+                    d="M10.6 3.9 2.9 17.4A1.6 1.6 0 0 0 4.3 19.8h15.4a1.6 1.6 0 0 0 1.4-2.4L13.4 3.9a1.6 1.6 0 0 0-2.8 0Z"
+                    stroke="#8A5A00"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : null}
+              <div>
+                <p
+                  className={`font-serif text-[19px] font-semibold tracking-tight ${
+                    said.blamed ? "text-amber-900" : "text-gray-900"
+                  }`}
+                >
+                  {said.headline}
+                </p>
+                {said.detail ? (
+                  <p
+                    className={`mt-1.5 max-w-[60ch] text-sm leading-relaxed ${
+                      said.blamed ? "text-amber-800" : "text-gray-600"
+                    }`}
+                  >
+                    {said.detail}
+                  </p>
+                ) : null}
+              </div>
+            </div>
 
-          {warnings.length ? (
-            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40">
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                What was recorded
-              </p>
-              <ol className="mt-2 space-y-1 text-sm text-amber-900 dark:text-amber-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3">
+              <div className="border-b border-gray-100 px-6.5 py-5.5 sm:border-r sm:border-b-0">
+                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                  Score
+                </p>
+                <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
+                  {existing.score != null ? `${existing.score}%` : "—"}
+                </p>
+                <p className="mt-1.5 text-[12.5px] text-gray-500">pass mark {passMark}%</p>
+              </div>
+
+              <div className="border-b border-gray-100 px-6.5 py-5.5 sm:border-r sm:border-b-0">
+                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                  Answered
+                </p>
+                <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
+                  {answered}
+                  <span className="text-[19px] font-medium text-gray-500"> of {asked}</span>
+                </p>
+                <p className="mt-1.5 text-[12.5px] text-gray-500">
+                  {blank ? `${blank} left blank when it ended` : "nothing left blank"}
+                </p>
+              </div>
+
+              <div className="px-6.5 py-5.5">
+                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                  Time used
+                </p>
+                <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
+                  {minutes ?? "—"}
+                  <span className="text-[19px] font-medium text-gray-500"> min</span>
+                </p>
+                <p className="mt-1.5 text-[12.5px] text-gray-500">
+                  {timer.totalMinutes ? `of the ${timer.totalMinutes} allowed` : "no time limit"}
+                </p>
+              </div>
+            </div>
+
+            {warnings.length ? (
+              <div className="border-t border-gray-100 px-6.5 py-5">
+                <p className="mb-3 text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+                  What was recorded
+                </p>
                 {warnings.map((w, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="tabular-nums opacity-60">{i + 1}.</span>
-                    <span>
-                      You {describeFlag(w.kind)}
-                      <span className="opacity-60"> — {when(w.at)}</span>
+                  <div
+                    key={i}
+                    className="flex items-baseline gap-3.5 border-b border-dashed border-gray-200 py-2.25 text-[13.5px] last:border-b-0"
+                  >
+                    <span className="w-3.5 shrink-0 tabular-nums text-gray-500">
+                      {warnings.length - i}.
                     </span>
-                  </li>
+                    <span className="flex-1 text-gray-900">You {describeFlag(w.kind)}</span>
+                    <span className="font-mono text-xs text-gray-500">{when(w.at)}</span>
+                  </div>
                 ))}
-              </ol>
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
 
-          <dl className="mt-6 flex gap-8 border-t border-gray-200 pt-4 text-sm dark:border-gray-800">
-            <div>
-              <dt className="text-gray-500 dark:text-gray-400">Score</dt>
-              <dd className="mt-0.5 text-lg font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                {existing.score != null ? `${existing.score}%` : "—"}
-              </dd>
+          {/* The end of the experience, which is what it is remembered by. */}
+          {said.blamed ? (
+            <div className="mt-5.5 rounded-[14px] border border-teal-100 bg-white px-6.5 py-6 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)]">
+              <h2 className="font-serif text-xl font-semibold tracking-tight text-gray-900">
+                If that was not what happened
+              </h2>
+              <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-gray-700">
+                A dropped connection, a notification that stole focus and a second
+                screen all look the same from here. Your teacher can let you sit it
+                again — ask them, and show them the times above.
+              </p>
+              <Link
+                href="/"
+                className="mt-5 inline-flex items-center border-b border-gray-200 pb-px text-[13.5px] text-gray-700 hover:border-gray-400"
+              >
+                Back to my exams
+              </Link>
             </div>
-          </dl>
-
-          <a
-            href="/"
-            className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
-          >
-            Back to home
-          </a>
+          ) : (
+            <Link
+              href="/"
+              className="mt-6 inline-block border-b border-gray-200 pb-px text-sm text-gray-700 hover:border-gray-400"
+            >
+              Back to my exams
+            </Link>
+          )}
         </div>
       </main>
     );
@@ -152,7 +280,7 @@ export default async function TakeExamPage({
     const { data: created, error } = await supabase
       .from("exam_sessions")
       .insert({ exam_id: id, student_id: user.id, status: "IN_PROGRESS" })
-      .select("id, status, started_at, score, submitted_reason")
+      .select("id, status, started_at, submitted_at, score, submitted_reason")
       .single();
     if (error) redirect("/?error=session");
     session = created;

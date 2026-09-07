@@ -1,7 +1,18 @@
 {
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "The product"
+    },
+    {
+      "id": "page-2",
+      "name": "Where the laws bite"
+    }
+  ],
   "artboards": [
     {
       "file": "Login.dc.html",
+      "page": "page-1",
       "x": 0,
       "y": 0,
       "w": 1440,
@@ -10,6 +21,7 @@
     },
     {
       "file": "StudentHome.dc.html",
+      "page": "page-1",
       "x": 1560,
       "y": 0,
       "w": 1440,
@@ -18,6 +30,7 @@
     },
     {
       "file": "StudentPhone.dc.html",
+      "page": "page-1",
       "x": 3120,
       "y": 0,
       "w": 390,
@@ -26,6 +39,7 @@
     },
     {
       "file": "ExamRunner.dc.html",
+      "page": "page-1",
       "x": 0,
       "y": 1060,
       "w": 1440,
@@ -34,6 +48,7 @@
     },
     {
       "file": "Main.dc.html",
+      "page": "page-1",
       "x": 1560,
       "y": 1060,
       "w": 1440,
@@ -42,6 +57,7 @@
     },
     {
       "file": "ExamList.dc.html",
+      "page": "page-1",
       "x": 0,
       "y": 2600,
       "w": 1440,
@@ -50,6 +66,7 @@
     },
     {
       "file": "AdminOverview.dc.html",
+      "page": "page-1",
       "x": 1560,
       "y": 2600,
       "w": 1440,
@@ -58,6 +75,7 @@
     },
     {
       "file": "Accounts.dc.html",
+      "page": "page-1",
       "x": 0,
       "y": 3820,
       "w": 1440,
@@ -66,23 +84,62 @@
     },
     {
       "file": "Components.dc.html",
+      "page": "page-1",
       "x": 1560,
       "y": 3820,
       "w": 1240,
       "h": 3300,
       "title": "The navy system"
+    },
+    {
+      "file": "ExamEnded.dc.html",
+      "page": "page-2",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "When the system ends it"
+    },
+    {
+      "file": "RunnerReview.dc.html",
+      "page": "page-2",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Before you submit"
+    },
+    {
+      "file": "FirstRun.dc.html",
+      "page": "page-2",
+      "x": 0,
+      "y": 1060,
+      "w": 1440,
+      "h": 900,
+      "title": "A teacher's first login"
+    },
+    {
+      "file": "Generating.dc.html",
+      "page": "page-2",
+      "x": 1560,
+      "y": 1060,
+      "w": 1440,
+      "h": 900,
+      "title": "The generation wait"
     }
   ],
   "annotations": [
     {
       "id": "brief",
+      "page": "page-1",
       "x": -380,
       "y": 0,
       "w": 300,
-      "text": "PROCTORLY — NAVY REDESIGN\n\nDeep navy chrome, warm ivory surfaces, one teal accent, status colours reserved.\n\nSource Serif 4 for titles, Geist for everything else.\n\nRead the rows top to bottom: signing in, sitting an exam, running one, administering the school, then the system sheet."
+      "text": "PROCTORLY — NAVY REDESIGN\n\nDeep navy chrome, blue-white surfaces, one teal accent, status colours reserved.\n\nSource Serif 4 for titles, Geist for everything else.\n\nRead the rows top to bottom: signing in, sitting an exam, running one, administering the school, then the system sheet.\n\nThe second page holds the four screens where a law says the product is still wrong."
     },
     {
       "id": "law-jakob",
+      "page": "page-1",
       "x": -380,
       "y": 420,
       "w": 300,
@@ -90,6 +147,7 @@
     },
     {
       "id": "law-single",
+      "page": "page-1",
       "x": -380,
       "y": 1060,
       "w": 300,
@@ -97,6 +155,7 @@
     },
     {
       "id": "law-hick",
+      "page": "page-1",
       "x": 3120,
       "y": 1060,
       "w": 320,
@@ -104,6 +163,7 @@
     },
     {
       "id": "law-proximity",
+      "page": "page-1",
       "x": -380,
       "y": 2600,
       "w": 300,
@@ -111,6 +171,7 @@
     },
     {
       "id": "law-miller",
+      "page": "page-1",
       "x": 3120,
       "y": 2600,
       "w": 320,
@@ -118,6 +179,7 @@
     },
     {
       "id": "law-similarity",
+      "page": "page-1",
       "x": -380,
       "y": 3820,
       "w": 300,
@@ -125,13 +187,55 @@
     },
     {
       "id": "system-note",
+      "page": "page-1",
       "x": 2900,
       "y": 3820,
       "w": 300,
       "text": "THE SYSTEM SHEET\n\nEverything on this canvas is built from the palette, ramp and components on the right — including the states that only appear when something goes wrong.\n\nIf a screen needs a colour or a control that is not here, the system is wrong, not the screen."
+    },
+    {
+      "id": "p2-brief",
+      "page": "page-2",
+      "x": -380,
+      "y": -300,
+      "w": 300,
+      "text": "WHERE THE LAWS BITE\n\nFour screens the redesign has not reached. Each is here because a law says it is wrong, not because it looked dated.\n\nThe first two are proposals that change behaviour, not just paint. The second two are states the product already enters and has never designed for."
+    },
+    {
+      "id": "law-peak-end",
+      "page": "page-2",
+      "x": -380,
+      "y": 0,
+      "w": 300,
+      "text": "PEAK–END RULE — when the system ends it\n\nAn experience is remembered by its most intense moment and its last one. For a student stopped at the third warning, both are this screen — and today it is the least designed page in the product: a plain heading, a list of what they did wrong, and a score of 0.\n\nSo the end is no longer the accusation. The figures are neutral ink and carry what a mark means (32%, pass mark 75%; 7 blank of 25). The amber band is the only coloured thing, and it says what the system SAW rather than what the student IS.\n\nThen the screen ends on a way forward: the teacher can let them back in, and asking costs one press. A dropped connection and a second monitor look identical from here — the design should not pretend otherwise."
+    },
+    {
+      "id": "law-tesler",
+      "page": "page-2",
+      "x": 3120,
+      "y": 0,
+      "w": 320,
+      "text": "TESLER'S LAW — before you submit\n\nComplexity is conserved: it can be moved between the system and the person, never removed. 'You cannot return to a question once you move on' moves all of it onto the student — one mis-click is a mark gone for good, and there is no way to find out which mark.\n\nThe proposal keeps the rule that matters and drops the one that only hurts. You still cannot browse ahead — that is what stops a student reading all 25 and going looking. But at the END, having already seen every question, you get one pass over the blanks.\n\nGOAL-GRADIENT: the map shows the finish, and 22 of 25 pulls harder than '3 unanswered'.\n\nMILLER: 25 chips are grouped in tens, and only the blanks carry colour — the three that need you are found without counting."
+    },
+    {
+      "id": "law-occam",
+      "page": "page-2",
+      "x": -380,
+      "y": 1060,
+      "w": 300,
+      "text": "OCCAM'S RAZOR — a teacher's first login\n\nToday this console opens on four zeroes, two empty charts and eight destinations. Every one of them is true and none of them is useful: nothing here can be acted on until a class exists.\n\nSo the first screen carries one action at the size of one action, and the panels that cannot say anything yet say what they WILL hold instead of showing a zero. A dashed border means 'not yet', a solid one means 'real'.\n\nGOAL-GRADIENT again: three steps with the first already ticked. A progress bar that starts above empty is finished more often than one that starts at nothing.\n\nThe two destinations that cannot work yet are dimmed rather than hidden — the room exists and is not ready, which is not the same as not existing."
+    },
+    {
+      "id": "law-doherty",
+      "page": "page-2",
+      "x": 3120,
+      "y": 1060,
+      "w": 320,
+      "text": "DOHERTY THRESHOLD — the generation wait\n\nBelow 400ms a person and a machine keep pace with each other. Above it the wait has to be narrated or it is experienced as a fault. Ninety seconds of a spinner is the product looking broken while working perfectly.\n\nSo the biggest thing on the card is the answer to the question actually being asked — about 40 seconds left — re-estimated from the batches already done rather than a fixed guess. Under it, what is being written right now, in the words of the subject rather than the machine.\n\nA rate-limited key is reported in navy, not red: it is routine, nothing is lost, and it is exactly what a second key is for. Colouring it as an error would teach a teacher to fear a working system.\n\nAnd the wait is escapable — the draft saves as it is written, so leaving the page costs nothing. Saying so is what makes it true for the reader."
     }
   ],
   "launch": {
-    "view": "canvas"
+    "view": "canvas",
+    "page": "page-2"
   }
 }

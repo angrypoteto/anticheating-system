@@ -5,6 +5,7 @@ import { classesEnabled } from "@/lib/settings";
 import { loadEnrolment } from "@/lib/enrolment";
 import { assessStudent } from "@/lib/risk";
 import { Card, Empty, PageHeader, Stat } from "@/app/admin/ui";
+import { FirstRun } from "@/app/admin/first-run";
 import { ClassProgressChart } from "@/app/admin/charts";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,76 @@ export default async function TeacherOverview() {
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
   const mine = exams ?? [];
+
+  // Nothing has been made yet, so there is exactly one useful thing to say.
+  // Showing the full console here means four zeroes and two empty charts,
+  // none of which can be acted on until a class exists.
+  const myClasses = enrolment.rollOf.size;
+  if (!mine.length && !myClasses) {
+    const name = (me.full_name ?? "").trim().split(/\s+/)[0];
+    return (
+      <FirstRun
+        greeting={name ? `Welcome, ${name}` : "Welcome"}
+        lede={
+          useClasses
+            ? "Nothing has been set yet. Three things and your first class can sit a paper."
+            : "Nothing has been set yet. Generate a paper and publish it to get started."
+        }
+        action={
+          useClasses
+            ? {
+                href: "/teacher/classes",
+                label: "Make my first class",
+                title: "Make a class",
+                detail:
+                  "A class is a subject and a section together — System Architecture for BSIT 4C. Students join it with its code, and every exam you publish reaches whoever is on it.",
+              }
+            : {
+                href: "/teacher/exams/new",
+                label: "Generate my first paper",
+                title: "Generate a paper",
+                detail:
+                  "Upload a lesson file and the questions are drafted from it. Nothing is published until you have read them.",
+              }
+        }
+        steps={[
+          { label: "Account ready", note: "Signed in and your name is set.", done: true },
+          ...(useClasses
+            ? [
+                {
+                  label: "Make a class",
+                  note: "Then hand its code to your students.",
+                  done: false,
+                },
+              ]
+            : []),
+          {
+            label: "Generate a paper",
+            note: "Upload a lesson file and publish what comes back.",
+            done: false,
+          },
+        ]}
+        slots={[
+          {
+            label: "Sitting now",
+            says: "Every student on a paper right now, and the ones who have left the window, as it happens.",
+          },
+          {
+            label: "Where each class stands",
+            says: "Who has finished, who is mid-paper and who has not started — once a class exists to stand somewhere.",
+          },
+          {
+            label: "Students & risk",
+            says: "Anyone whose marks put them near failing, once there are marks to read.",
+          },
+          {
+            label: "Recently published",
+            says: "The papers you have published, newest first, with how many sat each one.",
+          },
+        ]}
+      />
+    );
+  }
   const published = mine.filter((e) => e.status === "PUBLISHED");
   const drafts = mine.filter((e) => e.status === "DRAFT");
   const live = (sessions ?? []).filter((s) => s.status === "IN_PROGRESS");

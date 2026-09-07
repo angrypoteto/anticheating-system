@@ -41,6 +41,23 @@ export function ExamRunner({
   initialStrikes: number;
 }) {
   const [started, setStarted] = useState(false);
+  /**
+   * The review pass, shown once every question has been seen.
+   *
+   * Tesler's law: complexity is conserved, and "you cannot return to a
+   * question once you move on" put all of it on the student — one mis-click
+   * was a mark gone for good, with no way to find out which one. The rule that
+   * earns its keep is not being able to read ahead, since that is what stops
+   * somebody scanning all 25 and going looking. Having already reached the end,
+   * a pass back over the blanks costs the exam nothing.
+   *
+   * Everything else still applies while this is on screen: the clock runs, the
+   * window is watched, and a departure is still recorded.
+   */
+  const [reviewing, setReviewing] = useState(false);
+  /** True once the last question has been reached at least once. */
+  const [reachedEnd, setReachedEnd] = useState(false);
+
   const [index, setIndex] = useState(() => {
     // Resume where they left off; questions are forward-only.
     const answered = questions.filter((q) => savedAnswers[q.id] != null).length;
@@ -319,11 +336,12 @@ export function ExamRunner({
     await flushRef.current();
 
     if (indexRef.current >= questions.length - 1) {
-      finish("manual");
+      setReachedEnd(true);
+      setReviewing(true);
     } else {
       setIndex((i) => i + 1);
     }
-  }, [questions, finish]);
+  }, [questions]);
 
   // --- per-question countdown ---
   useEffect(() => {
@@ -473,6 +491,14 @@ export function ExamRunner({
   const answered = questions.filter(
     (q) => answers[q.id] != null && answers[q.id] !== "",
   ).length;
+
+  // Which questions are still blank, in the order they were asked. Once the
+  // end has been reached, every forward button returns to the review instead
+  // of walking through the rest again.
+  const blanks = questions
+    .map((q, i) => (answers[q.id] != null && answers[q.id] !== "" ? -1 : i))
+    .filter((i) => i >= 0);
+  const seen = reachedEnd;
   const through = Math.round(((index + 1) / Math.max(questions.length, 1)) * 100);
 
   return (
@@ -557,6 +583,102 @@ export function ExamRunner({
               </button>
             </div>
           ) : question ? (
+            reviewing ? (
+            <div className="select-none">
+              <span className="mb-2.5 block text-xs font-medium tracking-[0.08em] text-gray-500 uppercase">
+                All {questions.length} questions seen
+              </span>
+              <h2 className="font-serif text-[31px] leading-[1.25] font-semibold tracking-tight text-gray-900">
+                {blanks.length === 0
+                  ? "Everything is answered."
+                  : blanks.length === 1
+                    ? "One question is still blank."
+                    : `${blanks.length} questions are still blank.`}
+              </h2>
+              <p className="mt-2.5 max-w-[62ch] text-[15px] leading-relaxed text-gray-700">
+                {blanks.length
+                  ? "You have reached the end of the paper. Blanks score nothing, so while the clock is still running you may go back and answer them. Answers you have already given stay as they are."
+                  : "You have reached the end of the paper. Check anything you want to look at again, or submit it now."}
+              </p>
+
+              <div className="mt-6.5 rounded-xl border border-gray-200 bg-white px-6 py-5.5">
+                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-4">
+                  <h3 className="text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+                    Your paper
+                  </h3>
+                  <div className="flex items-center gap-4 text-[12.5px] text-gray-500">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.75 w-2.75 rounded-[3px] border-[1.5px] border-teal-100 bg-teal-50" />
+                      Answered
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2.75 w-2.75 rounded-[3px] border-[1.5px] border-amber-200 bg-amber-50" />
+                      Blank
+                    </span>
+                  </div>
+                </div>
+
+                {/* Twenty-five is past the point of counting, so they arrive in
+                    rows of ten and only the blanks carry a colour. */}
+                <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+                  {questions.map((q, i) => {
+                    const blank = !answers[q.id];
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => {
+                          setReviewing(false);
+                          setIndex(i);
+                        }}
+                        aria-label={`Question ${i + 1}${blank ? ", blank" : ", answered"}`}
+                        className={`flex h-11 items-center justify-center rounded-lg border-[1.5px] text-[13.5px] font-medium tabular-nums transition ${
+                          blank
+                            ? "border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-300"
+                            : "border-teal-100 bg-teal-50 text-teal-800 hover:border-teal-300"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-7 flex flex-wrap items-center justify-between gap-5">
+                <span className="text-sm text-gray-700 tabular-nums">
+                  <b className="font-medium text-gray-900">
+                    {answered} of {questions.length}
+                  </b>{" "}
+                  answered{blanks.length ? ` · ${blanks.length} blank` : ""}
+                </span>
+                <div className="flex flex-wrap items-center gap-4">
+                  {blanks.length ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReviewing(false);
+                        setIndex(blanks[0]!);
+                      }}
+                      className="inline-flex h-[52px] items-center gap-2.5 rounded-xl border-[1.5px] border-teal-100 bg-white px-5.5 text-[15px] font-medium text-teal-700 transition hover:border-teal-300"
+                    >
+                      <ArrowMark className="h-4 w-4 rotate-180" />
+                      Answer question {blanks[0]! + 1}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => finish("manual")}
+                    className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600 disabled:opacity-50"
+                  >
+                    {submitting ? "Submitting…" : "Submit my paper"}
+                    <TickMark className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
             <div className="select-none">
               <div className="mb-3.5 flex items-baseline justify-between gap-4">
                 <span className="text-xs font-medium tracking-[0.08em] text-gray-500 uppercase dark:text-gray-400">
@@ -626,30 +748,22 @@ export function ExamRunner({
 
               <div className="mt-9 flex flex-wrap items-center justify-between gap-4">
                 <span className="text-sm text-gray-500 tabular-nums dark:text-gray-400">
-                  {answered} of {questions.length} answered · you cannot return to a
-                  question once you move on
+                  {answered} of {questions.length} answered ·{" "}
+                  {seen
+                    ? "you can go back to this one from the review at the end"
+                    : "you cannot read ahead, but you get one pass over the blanks at the end"}
                 </span>
-                {isLast ? (
-                  <button
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => finish("manual")}
-                    className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600 disabled:opacity-50"
-                  >
-                    {submitting ? "Submitting…" : "Submit exam"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => void advance()}
-                    className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600"
-                  >
-                    Next question
-                    <ArrowMark className="h-4 w-4" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => (seen ? setReviewing(true) : void advance())}
+                  className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600"
+                >
+                  {seen ? "Back to review" : isLast ? "Review my paper" : "Next question"}
+                  <ArrowMark className="h-4 w-4" />
+                </button>
               </div>
             </div>
+          )
           ) : null}
 
           {submitState.error ? (

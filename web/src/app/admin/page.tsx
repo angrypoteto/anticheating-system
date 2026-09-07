@@ -18,6 +18,7 @@ import {
   RowWhen,
   Stat,
 } from "./ui";
+import { FirstRun } from "./first-run";
 import { LiveStatus } from "./live-status";
 import { ClassProgressChart, ExamsByInstructorChart } from "./charts";
 
@@ -113,6 +114,7 @@ export default async function AdminOverview() {
   const now = Date.now();
 
   const passThreshold = Number(settings?.pass_threshold ?? 75);
+  const activeKeysAtSetup = (keys ?? []).filter((k) => k.status === "ACTIVE").length;
   const students = (users ?? []).filter((u) => u.role === "STUDENT");
   const allExams = (exams ?? []) as unknown as ExamRow[];
   const published = allExams.filter((e) => e.status === "PUBLISHED");
@@ -133,6 +135,50 @@ export default async function AdminOverview() {
     : null;
 
   const flaggedSittings = new Set((openFlags ?? []).map((f) => f.session_id)).size;
+
+  // A school with no accounts and no exams has nothing to administer yet.
+  if (!students.length && !allExams.length) {
+    return (
+      <FirstRun
+        greeting={`Welcome to ${settings?.institution_name ?? "Proctorly"}`}
+        lede="Nothing has been set up yet. Three things and your first class can sit a paper."
+        action={{
+          href: "/admin/accounts",
+          label: "Add the first accounts",
+          title: "Add people",
+          detail:
+            "Instructors set the papers and students sit them. Add an account here, or let students register themselves and put them into a class afterwards.",
+        }}
+        steps={[
+          { label: "System ready", note: "Signed in as an administrator.", done: true },
+          { label: "Add people", note: "Instructors first, then students.", done: false },
+          {
+            label: "Add a provider key",
+            note: `${activeKeysAtSetup} stored — generation needs at least one.`,
+            done: activeKeysAtSetup > 0,
+          },
+        ]}
+        slots={[
+          {
+            label: "Sitting now",
+            says: "Every student on a paper across the school, and the ones who have left the window.",
+          },
+          {
+            label: "Open flags",
+            says: "Departures nobody has dealt with yet, and which sitting each belongs to.",
+          },
+          {
+            label: "System health",
+            says: "Whether the database, storage and live updates are actually reachable right now.",
+          },
+          {
+            label: "Recently given",
+            says: "The papers instructors have published, newest first, with how many sat each one.",
+          },
+        ]}
+      />
+    );
+  }
 
   // --- recently given -------------------------------------------------------
   const sittingsPerExam = new Map<string, number>();

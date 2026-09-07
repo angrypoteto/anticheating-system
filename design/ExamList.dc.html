@@ -13,7 +13,7 @@
       --navy-900:#0A1730;--navy-800:#0F2245;--navy-700:#12315B;--navy-600:#1B4179;
       --navy-500:#2A5799;--navy-300:#8FAAD2;--navy-100:#D3DEEE;--navy-50:#EEF3FA;
       --paper:#F6F8FB;--card:#FFFFFF;--line:#DCE3ED;--line-soft:#EAEFF6;
-      --ink:#0D1524;--ink-2:#42506B;--ink-3:#6B7A93;
+      --ink:#0D1524;--ink-2:#42506B;--ink-3:#5E6C84;
       --accent:#0F6F6B;--accent-bg:#E3F2F0;
       --good:#136F49;--good-bg:#E7F4EE;--warn:#8A5A00;--warn-bg:#FBF1DC;--bad:#A81F1A;--bad-bg:#FBEAE8;
       --sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -50,10 +50,10 @@
     .row{display:flex;align-items:center;gap:18px;padding:17px 24px;border-bottom:1px solid var(--line-soft);}
     .row:last-child{border-bottom:0;}
     .t{flex:1;min-width:0;}
-    .t .a{font-size:15.5px;font-weight:500;letter-spacing:-0.005em;}
-    .t .subj{margin-top:3px;font-size:12px;font-weight:500;letter-spacing:.06em;
+    .t .a{display:block;font-size:15.5px;font-weight:500;letter-spacing:-0.005em;}
+    .t .subj{display:block;font-size:12px;font-weight:500;letter-spacing:.06em;
       text-transform:uppercase;color:var(--accent);}
-    .t .b{margin-top:4px;font-size:13px;color:var(--ink-3);}
+    .t .b{display:block;margin-top:4px;font-size:13px;color:var(--ink-3);}
     .chev{color:var(--ink-3);flex-shrink:0;}
 
     .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
@@ -128,7 +128,7 @@
       <div class="row">
         <span class="t">
           <span class="subj">SYSARCH</span>
-          <span class="a" style="display:block;margin-top:3px;">Quiz #3 — Network Fundamentals</span>
+          <span class="a">Quiz #3 — Network Fundamentals</span>
           <span class="b">BSIT 4C · 25 questions · 46 sittings</span>
         </span>
         <span class="pill p-open"><span style="width:7px;height:7px;border-radius:999px;background:currentColor;"></span>Open</span>
@@ -162,7 +162,7 @@
       <div class="row">
         <span class="t">
           <span class="subj">DATASTRUC</span>
-          <span class="a" style="display:block;margin-top:3px;">Midterm — Data Structures</span>
+          <span class="a">Midterm — Data Structures</span>
           <span class="b">BSIT 4A · 40 questions · 38 sittings</span>
         </span>
         <span class="pill p-closed">Closed</span>
@@ -175,7 +175,7 @@
       <div class="row" style="background:#FDF7F7;">
         <span class="t">
           <span class="subj">SYSARCH</span>
-          <span class="a" style="display:block;margin-top:3px;">Quiz #2 — Transport Layer</span>
+          <span class="a">Quiz #2 — Transport Layer</span>
           <span class="b">BSIT 4C · 20 questions · 44 sittings</span>
         </span>
         <span class="confirm">
@@ -188,7 +188,7 @@
       <div class="row">
         <span class="t">
           <span class="subj">SYSARCH</span>
-          <span class="a" style="display:block;margin-top:3px;">Finals — Full Coverage</span>
+          <span class="a">Finals — Full Coverage</span>
           <span class="b">BSIT 4C · 60 questions · not yet given</span>
         </span>
         <span class="pill p-sched">Scheduled</span>
@@ -201,7 +201,7 @@
       <div class="row">
         <span class="t">
           <span class="subj">SYSARCH</span>
-          <span class="a" style="display:block;margin-top:3px;">Practice set — Subnetting</span>
+          <span class="a">Practice set — Subnetting</span>
           <span class="b">BSIT 4C · 12 questions · not published</span>
         </span>
         <span class="status" style="width:auto;">draft</span>

@@ -122,6 +122,37 @@ function Tick({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Stamped at build rather than read from a clock during render: a footer year
+ * that depends on when the page happens to re-render is a value that can
+ * disagree with itself between two visitors on New Year's Eve.
+ */
+const YEAR = new Date().getFullYear();
+
+function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="text-[11px] font-medium tracking-[0.09em] text-teal-300 uppercase">
+        {title}
+      </h2>
+      <ul className="mt-4 flex flex-col gap-2.5">{children}</ul>
+    </div>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link
+        href={href}
+        className="text-[13.5px] text-teal-100 transition hover:text-white"
+      >
+        {children}
+      </Link>
+    </li>
+  );
+}
+
 export function Landing() {
   return (
     <main className="bg-gray-50">
@@ -213,7 +244,7 @@ export function Landing() {
       </div>
 
       {/* ---------------------------------------------------------------- */}
-      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+      <section id="capabilities" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20 sm:py-24">
         <div className="max-w-[52ch]">
           <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
             Capabilities
@@ -237,7 +268,7 @@ export function Landing() {
       </section>
 
       {/* ---------------------------------------------------------------- */}
-      <section className="border-y border-gray-200 bg-white">
+      <section id="how-it-runs" className="scroll-mt-8 border-y border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
           <div className="max-w-[52ch]">
             <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
@@ -276,7 +307,7 @@ export function Landing() {
       {/* Given the weight of a section rather than a footnote. A tool that */}
       {/* oversells what it catches is the one a school cannot afford.      */}
       {/* ---------------------------------------------------------------- */}
-      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+      <section id="limits" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20 sm:py-24">
         <div className="grid gap-10 rounded-2xl border border-gray-200 bg-white px-8 py-10 sm:px-12 sm:py-12 lg:grid-cols-[minmax(0,22ch)_minmax(0,1fr)] lg:gap-16">
           <div>
             <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
@@ -304,25 +335,62 @@ export function Landing() {
       </section>
 
       {/* ---------------------------------------------------------------- */}
+      {/* ---------------------------------------------------------------- */}
+      {/* Only destinations that exist. A column of Privacy / Terms / Docs  */}
+      {/* links that 404 is worse than a short footer: it is the first      */}
+      {/* promise the site breaks.                                          */}
+      {/* ---------------------------------------------------------------- */}
       <footer className="bg-teal-900 text-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
-              <ShieldMark className="h-5.5 w-5.5" />
-              Proctorly
-            </span>
-            <p className="mt-3 max-w-[46ch] text-[13px] leading-relaxed text-teal-300">
-              BSIT 4C · Group 2 — System Administration project.
+        <div className="mx-auto max-w-6xl px-6 py-14 sm:py-16">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] lg:gap-12">
+            <div>
+              <span className="flex items-center gap-2.5 text-[16px] font-semibold tracking-tight">
+                <ShieldMark className="h-6 w-6" />
+                Proctorly
+              </span>
+              <p className="mt-3.5 max-w-[42ch] text-[13.5px] leading-relaxed text-teal-100">
+                Lockdown exams, live proctoring and question sets drafted from
+                your own lesson files — with a record that holds up afterwards.
+              </p>
+              <p className="mt-4 text-[12.5px] leading-relaxed text-teal-300">
+                Built as a System Administration project. It is run for one
+                school, not sold as a service.
+              </p>
+            </div>
+
+            <FooterColumn title="Get started">
+              <FooterLink href="/signup">Create a student account</FooterLink>
+              <FooterLink href="/login">Instructor sign in</FooterLink>
+              <FooterLink href="/login">Administrator sign in</FooterLink>
+            </FooterColumn>
+
+            <FooterColumn title="What it does">
+              <FooterLink href="#capabilities">Capabilities</FooterLink>
+              <FooterLink href="#how-it-runs">How an exam runs</FooterLink>
+              <FooterLink href="#limits">What it does not claim</FooterLink>
+            </FooterColumn>
+
+            <FooterColumn title="Students">
+              <li className="text-[13.5px] leading-relaxed text-teal-100">
+                You need a class code from your instructor before an exam will
+                appear.
+              </li>
+              <li className="text-[13.5px] leading-relaxed text-teal-100">
+                Exams run fullscreen. Leaving the window is recorded, and three
+                warnings submit the paper as it stands.
+              </li>
+            </FooterColumn>
+          </div>
+
+          <div className="mt-12 flex flex-col gap-4 border-t border-white/12 pt-7 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[12.5px] text-teal-300">
+              &copy; {YEAR} Proctorly · BSIT 4C &mdash; Group 2
+            </p>
+            <p className="text-[12.5px] text-teal-300">
+              Detects and escalates in the browser; it does not physically
+              prevent, and there is no camera proctoring.
             </p>
           </div>
-          <nav className="flex items-center gap-5 text-sm">
-            <Link href="/login" className="text-teal-100 transition hover:text-white">
-              Sign in
-            </Link>
-            <Link href="/signup" className="text-teal-100 transition hover:text-white">
-              Create account
-            </Link>
-          </nav>
         </div>
       </footer>
     </main>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AddKeyForm, KeyRow, TestAllKeys } from "./forms";
+import { AddKeyForm, KeyRow, LiveKeyCheck } from "./forms";
 
 export const metadata: Metadata = { title: "AI provider keys" };
 
@@ -54,7 +54,7 @@ export default async function KeysPage() {
               list as long as the key list, and it needs the width. */}
           {keys?.length ? (
             <div className="border-b border-gray-200 bg-gray-50/60 p-6 dark:border-gray-800">
-              <TestAllKeys count={keys.length} />
+              <LiveKeyCheck count={keys.length} />
             </div>
           ) : null}
           {keys?.length ? (

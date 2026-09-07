@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { PROVIDER_PRESETS, presetFor } from "@/lib/ai/providers";
 import {
   addKey,
@@ -219,48 +219,137 @@ export function KeyRow({
   );
 }
 
+/** Five minutes. See the note on testAllKeys for why this is not five seconds. */
+const EVERY_MS = 5 * 60_000;
+
+function relative(ms: number) {
+  const s = Math.round(ms / 1000);
+  if (s < 45) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} minute${m === 1 ? "" : "s"} ago`;
+  const h = Math.round(m / 60);
+  return `${h} hour${h === 1 ? "" : "s"} ago`;
+}
+
 /**
- * Ask every key at once.
+ * Whether generation will run, kept current without being asked.
  *
- * The question an admin has on this page is almost never "does key 3 work" —
- * it is "will generation run tomorrow", and one key answering is enough for
- * that. Testing them one at a time meant six presses and six answers held in
- * the head to work out one thing, so the summary answers it in a sentence
- * before the list explains itself.
+ * This used to be a button. The button was the wrong shape for the question:
+ * nobody wants to know whether the keys worked at the moment they pressed
+ * something, they want to know whether the thing will work — so the page finds
+ * out on its own and says how fresh the answer is.
+ *
+ * It re-checks every five minutes and only while the tab is in front. A
+ * background tab quietly spending a provider's quota is exactly the failure
+ * this screen is supposed to catch, so it stops when nobody is looking and
+ * catches up the moment the tab comes back.
  */
-export function TestAllKeys({ count }: { count: number }) {
-  const [state, action, pending] = useActionState<TestAllState, FormData>(testAllKeys, {});
+export function LiveKeyCheck({ count }: { count: number }) {
+  const [state, setState] = useState<TestAllState>({});
+  const [checking, setChecking] = useState(false);
+  const [ago, setAgo] = useState<string | null>(null);
+  const lastAt = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!count) return;
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const plan = (inMs: number) => {
+      if (!live) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(run, inMs);
+    };
+
+    const run = async () => {
+      if (!live) return;
+      // Nobody is looking: come back when they are, rather than spending a
+      // request on an unwatched tab.
+      if (typeof document !== "undefined" && document.hidden) return plan(EVERY_MS);
+
+      setChecking(true);
+      try {
+        const next = await testAllKeys();
+        if (!live) return;
+        setState(next);
+        lastAt.current = Date.now();
+      } catch {
+        if (live) setState({ error: "Could not reach the server to check the keys." });
+      } finally {
+        if (live) setChecking(false);
+      }
+      plan(EVERY_MS);
+    };
+
+    // Deferred rather than called in the effect body: reading the clock and
+    // setting state during the effect is a render-phase write.
+    plan(0);
+
+    const onShow = () => {
+      if (document.hidden) return;
+      const since = lastAt.current == null ? Infinity : Date.now() - lastAt.current;
+      if (since >= EVERY_MS) plan(0);
+    };
+    document.addEventListener("visibilitychange", onShow);
+
+    return () => {
+      live = false;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onShow);
+    };
+  }, [count]);
+
+  // The freshness stamp ticks on its own, so "just now" does not sit there
+  // being wrong for five minutes.
+  useEffect(() => {
+    const tick = () =>
+      setAgo(lastAt.current == null ? null : relative(Date.now() - lastAt.current));
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 20_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, [state]);
+
+  if (!count) return null;
+
   const verdicts = state.verdicts ?? [];
   const answered = verdicts.filter((v) => v.ok).length;
 
   return (
     <div>
-      <form action={action}>
-        <button
-          type="submit"
-          disabled={pending || count === 0}
-          className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 text-[13.5px] font-medium text-gray-800 transition hover:border-gray-300 disabled:opacity-50"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-              d="M12 4.75a7.25 7.25 0 1 0 7.25 7.25"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-            />
-            <path
-              d="M19.25 5.5v4h-4"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {pending
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
+          <span
+            aria-hidden
+            className={`h-2 w-2 rounded-full ${
+              checking
+                ? "animate-pulse bg-teal-600 ring-3 ring-teal-50"
+                : verdicts.length === 0
+                  ? "bg-gray-300 ring-3 ring-gray-100"
+                  : answered
+                    ? "bg-green-700 ring-3 ring-green-50"
+                    : "bg-red-700 ring-3 ring-red-50"
+            }`}
+          />
+          {checking
             ? `Asking ${count} key${count === 1 ? "" : "s"}…`
-            : `Test all ${count} key${count === 1 ? "" : "s"}`}
-        </button>
-      </form>
+            : verdicts.length === 0
+              ? "Checking the keys…"
+              : answered
+                ? `${answered} of ${verdicts.length} answered — generation will run.`
+                : "None answered. Generation will fail until one does."}
+        </span>
+        {ago && !checking ? (
+          <span className="text-[13px] text-gray-500">checked {ago}</span>
+        ) : null}
+      </div>
+
+      <p className="mt-1.5 text-[13px] text-gray-500">
+        Re-checked every five minutes while this page is open. Each check is a
+        real request to each provider, so it is paced rather than constant.
+      </p>
 
       {state.error ? (
         <p role="alert" className="mt-3 text-sm text-red-700">
@@ -269,48 +358,34 @@ export function TestAllKeys({ count }: { count: number }) {
       ) : null}
 
       {verdicts.length ? (
-        <div
-          role="status"
+        <ul
+          aria-live="polite"
           className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white"
         >
-          {/* The answer to the question, before the evidence for it. */}
-          <p
-            className={`border-b px-4.5 py-3 text-sm font-medium ${
-              answered
-                ? "border-green-200 bg-green-50 text-green-800"
-                : "border-red-200 bg-red-50 text-red-800"
-            }`}
-          >
-            {answered
-              ? `${answered} of ${verdicts.length} answered — generation will run.`
-              : "None of them answered. Generation will fail until one does."}
-          </p>
-          <ul>
-            {verdicts.map((v) => (
-              <li
-                key={v.id}
-                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-100 px-4.5 py-2.75 text-[13px] last:border-b-0"
+          {verdicts.map((v) => (
+            <li
+              key={v.id}
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-100 px-4.5 py-2.75 text-[13px] last:border-b-0"
+            >
+              <span className="font-medium text-gray-900">{v.label}</span>
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.25 py-0.5 text-xs font-medium ${
+                  v.tone === "good"
+                    ? "border-green-200 bg-green-50 text-green-800"
+                    : v.tone === "warn"
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-red-200 bg-red-50 text-red-800"
+                }`}
               >
-                <span className="font-medium text-gray-900">{v.label}</span>
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.25 py-0.5 text-xs font-medium ${
-                    v.tone === "good"
-                      ? "border-green-200 bg-green-50 text-green-800"
-                      : v.tone === "warn"
-                        ? "border-amber-200 bg-amber-50 text-amber-900"
-                        : "border-red-200 bg-red-50 text-red-800"
-                  }`}
-                >
-                  {v.tone === "good" ? (
-                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
-                  ) : null}
-                  {v.ok ? "Working" : v.tone === "warn" ? "Waiting" : "Broken"}
-                </span>
-                <span className="min-w-0 flex-1 text-gray-600">{v.say}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+                {v.tone === "good" ? (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                ) : null}
+                {v.ok ? "Working" : v.tone === "warn" ? "Waiting" : "Broken"}
+              </span>
+              <span className="min-w-0 flex-1 text-gray-600">{v.say}</span>
+            </li>
+          ))}
+        </ul>
       ) : null}
     </div>
   );

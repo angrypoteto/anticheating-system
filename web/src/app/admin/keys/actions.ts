@@ -89,16 +89,17 @@ async function pingStoredKey(
 /**
  * Ask every stored key to answer, and report what each one said.
  *
- * Testing them one at a time meant an admin with six keys pressed six buttons
- * and held six answers in their head to work out whether generation would run
- * at all — which is the only question they were asking. They go out together,
- * a few at a time so the providers are not hammered, and come back as one
- * list.
+ * The page runs this on its own — an admin should not have to press anything
+ * to find out whether generation works. It is paced rather than live, and
+ * deliberately: every check is a real request to every provider, so polling
+ * this every few seconds would spend the quota the page exists to report on,
+ * and would be a good way to get a working key rate-limited by watching it.
+ *
+ * They go out four at a time so a provider already throttling us does not see
+ * a burst, and each one's result is written to last_error, which is the same
+ * field the row beside it reads.
  */
-export async function testAllKeys(
-  _prev: TestAllState,
-  _formData: FormData,
-): Promise<TestAllState> {
+export async function testAllKeys(): Promise<TestAllState> {
   const actor = await requireRole("ADMIN");
 
   const client = createAdminClient();

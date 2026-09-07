@@ -158,8 +158,24 @@ try {
 
   sec("An allowance that has run out");
 
+  /**
+   * Expired according to the database, not according to this laptop.
+   *
+   * This used to write `Date.now() - 1000`, which asks a question on the
+   * client's clock and has it answered on the server's. This machine runs
+   * about two seconds ahead, so "one second ago" arrived as one second in the
+   * FUTURE, the allowance was still live, and the check failed while the rule
+   * was working perfectly.
+   *
+   * extend_sitting returns a timestamp the database computed, so the offset
+   * between the two clocks falls out of it. A minute of margin then makes the
+   * test independent of how well anybody's clock is synchronised.
+   */
+  const { data: stamped } = await teacher.client
+    .rpc("extend_sitting", { p_session_id: excusedSitting, p_minutes: 0 });
+  const dbNow = new Date(stamped).getTime() - 5 * 60_000;
   await svc.from("exam_sessions")
-    .update({ reopened_until: new Date(Date.now() - 1000).toISOString() })
+    .update({ reopened_until: new Date(dbNow - 60_000).toISOString() })
     .eq("id", excusedSitting);
   const expired = await canAnswer(excused, excusedSitting, q.id, "A");
   t(!expired.ok, "expires on its own, with nobody having to remember it",
@@ -168,7 +184,7 @@ try {
   sec("An archived paper");
 
   await svc.from("exam_sessions")
-    .update({ reopened_until: new Date(Date.now() + 3_600_000).toISOString() })
+    .update({ reopened_until: new Date(dbNow + 3_600_000).toISOString() })
     .eq("id", excusedSitting);
   await svc.from("exams").update({ status: "ARCHIVED" }).eq("id", exam.id);
   const archived = await canAnswer(excused, excusedSitting, q.id, "B");

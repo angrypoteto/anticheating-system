@@ -169,10 +169,12 @@ export default async function Home() {
       </div>
 
       <div className="mx-auto max-w-[1000px] px-6 pt-9 pb-12 sm:px-10">
-        <h1 className="font-serif text-[32px] font-semibold tracking-tight text-gray-900">
+        <h1 className="font-serif text-[24px] font-semibold tracking-tight text-gray-900 sm:text-[32px]">
           {firstName ? `${partOfDay}, ${firstName}` : partOfDay}
         </h1>
-        <p className="mt-1.75 text-[15px] text-gray-500">{standing}</p>
+        <p className="mt-1.5 text-[13.5px] leading-relaxed text-gray-500 sm:mt-1.75 sm:text-[15px]">
+          {standing}
+        </p>
 
         {(await classesEnabled()) ? <MyClasses /> : <div className="mb-7.5" />}
 

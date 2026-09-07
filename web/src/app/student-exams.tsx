@@ -182,7 +182,7 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                     <span className="mb-1.75 block text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
                       {[r.subject, r.teacher].filter(Boolean).join(" · ")}
                     </span>
-                    <p className="font-serif text-[23px] font-semibold tracking-tight text-gray-900">
+                    <p className="font-serif text-[19px] leading-[1.25] font-semibold tracking-tight text-gray-900 sm:text-[23px]">
                       {r.title}
                     </p>
                     <p className="mt-2 text-sm text-gray-500">

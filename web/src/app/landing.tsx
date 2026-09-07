@@ -249,7 +249,7 @@ export function Landing() {
           <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
             Capabilities
           </p>
-          <h2 className="mt-3 font-serif text-[34px] leading-tight font-semibold tracking-tight text-gray-900">
+          <h2 className="mt-3 font-serif text-[27px] leading-tight font-semibold tracking-tight text-gray-900 sm:text-[34px]">
             What it actually does
           </h2>
         </div>
@@ -274,7 +274,7 @@ export function Landing() {
             <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
               The flow
             </p>
-            <h2 className="mt-3 font-serif text-[34px] leading-tight font-semibold tracking-tight text-gray-900">
+            <h2 className="mt-3 font-serif text-[27px] leading-tight font-semibold tracking-tight text-gray-900 sm:text-[34px]">
               How an exam runs
             </h2>
           </div>

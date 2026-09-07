@@ -519,17 +519,18 @@ export function ExamRunner({
 
   return (
     <main className="flex min-h-screen flex-col bg-gray-950">
-      <header className="flex flex-wrap items-center justify-between gap-6 bg-gray-900 px-8 py-3.5 text-white">
-        <div className="flex min-w-0 items-center gap-3 text-sm">
+      <header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 bg-gray-900 px-4 py-3 text-white sm:px-8 sm:py-3.5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 text-sm sm:gap-3">
           <ShieldMark className="h-5 w-5 shrink-0" />
           <span className="truncate font-medium">{examTitle}</span>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-5">
           {saving ? <span className="text-xs text-teal-300">saving…</span> : null}
           {strikes > 0 ? (
             <span className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-1 text-[13px] font-medium text-amber-200">
               <WarnMark className="h-3.5 w-3.5" />
-              Warning {strikes} of {lockdown.maxStrikes}
+              <span className="hidden sm:inline">Warning </span>
+              {strikes} of {lockdown.maxStrikes}
             </span>
           ) : null}
           {questionRemaining != null ? (
@@ -545,9 +546,9 @@ export function ExamRunner({
           {remaining != null ? (
             <span
               title="Time left on the whole exam"
-              className="flex items-baseline gap-2 font-mono text-xl font-medium tabular-nums"
+              className="flex items-baseline gap-2 font-mono text-lg font-medium tabular-nums sm:text-xl"
             >
-              <span className="font-sans text-[11px] font-medium tracking-[0.07em] text-teal-300 uppercase">
+              <span className="hidden font-sans text-[11px] font-medium tracking-[0.07em] text-teal-300 uppercase sm:inline">
                 Time left
               </span>
               <span className={remaining < 60000 ? "text-red-300" : "text-white"}>
@@ -566,7 +567,7 @@ export function ExamRunner({
         />
       </div>
 
-      <div className="flex flex-1 justify-center bg-gray-50 px-8 py-10 dark:bg-gray-950">
+      <div className="flex flex-1 justify-center bg-gray-50 px-4 py-7 sm:px-8 sm:py-10">
         <div className="w-full max-w-3xl">
           {warning ? (
             <div
@@ -604,7 +605,7 @@ export function ExamRunner({
               <span className="mb-2.5 block text-xs font-medium tracking-[0.08em] text-gray-500 uppercase">
                 All {questions.length} questions seen
               </span>
-              <h2 className="font-serif text-[31px] leading-[1.25] font-semibold tracking-tight text-gray-900">
+              <h2 className="font-serif text-[24px] leading-[1.3] font-semibold tracking-tight text-gray-900 sm:text-[31px] sm:leading-[1.25]">
                 {blanks.length === 0
                   ? "Everything is answered."
                   : blanks.length === 1
@@ -708,7 +709,7 @@ export function ExamRunner({
                 ) : null}
               </div>
 
-              <h2 className="font-serif text-[31px] leading-[1.28] font-semibold tracking-tight text-pretty text-gray-900 dark:text-gray-50">
+              <h2 className="font-serif text-[24px] leading-[1.3] font-semibold tracking-tight text-pretty text-gray-900 sm:text-[31px] sm:leading-[1.28]">
                 {question.prompt}
               </h2>
 
@@ -719,7 +720,7 @@ export function ExamRunner({
                     return (
                       <label
                         key={choice}
-                        className={`flex min-h-16 cursor-pointer items-center gap-4 rounded-xl border-[1.5px] px-5 py-3.5 text-base transition ${
+                        className={`flex min-h-16 cursor-pointer items-center gap-3.5 rounded-xl border-[1.5px] px-4 py-3.5 text-[15px] transition sm:gap-4 sm:px-5 sm:text-base ${
                           picked
                             ? "border-teal-600 bg-teal-50 text-gray-900 shadow-[0_0_0_3px_rgba(27,65,121,0.10)] dark:bg-teal-950/60 dark:text-gray-50"
                             : "border-gray-200 bg-white text-gray-800 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
@@ -805,7 +806,7 @@ export function ExamRunner({
         </div>
       </div>
 
-      <footer className="flex items-center justify-center gap-2.5 bg-gray-950 px-8 py-4 text-xs text-teal-300">
+      <footer className="flex items-center justify-center gap-2.5 bg-gray-950 px-4 py-4 text-center text-xs text-teal-300 sm:px-8">
         <LockMark className="h-3.5 w-3.5" />
         {lockdown.fullscreenRequired ? "Fullscreen is required · " : ""}
         leaving this window is recorded

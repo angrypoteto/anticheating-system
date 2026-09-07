@@ -86,7 +86,7 @@ export function AuthShell({
             href="/"
             className="mb-8 flex items-center gap-2.5 font-semibold text-gray-900 lg:hidden"
           >
-            <ShieldMark className="h-7 w-7" />
+            <ShieldMark className="h-7 w-7" ground="light" />
             Proctorly
           </Link>
 
@@ -109,19 +109,40 @@ export function AuthShell({
  * sits on navy chrome as often as on ivory — it used to be a hardcoded teal
  * square, which was the one thing on the console that had not been redesigned.
  */
-export function ShieldMark({ className }: { className?: string }) {
+/**
+ * The mark. Teal on every ground, in the step that ground can carry.
+ *
+ * It used to inherit currentColor, which meant it was whatever the text around
+ * it happened to be — white in the navy chrome, ink on the pages — so the one
+ * element that is supposed to be constant was the one element that changed on
+ * every screen. It is teal now, and the two steps exist only because a single
+ * value cannot clear 3:1 against both navy and white.
+ *
+ * The outline sits at 0.8 rather than full strength so the tick reads as the
+ * figure and the shield as its enclosure; below about 0.8 the outline itself
+ * drops under 3:1 on navy, which is why it is not fainter.
+ */
+export function ShieldMark({
+  className,
+  ground = "dark",
+}: {
+  className?: string;
+  /** The surface it sits on — "dark" is the navy chrome, "light" the pages. */
+  ground?: "dark" | "light";
+}) {
+  const teal = ground === "dark" ? "var(--color-accent-bright)" : "var(--color-accent)";
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <path
         d="M12 2.75 4.75 5.5v6.02c0 4.34 2.94 8.4 7.25 9.73 4.31-1.33 7.25-5.39 7.25-9.73V5.5L12 2.75Z"
-        stroke="currentColor"
-        strokeOpacity="0.55"
+        stroke={teal}
+        strokeOpacity="0.8"
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
       <path
         d="m8.9 12.1 2.15 2.15 4.05-4.5"
-        stroke="currentColor"
+        stroke={teal}
         strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"

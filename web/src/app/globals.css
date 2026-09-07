@@ -103,6 +103,13 @@
   --color-accent:      #0F6F6B;
   --color-accent-soft: #E3F2F0;
   --color-accent-line: #BFDEDA;
+  /* The same teal, for dark grounds.
+   *
+   * The mark is teal on both the navy chrome and the white pages, and one
+   * value cannot do both: #0F6F6B is 6.0:1 on white and 2.6:1 on navy-800,
+   * which is under the 3:1 a graphic needs to be made out at all. This step
+   * is 6.3:1 on navy and is the same hue, so the mark reads as one mark. */
+  --color-accent-bright: #3FB5AC;
 
   /* Semantic surfaces and ink. */
   --color-paper:     #F6F8FB;

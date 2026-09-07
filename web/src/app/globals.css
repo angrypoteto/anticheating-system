@@ -43,8 +43,13 @@
    * The design canvas settles it. Paper is a blue-white a few degrees off the
    * card, cards are true white, and the two line weights are tinted with the
    * same navy rather than with grey — so the rules inside a card belong to it
-   * instead of merely being faint. Sampled from design/_tokens.css; the two
-   * files are meant to agree, and this is the half that ships. */
+   * instead of merely being faint.
+   *
+   * These came from the design canvas's _tokens.css, which lived in design/
+   * until the drawings had all been built and the folder was removed. This is
+   * now the only copy: it is the palette, not a reflection of one. The canvas
+   * itself is still published, and design/ is recoverable from git if the
+   * drawings are ever wanted again. */
   --color-white:    #FFFFFF;
   --color-gray-50:  #F6F8FB;
   --color-gray-100: #EAEFF6;

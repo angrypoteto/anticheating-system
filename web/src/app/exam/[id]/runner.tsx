@@ -344,6 +344,12 @@ export function ExamRunner({
   }, [questions]);
 
   // --- per-question countdown ---
+  //
+  // This advances whether or not the question was answered, and deliberately
+  // so: the Next button requires an answer, but a per-question limit must not
+  // be. Otherwise refusing to answer would stop the clock indefinitely, which
+  // is a way to sit one question for the whole hour. It is also why the review
+  // at the end still has a blank path — a timed-out question is a real blank.
   useEffect(() => {
     if (!started || done || superseded || !timer.perQuestionSeconds) return;
     const limit = timer.perQuestionSeconds * 1000;
@@ -499,6 +505,16 @@ export function ExamRunner({
     .map((q, i) => (answers[q.id] != null && answers[q.id] !== "" ? -1 : i))
     .filter((i) => i >= 0);
   const seen = reachedEnd;
+
+  // Moving on requires an answer.
+  //
+  // Forward-only and skippable together meant a question could be passed by
+  // accident — a mis-click on Next, and the mark was gone with nothing said.
+  // Requiring one before the button works costs a student who does not know
+  // the answer a guess, which is the trade the school is making deliberately.
+  // Typed answers must contain something: a space is not an answer.
+  const current = question ? answers[question.id] : undefined;
+  const hasAnswer = typeof current === "string" && current.trim() !== "";
   const through = Math.round(((index + 1) / Math.max(questions.length, 1)) * 100);
 
   return (
@@ -748,15 +764,30 @@ export function ExamRunner({
 
               <div className="mt-9 flex flex-wrap items-center justify-between gap-4">
                 <span className="text-sm text-gray-500 tabular-nums dark:text-gray-400">
-                  {answered} of {questions.length} answered ·{" "}
-                  {seen
-                    ? "you can go back to this one from the review at the end"
-                    : "you cannot read ahead, but you get one pass over the blanks at the end"}
+                  {/* A disabled control with no reason beside it is a dead end.
+                      The sentence says what to do, not what went wrong. */}
+                  {hasAnswer ? (
+                    <>
+                      {answered} of {questions.length} answered ·{" "}
+                      {seen
+                        ? "you can go back to this one from the review at the end"
+                        : "you cannot read ahead, but you get one pass over your answers at the end"}
+                    </>
+                  ) : (
+                    <span className="text-amber-800">
+                      {question.type === "MULTIPLE_CHOICE"
+                        ? "Choose an answer to move on."
+                        : "Type an answer to move on."}
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"
+                  disabled={!hasAnswer}
+                  aria-disabled={!hasAnswer}
+                  title={hasAnswer ? undefined : "Answer this question first"}
                   onClick={() => (seen ? setReviewing(true) : void advance())}
-                  className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600"
+                  className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:hover:bg-gray-200"
                 >
                   {seen ? "Back to review" : isLast ? "Review my paper" : "Next question"}
                   <ArrowMark className="h-4 w-4" />

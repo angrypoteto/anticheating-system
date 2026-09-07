@@ -43,15 +43,12 @@ export function ConsoleNav({
   role,
   name,
   email,
-  exitHref,
 }: {
   groups: NavGroup[];
   /** "Administrator" — omitted for an instructor, whose console needs no badge. */
   role?: string;
   name?: string | null;
   email: string;
-  /** Shown only where there is somewhere else to go. */
-  exitHref?: string;
 }) {
   const pathname = usePathname();
 
@@ -109,15 +106,12 @@ export function ConsoleNav({
           {name || email}
         </p>
         {name ? <p className="truncate text-xs text-navy-300">{email}</p> : null}
-        <div className="mt-2 flex items-center gap-3 text-xs">
-          {exitHref ? (
-            <Link
-              href={exitHref}
-              className="text-navy-300 underline underline-offset-4 transition hover:text-white"
-            >
-              Exit to app
-            </Link>
-          ) : null}
+        {/* Only Sign out. There used to be an "Exit to app" beside it, meant
+            to take an admin back to the student-facing root — but / redirects
+            an admin straight to /admin, so it returned you to the page you
+            were already on. A link that goes nowhere teaches people not to
+            trust the ones that do. */}
+        <div className="mt-2 text-xs">
           <form action="/auth/signout" method="post">
             <button
               type="submit"

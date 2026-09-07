@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PageHeader } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AddKeyForm, KeyRow } from "./forms";
+import { AddKeyForm, KeyRow, TestAllKeys } from "./forms";
 
 export const metadata: Metadata = { title: "AI provider keys" };
 
@@ -43,7 +43,20 @@ export default async function KeysPage() {
             <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
               Stored keys
             </h2>
+            <p className="mt-1 max-w-[62ch] text-sm text-gray-500">
+              Generation needs one of these to answer. Testing asks each one to
+              write a single word, which is the same thing generation does — so
+              a key that passes here is a key that will work.
+            </p>
           </div>
+
+          {/* Its own strip rather than a corner of the header: the result is a
+              list as long as the key list, and it needs the width. */}
+          {keys?.length ? (
+            <div className="border-b border-gray-200 bg-gray-50/60 p-6 dark:border-gray-800">
+              <TestAllKeys count={keys.length} />
+            </div>
+          ) : null}
           {keys?.length ? (
             <ul>
               {keys.map((k) => (

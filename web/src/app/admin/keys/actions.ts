@@ -9,6 +9,140 @@ import { nextKeyLabel, presetFor } from "@/lib/ai/providers";
 
 export type KeyState = { error?: string; success?: string };
 
+/** What one key did when asked, and how much it matters. */
+export type KeyVerdict = {
+  id: string;
+  label: string;
+  provider: string;
+  ok: boolean;
+  tone: "good" | "warn" | "bad";
+  say: string;
+};
+
+export type TestAllState = {
+  error?: string;
+  /** Absent until a run has happened. */
+  verdicts?: KeyVerdict[];
+  checkedAt?: string;
+};
+
+/**
+ * What a ping means, in words.
+ *
+ * The distinction that matters is not working/broken — it is "replace this"
+ * versus "wait". A spent allowance and a rejected credential both stop
+ * generation today, and only one of them is worth an admin's afternoon.
+ */
+function readPing(
+  provider: string,
+  result: { ok: boolean; status: number; detail: string },
+): { ok: boolean; tone: "good" | "warn" | "bad"; say: string } {
+  if (result.ok) return { ok: true, tone: "good", say: "Answered." };
+  if (result.status === 401 || result.status === 403) {
+    return { ok: false, tone: "bad", say: `Rejected (${result.status}). Replace it.` };
+  }
+  if (result.status === 429) {
+    return { ok: false, tone: "warn", say: "Out of quota for now — the key is valid, the allowance is spent." };
+  }
+  if (result.status >= 500) {
+    return {
+      ok: false,
+      tone: "warn",
+      say: `Valid, but ${provider} is not answering (${result.status}). Their capacity, not your key.`,
+    };
+  }
+  return { ok: false, tone: "bad", say: `Refused (${result.status}). ${result.detail.slice(0, 100)}` };
+}
+
+/** Ping one stored key and record what came back. Shared by both tests. */
+async function pingStoredKey(
+  client: ReturnType<typeof createAdminClient>,
+  key: { id: string; provider: string; label: string; api_style: string; base_url: string | null; model: string | null },
+): Promise<{ ok: boolean; tone: "good" | "warn" | "bad"; say: string }> {
+  const { data: secret, error } = await client.rpc("ai_key_reveal", { p_key_id: key.id });
+  if (error || typeof secret !== "string") {
+    return { ok: false, tone: "bad", say: "Could not read that key from the vault." };
+  }
+
+  let read: { ok: boolean; tone: "good" | "warn" | "bad"; say: string };
+  try {
+    const result = await pingModel(key as Parameters<typeof pingModel>[0], secret);
+    read = readPing(key.provider, result);
+    await client
+      .from("ai_provider_keys")
+      .update({
+        last_error: result.ok
+          ? null
+          : `${key.provider}: ${result.status} ${result.detail}`.slice(0, 500),
+      })
+      .eq("id", key.id);
+  } catch (e) {
+    read = { ok: false, tone: "bad", say: e instanceof Error ? e.message : "Test failed." };
+    await client
+      .from("ai_provider_keys")
+      .update({ last_error: read.say.slice(0, 500) })
+      .eq("id", key.id);
+  }
+  return read;
+}
+
+/**
+ * Ask every stored key to answer, and report what each one said.
+ *
+ * Testing them one at a time meant an admin with six keys pressed six buttons
+ * and held six answers in their head to work out whether generation would run
+ * at all — which is the only question they were asking. They go out together,
+ * a few at a time so the providers are not hammered, and come back as one
+ * list.
+ */
+export async function testAllKeys(
+  _prev: TestAllState,
+  _formData: FormData,
+): Promise<TestAllState> {
+  const actor = await requireRole("ADMIN");
+
+  const client = createAdminClient();
+  const { data: keys } = await client
+    .from("ai_provider_keys")
+    .select("id, provider, label, api_style, base_url, model")
+    .order("created_at", { ascending: true });
+
+  if (!keys?.length) return { error: "There are no keys to test." };
+
+  // A small pool: enough to finish quickly, not enough to look like an attack
+  // to a provider already rate-limiting us.
+  const AT_ONCE = 4;
+  const verdicts: KeyVerdict[] = new Array(keys.length);
+  let next = 0;
+
+  await Promise.all(
+    Array.from({ length: Math.min(AT_ONCE, keys.length) }, async () => {
+      for (;;) {
+        const i = next++;
+        if (i >= keys.length) return;
+        const key = keys[i]!;
+        const read = await pingStoredKey(client, key);
+        verdicts[i] = {
+          id: key.id,
+          label: key.label,
+          provider: key.provider,
+          ok: read.ok,
+          tone: read.tone,
+          say: read.say,
+        };
+      }
+    }),
+  );
+
+  await auditServerAction(actor.id, "test_all_ai_keys", "ai_provider_keys", "all", {
+    tested: verdicts.length,
+    answered: verdicts.filter((v) => v.ok).length,
+  });
+
+  revalidatePath("/admin/keys");
+  return { verdicts, checkedAt: new Date().toISOString() };
+}
+
 export async function addKey(
   _prev: KeyState,
   formData: FormData,
@@ -128,44 +262,12 @@ export async function testKey(
     .eq("id", keyId)
     .maybeSingle();
   if (!key) return { error: "That key is gone." };
-  const { data: secret, error } = await client.rpc("ai_key_reveal", { p_key_id: keyId });
-  if (error || typeof secret !== "string") return { error: "Could not read that key." };
 
-  try {
-    // Ask the generation endpoint itself. Testing the provider's model listing
-    // proved only that the credential was valid — it answered happily while
-    // generateContent returned 503, so the console showed "Key works" over a
-    // key that could not generate anything.
-    const result = await pingModel(key as Parameters<typeof pingModel>[0], secret);
-
-    await client
-      .from("ai_provider_keys")
-      .update({
-        last_error: result.ok ? null : `${key.provider}: ${result.status} ${result.detail}`.slice(0, 500),
-      })
-      .eq("id", keyId);
-
-    revalidatePath("/admin/keys");
-
-    if (result.ok) return { success: "Key works — the model answered." };
-
-    // The provider's own status is the difference between "fix your key" and
-    // "wait and try again", so say which it is.
-    if (result.status === 401 || result.status === 403) {
-      return { error: `The provider rejected this key (${result.status}). Replace it.` };
-    }
-    if (result.status === 429) {
-      return { error: "Out of quota for now. The key is valid; the allowance is spent." };
-    }
-    if (result.status >= 500) {
-      return {
-        error:
-          `The key is valid, but the model is not answering (${result.status}). ` +
-          "This is the provider's capacity, not your key — try again, or add a key from another provider.",
-      };
-    }
-    return { error: `The model refused the request (${result.status}). ${result.detail.slice(0, 120)}` };
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Test failed." };
-  }
+  // Ask the generation endpoint itself. Testing the provider's model listing
+  // proved only that the credential was valid — it answered happily while
+  // generateContent returned 503, so the console showed "Key works" over a
+  // key that could not generate anything.
+  const read = await pingStoredKey(client, key);
+  revalidatePath("/admin/keys");
+  return read.ok ? { success: "Key works — the model answered." } : { error: read.say };
 }

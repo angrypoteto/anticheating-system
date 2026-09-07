@@ -2,7 +2,15 @@
 
 import { useActionState, useState } from "react";
 import { PROVIDER_PRESETS, presetFor } from "@/lib/ai/providers";
-import { addKey, deleteKey, setKeyStatus, testKey, type KeyState } from "./actions";
+import {
+  addKey,
+  deleteKey,
+  setKeyStatus,
+  testAllKeys,
+  testKey,
+  type KeyState,
+  type TestAllState,
+} from "./actions";
 
 const field =
   "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
@@ -208,5 +216,102 @@ export function KeyRow({
         <Feedback state={delState} />
       </div>
     </li>
+  );
+}
+
+/**
+ * Ask every key at once.
+ *
+ * The question an admin has on this page is almost never "does key 3 work" —
+ * it is "will generation run tomorrow", and one key answering is enough for
+ * that. Testing them one at a time meant six presses and six answers held in
+ * the head to work out one thing, so the summary answers it in a sentence
+ * before the list explains itself.
+ */
+export function TestAllKeys({ count }: { count: number }) {
+  const [state, action, pending] = useActionState<TestAllState, FormData>(testAllKeys, {});
+  const verdicts = state.verdicts ?? [];
+  const answered = verdicts.filter((v) => v.ok).length;
+
+  return (
+    <div>
+      <form action={action}>
+        <button
+          type="submit"
+          disabled={pending || count === 0}
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 text-[13.5px] font-medium text-gray-800 transition hover:border-gray-300 disabled:opacity-50"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 4.75a7.25 7.25 0 1 0 7.25 7.25"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            />
+            <path
+              d="M19.25 5.5v4h-4"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {pending
+            ? `Asking ${count} key${count === 1 ? "" : "s"}…`
+            : `Test all ${count} key${count === 1 ? "" : "s"}`}
+        </button>
+      </form>
+
+      {state.error ? (
+        <p role="alert" className="mt-3 text-sm text-red-700">
+          {state.error}
+        </p>
+      ) : null}
+
+      {verdicts.length ? (
+        <div
+          role="status"
+          className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white"
+        >
+          {/* The answer to the question, before the evidence for it. */}
+          <p
+            className={`border-b px-4.5 py-3 text-sm font-medium ${
+              answered
+                ? "border-green-200 bg-green-50 text-green-800"
+                : "border-red-200 bg-red-50 text-red-800"
+            }`}
+          >
+            {answered
+              ? `${answered} of ${verdicts.length} answered — generation will run.`
+              : "None of them answered. Generation will fail until one does."}
+          </p>
+          <ul>
+            {verdicts.map((v) => (
+              <li
+                key={v.id}
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gray-100 px-4.5 py-2.75 text-[13px] last:border-b-0"
+              >
+                <span className="font-medium text-gray-900">{v.label}</span>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.25 py-0.5 text-xs font-medium ${
+                    v.tone === "good"
+                      ? "border-green-200 bg-green-50 text-green-800"
+                      : v.tone === "warn"
+                        ? "border-amber-200 bg-amber-50 text-amber-900"
+                        : "border-red-200 bg-red-50 text-red-800"
+                  }`}
+                >
+                  {v.tone === "good" ? (
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                  ) : null}
+                  {v.ok ? "Working" : v.tone === "warn" ? "Waiting" : "Broken"}
+                </span>
+                <span className="min-w-0 flex-1 text-gray-600">{v.say}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }

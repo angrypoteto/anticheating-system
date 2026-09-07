@@ -49,24 +49,21 @@ export default async function AccountsPage() {
     classIds: classesOf.get(u.id) ?? [],
   }));
 
+  // Making an account is one thing you do here occasionally; reading the list
+  // is what you came for. The form used to sit above the list permanently,
+  // which put a six-field form between an admin and the only thing on the page
+  // they use daily. It now opens from the toolbar, next to the filters that
+  // narrow the same list.
   const accountsPanel = (
-    <div className="space-y-6">
-      <Card
-        title="Create account"
-        hint="Confirmed immediately — share the temporary password directly with the person."
-      >
-        <CreateAccountForm classes={useClasses ? classes : []} />
-      </Card>
-
-      <Card title="All accounts" flush>
-        <Directory
-          people={people}
-          classes={classes}
-          adminId={admin?.id}
-          useClasses={useClasses}
-        />
-      </Card>
-    </div>
+    <Card flush>
+      <Directory
+        people={people}
+        classes={classes}
+        adminId={admin?.id}
+        useClasses={useClasses}
+        createForm={<CreateAccountForm classes={useClasses ? classes : []} />}
+      />
+    </Card>
   );
 
   const classesPanel = (

@@ -4,7 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldMark } from "@/components/auth-shell";
 
-export type NavLink = { href: string; label: string; exact?: boolean; tag?: string };
+export type NavLink = {
+  href: string;
+  label: string;
+  exact?: boolean;
+  tag?: string;
+  /**
+   * Other paths this destination owns.
+   *
+   * Watching a sitting lives at /exams/<id>/monitor, outside the console's own
+   * tree, so without this the rail went blank the moment a teacher opened the
+   * thing the rail had just sent them to — and a rail with nothing lit reads as
+   * "you have left", which they had not.
+   */
+  also?: string[];
+};
 export type NavGroup = { label: string; links: NavLink[] };
 
 /**
@@ -63,7 +77,9 @@ export function ConsoleNav({
               {group.label}
             </div>
             {group.links.map((l) => {
-              const active = l.exact ? pathname === l.href : pathname.startsWith(l.href);
+              const active =
+                (l.exact ? pathname === l.href : pathname.startsWith(l.href)) ||
+                (l.also ?? []).some((p) => pathname.startsWith(p));
               return (
                 <Link
                   key={l.href}

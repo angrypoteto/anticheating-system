@@ -50,13 +50,17 @@ export function Directory({
   classes,
   adminId,
   useClasses,
+  createForm,
 }: {
   people: Person[];
   classes: ClassOption[];
   adminId: string | undefined;
   /** Classes are switched off system-wide, so do not offer them here either. */
   useClasses: boolean;
+  /** Opens from the toolbar. Passed in because it is a server-rendered form. */
+  createForm?: React.ReactNode;
 }) {
+  const [adding, setAdding] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("ALL");
   const [status, setStatus] = useState("ALL");
@@ -202,19 +206,55 @@ export function Directory({
               setStatus("ALL");
               setClassId("ALL");
             }}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900"
           >
             Clear
           </button>
         ) : null}
+
+        {createForm ? (
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            aria-expanded={adding}
+            className="ml-auto inline-flex h-9 items-center gap-2 rounded-lg bg-teal-700 px-3.75 text-[13.5px] font-medium text-white transition hover:bg-teal-800"
+          >
+            {adding ? (
+              "Cancel"
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M12 5.5v13M5.5 12h13"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Add an account
+              </>
+            )}
+          </button>
+        ) : null}
       </div>
 
-      <p aria-live="polite" className="px-6 pt-4 text-sm text-gray-500 dark:text-gray-400">
+      {adding && createForm ? (
+        <div className="border-b border-gray-100 px-5.5 py-5">
+          <p className="text-sm font-medium text-gray-900">Add an account</p>
+          <p className="mt-1 mb-4 max-w-[64ch] text-[13px] text-gray-500">
+            Confirmed immediately — share the temporary password directly with
+            the person.
+          </p>
+          {createForm}
+        </div>
+      ) : null}
+
+      <p aria-live="polite" className="px-5.5 pt-3.5 text-[13px] text-gray-500">
         {shown.length} of {people.length} {people.length === 1 ? "account" : "accounts"}
       </p>
 
       {shown.length === 0 ? (
-        <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
+        <p className="p-5.5 text-sm text-gray-500">
           Nobody matches that. Try a different search, or clear the filters.
         </p>
       ) : (

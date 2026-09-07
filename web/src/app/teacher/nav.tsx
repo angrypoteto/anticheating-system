@@ -13,7 +13,7 @@ const GROUPS = (useClasses: boolean): NavGroup[] => [
     label: "Teaching",
     links: [
       { href: "/teacher", label: "Overview", exact: true },
-      { href: "/teacher/exams", label: "Exams & quizzes", exact: true },
+      { href: "/teacher/exams", label: "Exams & quizzes", exact: true, also: ["/exams/"] },
       { href: "/teacher/exams/new", label: "Generate exams" },
     ],
   },

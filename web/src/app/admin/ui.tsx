@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 /**
  * The pieces every console screen is built from.
  *
@@ -136,6 +138,109 @@ export function Pill({
       {dot ? (
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
       ) : null}
+      {children}
+    </span>
+  );
+}
+
+/**
+ * A card's header link — "All exams & quizzes", "Manage", "Details".
+ *
+ * Every list card on the console ends somewhere fuller, and the way back is
+ * always in the same corner. It is a link and looks like one: the card already
+ * has one job, and a second button in its header would make you decide which.
+ */
+export function CardLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="shrink-0 text-sm text-teal-700 hover:text-teal-800 hover:underline hover:underline-offset-[3px]"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/** The one primary action on a screen, in the page header. */
+export function PrimaryAction({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex h-[42px] shrink-0 items-center gap-2.25 rounded-[9px] bg-teal-700 px-4.5 text-sm font-medium text-white hover:bg-teal-800"
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * A row in a list card: what the row *is*, what it is about, then its state.
+ *
+ * The two lines are one block on the left because they name the same thing —
+ * proximity does the grouping, so no rule or indent has to. Everything on the
+ * right is state, never an action, which is what lets the eye run down the
+ * right-hand edge of a list and read only the states.
+ */
+export function ListRow({
+  title,
+  detail,
+  children,
+}: {
+  title: React.ReactNode;
+  detail?: React.ReactNode;
+  /** State on the right — a pill, a date, both. */
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-4 border-b border-gray-100 px-5.5 py-3.5 last:border-b-0">
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-medium text-gray-900">{title}</span>
+        {detail ? (
+          <span className="mt-[3px] block text-[12.5px] text-gray-500">{detail}</span>
+        ) : null}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+/** The date on the right of a list row. Mono so dates line up down the column. */
+export function RowWhen({ children }: { children: React.ReactNode }) {
+  return <span className="shrink-0 font-mono text-xs text-gray-500">{children}</span>;
+}
+
+/**
+ * A named fact and its reading — "Last backup / Today, 3:00 AM".
+ *
+ * Distinct from ListRow on purpose: a fact has no second line and no state
+ * pill, so it gets a tighter row. Two shapes, two meanings.
+ */
+export function FactRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5.5 py-[13px] text-sm text-gray-900 last:border-b-0">
+      <span>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+/** A fact's reading when it is just a value, not a state. */
+export function FactValue({ children }: { children: React.ReactNode }) {
+  return <span className="text-[13px] text-gray-500">{children}</span>;
+}
+
+/**
+ * A reachable dependency. The dot is filled because the thing is live right
+ * now — an outline would read as "configured", which is a different claim.
+ */
+export function Reachable({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.75 text-[13px] font-medium ${
+        ok ? "text-green-700" : "text-red-700"
+      }`}
+    >
+      <span aria-hidden className="h-2 w-2 rounded-full bg-current" />
       {children}
     </span>
   );

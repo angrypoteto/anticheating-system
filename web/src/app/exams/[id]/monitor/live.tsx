@@ -265,14 +265,20 @@ export function LiveMonitor({
 
       <ClearAllFlags examId={examId} open={flags.filter((f) => f.resolution == null).length} />
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">
-        {connected ? "● Live — updates stream in as they happen" : "○ Connecting…"}
+      <p className="flex items-center gap-2 text-[13px] text-gray-700">
+        <span
+          aria-hidden
+          className={`h-2 w-2 rounded-full ${
+            connected ? "bg-green-700 ring-3 ring-green-50" : "bg-gray-300 ring-3 ring-gray-100"
+          }`}
+        />
+        {connected ? "Live — updates stream in as they happen" : "Connecting…"}
       </p>
 
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="space-y-4 border-b border-gray-200 p-6 dark:border-gray-800">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <div>
+          <div className="flex flex-wrap items-baseline justify-between gap-4 px-6 pt-5 pb-4">
+            <h2 className="text-[17px] font-semibold tracking-tight text-gray-900">
               Students
             </h2>
             {sessions.length ? (
@@ -285,21 +291,21 @@ export function LiveMonitor({
           </div>
 
           {sessions.length ? (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 border-y border-gray-100 bg-gray-50/60 px-6 py-4">
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name or email"
                 aria-label="Search students"
-                className="min-w-56 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                className="h-9.5 min-w-60 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-3 focus:ring-teal-600/12"
               />
               {classOptions.length ? (
                 <select
                   value={klass}
                   onChange={(e) => setKlass(e.target.value)}
                   aria-label="Filter by class"
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="h-8.5 rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-700 outline-none focus:border-teal-600 focus:ring-3 focus:ring-teal-600/12"
                 >
                   <option value="all">All classes</option>
                   {classOptions.map((c) => (
@@ -310,7 +316,7 @@ export function LiveMonitor({
                   {unplaced ? <option value="none">No class</option> : null}
                 </select>
               ) : null}
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {FILTERS.map((f) => {
                   const count =
                     f.id === "flagged"
@@ -327,14 +333,14 @@ export function LiveMonitor({
                       type="button"
                       aria-pressed={on}
                       onClick={() => setFilter(f.id)}
-                      className={`rounded-full px-3 py-1.5 text-sm transition ${
+                      className={`flex h-8.5 items-center gap-1.75 rounded-lg px-3.25 text-[13px] transition ${
                         on
-                          ? "bg-gray-900 font-medium text-white dark:bg-gray-100 dark:text-gray-900"
-                          : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                          ? "bg-teal-700 font-medium text-white"
+                          : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
                       {f.label}
-                      <span className={`ml-1.5 tabular-nums ${on ? "opacity-70" : "opacity-50"}`}>
+                      <span className={`tabular-nums ${on ? "opacity-75" : "opacity-60"}`}>
                         {count}
                       </span>
                     </button>
@@ -455,15 +461,13 @@ function StudentRow({
 
   return (
     <li className="border-b border-gray-100 last:border-0 dark:border-gray-800">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6">
-        <div className="min-w-0">
-          <p className="font-medium text-gray-900 dark:text-gray-100">{name}</p>
+      <div className="flex flex-wrap items-center justify-between gap-5 px-6 py-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-medium tracking-[-0.005em] text-gray-900">{name}</p>
           {classes.length ? (
-            <p className="mt-0.5 truncate text-xs text-accent dark:text-[#5FBDB6]">
-              {classes.join(", ")}
-            </p>
+            <p className="mt-0.5 truncate text-xs text-accent">{classes.join(", ")}</p>
           ) : null}
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-[3px] text-[13px] tabular-nums text-gray-500">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
             {session.score != null ? ` · ${session.score}%` : ""}
             {elapsed != null ? ` · ${Math.round(elapsed / 60000)} min` : ""}

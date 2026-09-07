@@ -7,11 +7,16 @@ import { classesEnabled } from "@/lib/settings";
 import { siteUrl } from "@/lib/site-url";
 import { DeleteExam } from "./delete-exam";
 
-const STATUS_STYLES: Record<string, string> = {
-  DRAFT: "text-amber-700 dark:text-amber-400",
-  PUBLISHED: "text-green-700 dark:text-green-400",
-  ARCHIVED: "text-gray-400 dark:text-gray-500",
-};
+/**
+ * The publishing state is a word, not a colour.
+ *
+ * The row already carries one coloured thing — the window pill — and that is
+ * the state a teacher acts on. Painting "published" green beside a grey
+ * "Closed" pill made the row argue with itself: two colours, two meanings,
+ * neither obviously the one to read. So this stays grey and sits in a fixed
+ * column, where it is scanned down rather than read across.
+ */
+const STATUS_WORD = "w-[74px] shrink-0 text-right text-[13px] text-gray-500";
 
 /**
  * Whether a published exam can be sat *right now*.
@@ -23,9 +28,16 @@ const STATUS_STYLES: Record<string, string> = {
  * without opening anything.
  */
 const WINDOW_STYLES: Record<string, string> = {
-  open: "border-green-600/40 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-950/60 dark:text-green-300",
-  closed: "border-gray-400/40 bg-gray-100 text-gray-700 dark:border-gray-600/40 dark:bg-gray-800 dark:text-gray-300",
-  scheduled: "border-amber-500/40 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/60 dark:text-amber-300",
+  open: "border-green-200 bg-green-50 text-green-800",
+  closed: "border-gray-200 bg-gray-100 text-gray-700",
+  scheduled: "border-amber-200 bg-amber-50 text-amber-900",
+};
+
+/** Sentence case, because it is a state being reported and not a tag. */
+const WINDOW_WORDS: Record<string, string> = {
+  open: "Open",
+  closed: "Closed",
+  scheduled: "Scheduled",
 };
 
 /** Manila time, since that is where the exams are actually sat. */
@@ -49,10 +61,10 @@ const duration = (minutes: number) => {
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <dt className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
         {label}
       </dt>
-      <dd className="mt-0.5 text-sm text-gray-900 dark:text-gray-100">{children}</dd>
+      <dd className="mt-1.25 text-sm text-gray-900">{children}</dd>
     </div>
   );
 }
@@ -66,7 +78,13 @@ export async function ExamList() {
   await requireRole("INSTRUCTOR", "ADMIN");
   const supabase = await createClient();
 
-  const [{ data: exams }, { data: sections }, { data: people }] = await Promise.all([
+  const [
+    { data: exams },
+    { data: sections },
+    { data: people },
+    { data: questions },
+    { data: sittings },
+  ] = await Promise.all([
     supabase
       .from("exams")
       .select(
@@ -75,7 +93,19 @@ export async function ExamList() {
       .order("created_at", { ascending: false }),
     supabase.from("sections").select("id, name, subject"),
     supabase.from("users").select("id, full_name, email"),
+    // How long an exam is and how many sat it are the two things a teacher
+    // picks a row by, and both were only visible after opening one.
+    supabase.from("questions").select("exam_id"),
+    supabase.from("exam_sessions").select("exam_id"),
   ]);
+
+  const tally = (rows: { exam_id: string }[] | null) => {
+    const m = new Map<string, number>();
+    for (const r of rows ?? []) m.set(r.exam_id, (m.get(r.exam_id) ?? 0) + 1);
+    return m;
+  };
+  const questionCount = tally(questions);
+  const sittingCount = tally(sittings);
 
   const sectionName = new Map((sections ?? []).map((s) => [s.id, classLabel(s)]));
   const useClasses = await classesEnabled();
@@ -120,6 +150,17 @@ export async function ExamList() {
               : notYet
                 ? "scheduled"
                 : "open";
+        // Class, length, turnout — the three things a row is chosen by.
+        const asked = questionCount.get(e.id) ?? 0;
+        const sat = sittingCount.get(e.id) ?? 0;
+        const scanline = [
+          useClasses ? (classes.length ? classes.join(", ") : "No class assigned") : null,
+          `${asked} question${asked === 1 ? "" : "s"}`,
+          e.status === "PUBLISHED" ? `${sat} sitting${sat === 1 ? "" : "s"}` : "not published",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+
         const availability =
           e.status !== "PUBLISHED"
             ? null
@@ -134,47 +175,52 @@ export async function ExamList() {
         return (
           <li key={e.id}>
             <details className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <div className="min-w-0">
+              <summary className="flex cursor-pointer list-none items-center gap-4.5 px-6 py-[17px] hover:bg-gray-50">
+                <div className="min-w-0 flex-1">
                   {/* The subject is a kicker: it says what this belongs to, so it
                       is read before the name and not mistaken for part of it. */}
                   {subject ? (
-                    <p className="truncate text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
+                    <p className="truncate text-xs font-medium tracking-[0.06em] text-accent uppercase">
                       {subject}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 truncate text-[15px] font-medium tracking-[-0.005em] text-gray-900">
+                  <p className="truncate text-[15.5px] font-medium tracking-[-0.005em] text-gray-900">
                     {e.title}
                   </p>
-                  {useClasses ? (
-                    <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
-                      {classes.length ? classes.join(", ") : "No class assigned"}
-                    </p>
-                  ) : null}
+                  <p className="mt-1 truncate text-[13px] text-gray-500">{scanline}</p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {windowState ? (
-                    <span
-                      title={availability ?? undefined}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${WINDOW_STYLES[windowState]}`}
-                    >
-                      {windowState}
-                    </span>
-                  ) : null}
-                  <span className={`text-sm ${STATUS_STYLES[e.status] ?? ""}`}>
-                    {e.status.toLowerCase()}
-                  </span>
+                {windowState ? (
                   <span
-                    aria-hidden
-                    className="text-gray-400 transition group-open:rotate-90 dark:text-gray-500"
+                    title={availability ?? undefined}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.75 py-1 text-xs font-medium ${WINDOW_STYLES[windowState]}`}
                   >
-                    ›
+                    {windowState === "open" ? (
+                      <span aria-hidden className="h-1.75 w-1.75 rounded-full bg-current" />
+                    ) : null}
+                    {WINDOW_WORDS[windowState]}
                   </span>
-                </div>
+                ) : null}
+                <span className={STATUS_WORD}>{e.status.toLowerCase()}</span>
+                <svg
+                  aria-hidden
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="shrink-0 -rotate-90 text-gray-500 transition group-open:rotate-0"
+                >
+                  <path
+                    d="m6 9 6 6 6-6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </summary>
 
-              <div className="border-t border-gray-100 bg-gray-50/60 px-6 py-4 dark:border-gray-800 dark:bg-gray-950/40">
-                <dl className="grid gap-4 sm:grid-cols-2">
+              <div className="border-t border-gray-100 bg-gray-50/60 px-6 pt-3.5 pb-5.5">
+                <dl className="grid gap-4.5 gap-x-10 sm:grid-cols-2">
                   {subject ? <Detail label="Subject">{subject}</Detail> : null}
 
                   {useClasses ? (
@@ -237,17 +283,17 @@ export async function ExamList() {
                   </Detail>
                 </dl>
 
-                <div className="mt-4 flex flex-wrap gap-4 text-sm">
+                <div className="mt-5 flex flex-wrap items-center gap-4.5 border-t border-gray-100 pt-4 text-[13.5px]">
                   <Link
                     href={`/exams/${e.id}`}
-                    className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                    className="border-b border-teal-100 pb-px text-teal-700 hover:border-teal-700"
                   >
                     Open editor
                   </Link>
                   {e.status === "PUBLISHED" ? (
                     <Link
                       href={`/exams/${e.id}/monitor?from=list`}
-                      className="text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                      className="border-b border-teal-100 pb-px text-teal-700 hover:border-teal-700"
                     >
                       {/* Nothing is live once it has closed — the same page is
                           then a record of what happened, and calling it "watch"

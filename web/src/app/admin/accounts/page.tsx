@@ -155,8 +155,8 @@ export default async function AccountsPage() {
         title={useClasses ? "Accounts & classes" : "Accounts"}
         subtitle={
           useClasses
-            ? "Provision people, group them into classes by subject, and hand out join codes."
-            : "Provision people and enable or disable their accounts."
+            ? "Everyone with a login. Disabling keeps their results and stops them signing in; deleting removes the account and its sittings for good."
+            : "Everyone with a login. Disabling keeps their results and stops them signing in; deleting removes the account and its sittings for good."
         }
       />
       <Tabs

@@ -16,7 +16,29 @@ export type Person = {
 };
 
 const control =
-  "rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+  "h-9.5 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-3 focus:ring-teal-600/12";
+
+/**
+ * Role is a chip row, not a dropdown.
+ *
+ * There are four choices and they never grow, so a select hid four options
+ * behind a click for nothing. The count on each one is the point: it says what
+ * the filter will cost you *before* you press it, which is the difference
+ * between narrowing a list and guessing at it.
+ */
+const ROLES = [
+  { id: "ALL", label: "All" },
+  { id: "STUDENT", label: "Students" },
+  { id: "INSTRUCTOR", label: "Instructors" },
+  { id: "ADMIN", label: "Admins" },
+] as const;
+
+/** What a role is called to a person, rather than what the column is called. */
+const ROLE_WORD: Record<string, string> = {
+  ADMIN: "Administrator",
+  INSTRUCTOR: "Instructor",
+  STUDENT: "Student",
+};
 
 /**
  * The account list, filtered in the browser. Every account is already on the
@@ -62,6 +84,30 @@ export function Directory({
     });
   }, [people, q, role, status, classId, useClasses]);
 
+  // Counted before the role filter is applied — a chip that only counted the
+  // rows already showing would read 0 for every role but the chosen one.
+  const roleCounts = useMemo(() => {
+    const m = new Map<string, number>([["ALL", 0]]);
+    const needle = q.trim().toLowerCase();
+    const byClass = useClasses ? classId : "ALL";
+    for (const person of people) {
+      if (status !== "ALL" && person.status !== status) continue;
+      if (byClass === "NONE" && person.classIds.length) continue;
+      if (byClass !== "ALL" && byClass !== "NONE" && !person.classIds.includes(byClass)) continue;
+      if (
+        needle &&
+        ![person.full_name, person.username, person.email]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(needle))
+      ) {
+        continue;
+      }
+      m.set("ALL", (m.get("ALL") ?? 0) + 1);
+      m.set(person.role, (m.get(person.role) ?? 0) + 1);
+    }
+    return m;
+  }, [people, q, status, classId, useClasses]);
+
   const filtering =
     q.trim() !== "" ||
     role !== "ALL" ||
@@ -70,8 +116,8 @@ export function Directory({
 
   return (
     <div>
-      <div className="flex flex-wrap items-end gap-3 border-b border-gray-200 p-6 dark:border-gray-800">
-        <div className="min-w-56 flex-1">
+      <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-5.5 py-4">
+        <div className="min-w-65 flex-1">
           <label htmlFor="account-search" className="sr-only">
             Search by name, username or email
           </label>
@@ -85,21 +131,28 @@ export function Directory({
           />
         </div>
 
-        <div>
-          <label htmlFor="filter-role" className="sr-only">
-            Role
-          </label>
-          <select
-            id="filter-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className={control}
-          >
-            <option value="ALL">All roles</option>
-            <option value="STUDENT">Students</option>
-            <option value="INSTRUCTOR">Teachers</option>
-            <option value="ADMIN">Admins</option>
-          </select>
+        <div role="group" aria-label="Role" className="flex flex-wrap items-center gap-1">
+          {ROLES.map((r) => {
+            const on = role === r.id;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setRole(r.id)}
+                className={`flex h-8.5 items-center gap-1.75 rounded-lg px-3.25 text-[13px] ${
+                  on
+                    ? "bg-teal-700 font-medium text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {r.label}
+                <span className={`tabular-nums ${on ? "opacity-75" : "opacity-60"}`}>
+                  {roleCounts.get(r.id) ?? 0}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {useClasses ? (
@@ -169,18 +222,18 @@ export function Directory({
           <table className="w-full text-left text-sm">
             <thead className="border-b border-gray-100 bg-gray-50/60 text-[11px] tracking-[0.07em] text-gray-500 uppercase">
               <tr>
-                <th className="px-5.5 py-3 font-medium">Person</th>
+                <th className="w-[32%] px-5.5 py-3 font-medium">Person</th>
                 <th className="px-5.5 py-3 font-medium">Role</th>
                 {useClasses ? <th className="px-5.5 py-3 font-medium">Classes</th> : null}
                 <th className="px-5.5 py-3 font-medium">Status</th>
-                <th className="px-5.5 py-3 font-medium">Action</th>
+                <th className="px-5.5 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {shown.map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-gray-100 align-top last:border-0 dark:border-gray-800"
+                  className="border-b border-gray-100 align-middle last:border-0"
                 >
                   <td className="px-5.5 py-3.5">
                     <span className="block font-medium text-gray-900">
@@ -204,7 +257,7 @@ export function Directory({
                             : "border-gray-200 bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {p.role.toLowerCase()}
+                      {ROLE_WORD[p.role] ?? p.role.toLowerCase()}
                     </span>
                   </td>
 {useClasses ? (
@@ -248,14 +301,14 @@ export function Directory({
                       }`}
                     >
                       <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
-                      {p.status.toLowerCase()}
+                      {p.status === "ACTIVE" ? "Active" : "Disabled"}
                     </span>
                   </td>
-                  <td className="px-5.5 py-3.5">
+                  <td className="px-5.5 py-3.5 text-right">
                     {p.id === adminId ? (
-                      <span className="text-xs text-gray-400 dark:text-gray-600">you</span>
+                      <span className="text-xs text-gray-500">you</span>
                     ) : (
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap items-center justify-end gap-3.5">
                         <StatusToggle userId={p.id} status={p.status} />
                         <DeleteAccount userId={p.id} />
                       </div>

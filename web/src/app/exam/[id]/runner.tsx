@@ -195,6 +195,65 @@ export function ExamRunner({
     tracker.setOnStrike(recordFlag);
   }, [tracker, recordFlag]);
 
+  /**
+   * A departure the tab may not live long enough to report.
+   *
+   * The normal path is an awaited RPC. If the student closes the tab in the
+   * same breath as leaving it, the browser is entitled to cancel that request
+   * — and the departure that mattered most is the one that vanishes. A
+   * keepalive fetch is the one kind the browser promises to finish, so the
+   * same call goes out again that way as the page dies. record_flag() merges
+   * anything inside ten seconds into one strike, so the copy cannot cost the
+   * student twice.
+   *
+   * It only ever re-sends a departure already decided on. A plain reload is
+   * not a departure, and inventing one here would punish a student with a bad
+   * connection for reloading.
+   */
+  const tokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    const client = supabase.current;
+    client.auth.getSession().then(({ data }) => {
+      if (live) tokenRef.current = data.session?.access_token ?? null;
+    });
+    const { data: sub } = client.auth.onAuthStateChange((_e, session) => {
+      tokenRef.current = session?.access_token ?? null;
+    });
+    return () => {
+      live = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const beaconFlag = useCallback(
+    (type: FlagType) => {
+      const token = tokenRef.current;
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      if (!token || !url || !key) return;
+      try {
+        void fetch(`${url}/rest/v1/rpc/record_flag`, {
+          method: "POST",
+          keepalive: true,
+          headers: {
+            "Content-Type": "application/json",
+            apikey: key,
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            p_session_id: sessionId,
+            p_type: type,
+            p_question_id: currentQuestionRef.current,
+          }),
+        });
+      } catch {
+        // The page is going. There is nowhere left to report the failure to.
+      }
+    },
+    [sessionId],
+  );
+
   const noteDeparture = useCallback(
     (type: FlagType) => {
       if (endedRef.current || !started) return;
@@ -248,10 +307,18 @@ export function ExamRunner({
     };
     const block = (e: Event) => e.preventDefault();
 
+    // Re-send, not re-detect: only a departure the tracker has already called.
+    const onPageHide = () => {
+      if (endedRef.current || !started) return;
+      if (!tracker.isAway) return;
+      beaconFlag(tracker.reportedAs ?? "TAB_SWITCH");
+    };
+
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
     window.addEventListener("focus", onFocus);
     document.addEventListener("fullscreenchange", onFullscreenChange);
+    window.addEventListener("pagehide", onPageHide);
 
     if (lockdown.blockCopyPaste) {
       document.addEventListener("copy", block);
@@ -265,6 +332,7 @@ export function ExamRunner({
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
+      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("copy", block);
       document.removeEventListener("paste", block);
       document.removeEventListener("cut", block);
@@ -274,6 +342,8 @@ export function ExamRunner({
     started,
     done,
     superseded,
+    tracker,
+    beaconFlag,
     lockdown.fullscreenRequired,
     lockdown.blockCopyPaste,
     noteDeparture,

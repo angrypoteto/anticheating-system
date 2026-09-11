@@ -58,7 +58,7 @@ export function explainSubmission(
         headline: "Submitted after leaving the exam window",
         detail:
           `The exam allows ${maxStrikes} ${maxStrikes === 1 ? "warning" : "warnings"} for leaving its window — switching tabs, ` +
-          `leaving fullscreen, or clicking away to another app. ` +
+          `leaving fullscreen, clicking away to another app, or taking a screenshot. ` +
           `${strikes >= maxStrikes ? `You reached ${strikes}, so the paper was submitted as it stood.` : "The limit was reached, so the paper was submitted as it stood."} ` +
           `If you think this was wrong, show your teacher: they can see each warning and can set them aside.`,
         blamed: true,

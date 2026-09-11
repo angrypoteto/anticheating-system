@@ -74,7 +74,7 @@ export default async function TakeExamPage({
   if ((notYet || over) && !existing) {
     return (
       <main className="min-h-screen bg-gray-50">
-        <StudentBar email={user.email} name={user.full_name} />
+        <StudentBar />
         <div className="mx-auto max-w-[800px] px-6 pt-9 pb-12 sm:px-10">
           <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
             {exam.title}
@@ -155,7 +155,7 @@ export default async function TakeExamPage({
 
     return (
       <main className="min-h-screen bg-gray-50">
-        <StudentBar email={user.email} name={user.full_name} />
+        <StudentBar />
 
         <div className="mx-auto max-w-[800px] px-6 pt-9.5 pb-12 sm:px-10">
           <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">

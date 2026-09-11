@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { auditServerAction } from "@/lib/audit";
+import { removeRecordings, sittingsOf } from "@/lib/recordings";
 
 export type ActionState = { error?: string; success?: string };
 
@@ -272,8 +273,12 @@ export async function deleteAccount(
 
   if (!confirmed || summary.blocked_by) return { confirm: summary };
 
+  const sittings = await sittingsOf({ studentId: userId });
+
   const { error: purgeError } = await supabase.rpc("purge_account", { p_user_id: userId });
   if (purgeError) return { error: purgeError.message };
+
+  await removeRecordings(sittings);
 
   // The login itself belongs to the auth schema, which only the admin API
   // reaches. Everything pointing at it has just gone, so this is the step that

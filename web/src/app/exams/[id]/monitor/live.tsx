@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -52,6 +53,7 @@ const FLAG_LABELS: Record<string, string> = {
   FULLSCREEN_EXIT: "left fullscreen",
   WINDOW_BLUR: "window lost focus",
   HONEYPOT: "honeypot triggered",
+  SCREEN_SHARE_ENDED: "stopped sharing screen",
 };
 
 export function LiveMonitor({
@@ -64,6 +66,8 @@ export function LiveMonitor({
   questionLabels,
   answeredBySession,
   askedCount,
+  recordsScreens = false,
+  recordedSessions = [],
 }: {
   examId: string;
   initialSessions: SessionRow[];
@@ -77,6 +81,10 @@ export function LiveMonitor({
   /** Answers recorded per sitting, so a live row can say how far through it is. */
   answeredBySession: Record<string, number>;
   askedCount: number;
+  /** The exam asks students to share their screen. */
+  recordsScreens?: boolean;
+  /** Sittings with at least one recording, whatever the exam asks now. */
+  recordedSessions?: string[];
 }) {
   const [sessions, setSessions] = useState(initialSessions);
   const [flags, setFlags] = useState(initialFlags);
@@ -370,6 +378,7 @@ export function LiveMonitor({
                 questionLabels={questionLabels}
                 answered={answeredBySession[s.id] ?? 0}
                 asked={askedCount}
+                recorded={recordsScreens || recordedSessions.includes(s.id)}
               />
             ))}
           </ul>
@@ -422,6 +431,7 @@ function StudentRow({
   questionLabels,
   answered,
   asked,
+  recorded,
 }: {
   examId: string;
   session: SessionRow;
@@ -431,6 +441,8 @@ function StudentRow({
   questionLabels: Record<string, string>;
   answered: number;
   asked: number;
+  /** There is (or will be) a screen recording to watch for this sitting. */
+  recorded: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [state, submit, pending] = useActionState<MonitorState, FormData>(
@@ -510,6 +522,14 @@ function StudentRow({
         </div>
 
         <div className="flex items-center gap-4">
+          {recorded ? (
+            <Link
+              href={`/exams/${examId}/monitor/${session.id}`}
+              className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+            >
+              Watch recording
+            </Link>
+          ) : null}
           {active.length ? (
             <button
               type="button"

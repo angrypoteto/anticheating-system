@@ -11,6 +11,11 @@ export type LockdownConfig = {
   /** Flags allowed before the session is auto-submitted. */
   maxStrikes: number;
   honeypot: boolean;
+  /**
+   * Record the student's screen for the whole sitting, so a teacher can watch
+   * what each flag actually was. The paper will not start without it.
+   */
+  recordScreen: boolean;
 };
 
 export const DEFAULT_TIMER: TimerConfig = {
@@ -23,6 +28,7 @@ export const DEFAULT_LOCKDOWN: LockdownConfig = {
   blockCopyPaste: true,
   maxStrikes: 3,
   honeypot: true,
+  recordScreen: true,
 };
 
 export function parseTimer(value: unknown): TimerConfig {
@@ -47,5 +53,9 @@ export function parseLockdown(value: unknown): LockdownConfig {
       ? Math.max(1, Number(v.maxStrikes))
       : DEFAULT_LOCKDOWN.maxStrikes,
     honeypot: v.honeypot ?? DEFAULT_LOCKDOWN.honeypot,
+    // Absent means the exam was set before recording existed. Those papers keep
+    // the rules they were published under rather than starting to ask for a
+    // screen share nobody agreed to.
+    recordScreen: v.recordScreen ?? false,
   };
 }

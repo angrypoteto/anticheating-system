@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
 import { auditServerAction } from "@/lib/audit";
+import { removeRecordings, sittingsOf } from "@/lib/recordings";
 import { classesEnabled } from "@/lib/settings";
 import {
   DEFAULT_LOCKDOWN,
@@ -105,7 +106,7 @@ export async function createExam(
   const { data: settings } = await supabase
     .from("system_settings")
     .select(
-      "default_total_minutes, default_per_question_seconds, default_max_strikes, default_fullscreen, default_block_copy_paste, default_honeypot",
+      "default_total_minutes, default_per_question_seconds, default_max_strikes, default_fullscreen, default_block_copy_paste, default_honeypot, default_record_screen",
     )
     .eq("id", true)
     .maybeSingle();
@@ -123,6 +124,7 @@ export async function createExam(
         blockCopyPaste: settings.default_block_copy_paste,
         maxStrikes: settings.default_max_strikes,
         honeypot: settings.default_honeypot,
+        recordScreen: settings.default_record_screen ?? DEFAULT_LOCKDOWN.recordScreen,
       }
     : DEFAULT_LOCKDOWN;
 
@@ -167,6 +169,7 @@ export async function updateExamSettings(
     blockCopyPaste: formData.get("blockCopyPaste") === "on",
     maxStrikes: Math.max(1, Number(formData.get("maxStrikes") ?? 3)),
     honeypot: formData.get("honeypot") === "on",
+    recordScreen: formData.get("recordScreen") === "on",
   };
 
   const supabase = await createClient();
@@ -260,8 +263,14 @@ export async function deleteExam(
     return { confirm: summary };
   }
 
+  // Read before the delete: afterwards there is nothing left to say which
+  // sittings' recordings belonged to this exam.
+  const sittings = await sittingsOf({ examId });
+
   const { data: title, error } = await supabase.rpc("delete_exam", { p_exam_id: examId });
   if (error) return { error: explainDeleteError(error.message) };
+
+  await removeRecordings(sittings);
 
   // The lesson file's bytes are in Storage, which the database cannot reach.
   // Best effort: a leftover file is swept later and is not worth failing a

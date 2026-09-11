@@ -127,6 +127,22 @@ export function SettingsForm({
           <input type="checkbox" name="honeypot" defaultChecked={lockdown.honeypot} />
           Include hidden honeypot field
         </label>
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            name="recordScreen"
+            defaultChecked={lockdown.recordScreen}
+            className="mt-0.5"
+          />
+          <span>
+            Record the student&rsquo;s screen
+            <span className="block text-[12.5px] text-gray-500">
+              They share their entire screen before starting, and you can watch it
+              beside every flag. Needs a computer with Chrome, Edge or Firefox; one
+              screen is recorded, so a second monitor or another device is not.
+            </span>
+          </span>
+        </label>
         <div className="pt-1">
           <label htmlFor="maxStrikes" className={label}>
             Strikes before auto-submit

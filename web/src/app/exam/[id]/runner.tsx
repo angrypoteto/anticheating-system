@@ -8,6 +8,7 @@ import { createDepartureTracker, type FlagType } from "@/lib/departure";
 import { ShieldMark } from "@/components/auth-shell";
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
 import { explainSubmission } from "@/lib/submission";
+import { ScreenRecorder, describeShareProblem } from "@/lib/screen-recorder";
 import { submitExam, type SubmitState } from "./actions";
 
 export type RunnerQuestion = {
@@ -74,6 +75,16 @@ export function ExamRunner({
   const [fullscreen, setFullscreen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  // The screen share, when the exam records one. Held in state so the paper can
+  // pause when it stops, and in a ref so submission can wait on the last piece.
+  const [sharing, setSharing] = useState(false);
+  const [shareProblem, setShareProblem] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
+  const recorderRef = useRef<ScreenRecorder | null>(null);
+  // While the browser's share picker is open the window loses focus. That is
+  // the student doing what the paper asked, not leaving it, so it is not a
+  // departure — and the questions are hidden while it happens anyway.
+  const pickingRef = useRef(false);
   const [questionRemaining, setQuestionRemaining] = useState<number | null>(null);
 
   const [submitState, submit, submitting] = useActionState<SubmitState, FormData>(
@@ -100,8 +111,12 @@ export function ExamRunner({
   // they are back. Leaving used to cost one warning and then buy an unwatched
   // window over the questions for the rest of the exam — worth a great deal
   // more than the warning cost.
+  const shareMissing = lockdown.recordScreen && !sharing;
   const paused =
-    started && !done && !superseded && lockdown.fullscreenRequired && !fullscreen;
+    started &&
+    !done &&
+    !superseded &&
+    ((lockdown.fullscreenRequired && !fullscreen) || shareMissing);
   const pausedRef = useRef(false);
   useEffect(() => {
     pausedRef.current = paused;
@@ -124,8 +139,11 @@ export function ExamRunner({
     };
 
     // Saving the last answer must not be able to hold the submission hostage.
+    // The recording's last piece goes up with it. Uploads that outlast the two
+    // seconds carry on in the background; the bucket accepts them for a while
+    // after the sitting ends for exactly this reason.
     void Promise.race([
-      flushRef.current(),
+      Promise.all([flushRef.current(), recorderRef.current?.stop()]),
       new Promise((r) => setTimeout(r, 2000)),
     ]).then(send, send);
   }, []);
@@ -256,7 +274,7 @@ export function ExamRunner({
 
   const noteDeparture = useCallback(
     (type: FlagType) => {
-      if (endedRef.current || !started) return;
+      if (endedRef.current || !started || pickingRef.current) return;
       tracker.leave(type);
     },
     [started, tracker],
@@ -455,7 +473,56 @@ export function ExamRunner({
     }
   }, []);
 
+  /**
+   * The student ended the share from the browser's own bar mid-exam.
+   *
+   * The recording has gone dark, which is a signal in its own right: it is
+   * recorded like a departure (and merged with one, if they left the window to
+   * do it), and the paper pauses until the screen is shared again.
+   */
+  const onShareEndedRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    onShareEndedRef.current = () => {
+      setSharing(false);
+      if (!started || endedRef.current) return;
+      void recordFlag("SCREEN_SHARE_ENDED");
+    };
+  }, [started, recordFlag]);
+
+  const shareScreen = async () => {
+    setShareProblem(null);
+    const recorder =
+      recorderRef.current ??
+      new ScreenRecorder({
+        supabase: supabase.current,
+        sessionId,
+        onEnded: () => onShareEndedRef.current(),
+        onUploadFailed: () =>
+          setWarning(
+            "Part of your screen recording could not be uploaded. Check your connection.",
+          ),
+      });
+    recorderRef.current = recorder;
+
+    pickingRef.current = true;
+    setPicking(true);
+    const result = await recorder.start();
+    pickingRef.current = false;
+    setPicking(false);
+
+    if (result.ok) setSharing(true);
+    else setShareProblem(describeShareProblem(result.problem));
+  };
+
+  // A tab that has handed the paper to another, or is going away, stops
+  // recording; the one that carries on asks for its own share.
+  useEffect(() => {
+    if (superseded) void recorderRef.current?.stop();
+  }, [superseded]);
+  useEffect(() => () => void recorderRef.current?.stop(), []);
+
   const startExam = async () => {
+    if (lockdown.recordScreen && !sharing) return;
     if (lockdown.fullscreenRequired && !(await enterFullscreen())) return;
     setStarted(true);
   };
@@ -537,6 +604,12 @@ export function ExamRunner({
             </li>
           ) : null}
           {lockdown.fullscreenRequired ? <li>Fullscreen is required.</li> : null}
+          {lockdown.recordScreen ? (
+            <li>
+              Your entire screen is recorded while you sit the exam. Your teacher
+              can watch it beside any warnings.
+            </li>
+          ) : null}
           <li>
             Leaving the exam window counts as one warning each time, however
             you leave it. {lockdown.maxStrikes} warnings end the attempt
@@ -548,13 +621,51 @@ export function ExamRunner({
             {warning}
           </p>
         ) : null}
-        <button
-          type="button"
-          onClick={startExam}
-          className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
-        >
-          Start exam
-        </button>
+        {shareProblem ? (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {shareProblem}
+          </p>
+        ) : null}
+        {lockdown.recordScreen ? (
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {sharing ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-green-700">
+                <TickMark className="h-4 w-4" />
+                Your screen is being shared
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void shareScreen()}
+                disabled={picking}
+                className="inline-flex h-[38px] items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+              >
+                {picking ? "Choose your screen…" : "Share your screen"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={startExam}
+              disabled={!sharing}
+              title={sharing ? undefined : "Share your screen first"}
+              className={`inline-flex h-[38px] items-center rounded-lg px-4 text-sm font-medium ${
+                sharing
+                  ? "bg-gray-900 text-white hover:bg-gray-700"
+                  : "cursor-not-allowed border border-gray-200 bg-white text-gray-400"
+              }`}
+            >
+              Start exam
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={startExam}
+            className="mt-6 inline-flex h-[38px] items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
+          >
+            Start exam
+          </button>
+        )}
         <SubmitForm ref={formRef} sessionId={sessionId} action={submit} />
       </Shell>
     );
@@ -716,12 +827,36 @@ export function ExamRunner({
             </div>
           ) : null}
 
-          {paused ? (
-            <div className="rounded-xl border border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-800 dark:bg-amber-950">
+          {paused && shareMissing ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-8 text-center">
+              <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-amber-900">
+                Screen sharing stopped, so your exam is paused
+              </h2>
+              <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-amber-800">
+                The questions are hidden until you share your entire screen again.
+                Stopping has been recorded as one warning; sharing again does not
+                cost another. The clock keeps running.
+              </p>
+              {shareProblem ? (
+                <p role="alert" className="mx-auto mt-3 max-w-md text-sm text-red-700">
+                  {shareProblem}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void shareScreen()}
+                disabled={picking}
+                className="mt-6 h-[46px] rounded-lg bg-gray-900 px-6 text-[15px] font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+              >
+                {picking ? "Choose your screen…" : "Share your screen again"}
+              </button>
+            </div>
+          ) : paused ? (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-8 text-center">
               <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-amber-900">
                 Fullscreen ended, so your exam is paused
               </h2>
-              <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-amber-800 dark:text-amber-300">
+              <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-amber-800">
                 The questions are hidden until you are back in fullscreen. This has
                 already been recorded as one warning; going back now does not cost
                 another. The clock keeps running.
@@ -729,7 +864,7 @@ export function ExamRunner({
               <button
                 type="button"
                 onClick={() => void enterFullscreen()}
-                className="mt-6 h-12 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600"
+                className="mt-6 h-[46px] rounded-lg bg-gray-900 px-6 text-[15px] font-medium text-white hover:bg-gray-700"
               >
                 Return to fullscreen
               </button>

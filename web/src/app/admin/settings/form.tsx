@@ -12,6 +12,7 @@ export type Settings = {
   default_fullscreen: boolean;
   default_block_copy_paste: boolean;
   default_honeypot: boolean;
+  default_record_screen: boolean;
   allow_class_self_join: boolean;
   classes_enabled: boolean;
   allowed_email_domains: string;
@@ -129,6 +130,10 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           <label className={check}>
             <input type="checkbox" name="defaultHoneypot" defaultChecked={settings.default_honeypot} className="mt-0.5" />
             Include the hidden honeypot field
+          </label>
+          <label className={check}>
+            <input type="checkbox" name="defaultRecordScreen" defaultChecked={settings.default_record_screen} className="mt-0.5" />
+            Record the student&rsquo;s screen, so flags can be watched back
           </label>
         </div>
       </section>

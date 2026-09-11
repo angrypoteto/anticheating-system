@@ -227,8 +227,9 @@ model ExamSession {
   score           Float?
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  answers Answer[]
-  flags   Flag[]
+  answers    Answer[]
+  flags      Flag[]
+  recordings ScreenRecording[]
 
   @@unique([examId, studentId])
   @@index([studentId])
@@ -253,11 +254,28 @@ enum FlagType {
   FULLSCREEN_EXIT
   WINDOW_BLUR
   HONEYPOT
+  /// The student stopped sharing their screen while the exam was recording it.
+  SCREEN_SHARE_ENDED
 }
 
 enum FlagResolution {
   VOIDED
   FORCE_SUBMITTED
+}
+
+/// One continuous screen recording of a sitting. The video itself is in the
+/// screen-recordings Storage bucket, in pieces under <session_id>/.
+model ScreenRecording {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId String      @map("session_id") @db.Uuid
+  session   ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// Stamped by the database, the same clock as flags.occurred_at.
+  startedAt DateTime    @default(now()) @map("started_at") @db.Timestamptz(3)
+  mimeType  String      @map("mime_type")
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([sessionId, startedAt])
+  @@map("screen_recordings")
 }
 
 model Flag {

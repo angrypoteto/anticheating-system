@@ -214,6 +214,26 @@ npx prisma migrate status                                       # should read cl
 
 ---
 
+### Screen recordings
+
+Exams with **Record the student's screen** on ask each student to share their entire
+screen before the paper starts. The video goes to the private `screen-recordings`
+bucket in 30-second pieces, under `<session_id>/`, and each piece's place in the
+sitting is in its file name. Rows in `screen_recordings` carry the database-stamped
+start that flags are measured against. Teachers watch them from the monitor
+(**Watch recording** on a student's row).
+
+- **Size.** Five frames a second at a 250 kbps cap; a mostly-still exam screen
+  comes to a few tens of MB an hour per student. Watch bucket usage before large
+  exam days on the free plan's 1 GB of Storage.
+- **Uploads after submission.** The bucket accepts a sitting's pieces for 15 minutes
+  after it ends, so the last piece is not lost when the paper is submitted.
+- **Cleanup.** Deleting an exam or an account removes its recordings. Nothing else
+  expires them; to clear old ones, delete the `<session_id>/` folders in the bucket.
+- **Limits.** One screen is recorded. A second monitor, a phone, or another person in
+  the room is not seen. Phones and Safari on iPad cannot share a screen at all, so a
+  recorded exam must be sat on a computer.
+
 ## Known issues
 
 ### GitHub Actions jobs do not start — account locked

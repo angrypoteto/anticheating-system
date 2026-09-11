@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classesEnabled } from "@/lib/settings";
 import { classLabel } from "@/lib/classes";
-import { parseTimer } from "@/lib/exam-config";
+import { parseLockdown, parseTimer } from "@/lib/exam-config";
 import { ConsoleShell } from "@/components/console-shell";
 import { LiveMonitor, type FlagRow, type SessionRow } from "./live";
 import { PerQuestion } from "./per-question";
@@ -71,7 +71,7 @@ export default async function MonitorPage({
   const { data: exam } = await supabase
     .from("exams")
     .select(
-      "id, title, status, section_id, timer_config, opens_at, closes_at, subjects(name), exam_sections(section_id)",
+      "id, title, status, section_id, timer_config, lockdown_config, opens_at, closes_at, subjects(name), exam_sections(section_id)",
     )
     .eq("id", id)
     .maybeSingle();
@@ -119,6 +119,12 @@ export default async function MonitorPage({
   for (const a of (given ?? []) as { session_id: string }[]) {
     answeredBySession[a.session_id] = (answeredBySession[a.session_id] ?? 0) + 1;
   }
+
+  // Which sittings have a screen recording to watch. Read through the caller's
+  // own client: the table's policy already limits it to exams they manage.
+  const { data: recorded } = sessionIds.length
+    ? await supabase.from("screen_recordings").select("session_id").in("session_id", sessionIds)
+    : { data: [] as { session_id: string }[] };
 
   // Which class each of these students is in, so the roll can be filtered down
   // to one section. Read through the caller's own client on purpose: an
@@ -271,6 +277,8 @@ export default async function MonitorPage({
           questionLabels={questionLabels}
           answeredBySession={answeredBySession}
           askedCount={(questions ?? []).length}
+          recordsScreens={parseLockdown(exam.lockdown_config).recordScreen}
+          recordedSessions={[...new Set((recorded ?? []).map((r) => r.session_id))]}
         />
 
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">

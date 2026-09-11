@@ -1,4 +1,10 @@
-export type FlagType = "TAB_SWITCH" | "FULLSCREEN_EXIT" | "WINDOW_BLUR" | "HONEYPOT";
+export type FlagType =
+  | "TAB_SWITCH"
+  | "FULLSCREEN_EXIT"
+  | "WINDOW_BLUR"
+  | "HONEYPOT"
+  /** Sharing stopped while the exam was recording the screen. */
+  | "SCREEN_SHARE_ENDED";
 
 /** Leaving for another tab or app says more than losing focus to a notification. */
 const PRECEDENCE: FlagType[] = ["TAB_SWITCH", "FULLSCREEN_EXIT", "WINDOW_BLUR"];

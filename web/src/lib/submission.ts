@@ -90,6 +90,8 @@ export function describeFlag(type: FlagType | string): string {
       return "clicked away from the exam";
     case "HONEYPOT":
       return "a hidden field was filled in";
+    case "SCREEN_SHARE_ENDED":
+      return "stopped sharing their screen";
     default:
       return "left the exam window";
   }

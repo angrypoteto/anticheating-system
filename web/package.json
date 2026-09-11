@@ -23,7 +23,8 @@
     "qa:extension": "node scripts/qa/extension.mjs",
     "qa:exam-day": "node scripts/qa/exam-day.mjs",
     "qa:marking": "node scripts/qa/marking.mjs",
-    "qa:watching": "node scripts/qa/watching.mjs"
+    "qa:watching": "node scripts/qa/watching.mjs",
+    "qa:recording": "node scripts/qa/recording.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

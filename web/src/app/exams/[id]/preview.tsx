@@ -106,6 +106,7 @@ export function ExamPreview({
             lockdown.blockCopyPaste ? "No copy-paste" : null,
             `${lockdown.maxStrikes} strikes`,
             lockdown.honeypot ? "honeypot" : null,
+            lockdown.recordScreen ? "screen recorded" : null,
           ]
             .filter(Boolean)
             .join(", ")}

@@ -39,6 +39,7 @@ export async function saveSettings(
       default_fullscreen: formData.get("defaultFullscreen") === "on",
       default_block_copy_paste: formData.get("defaultBlockCopyPaste") === "on",
       default_honeypot: formData.get("defaultHoneypot") === "on",
+      default_record_screen: formData.get("defaultRecordScreen") === "on",
       allow_class_self_join: formData.get("allowClassSelfJoin") === "on",
       classes_enabled: formData.get("classesEnabled") === "on",
       allowed_email_domains: String(formData.get("allowedEmailDomains") ?? "").trim(),

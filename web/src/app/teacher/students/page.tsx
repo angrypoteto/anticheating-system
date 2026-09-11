@@ -6,6 +6,7 @@ import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat, Stats } from "@/app/admin/ui";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -237,6 +238,9 @@ export default async function TeacherStudentsPage() {
                         Still to sit: {a.missing.join(", ")}
                       </p>
                     ) : null}
+                    <Link href={`/students/${a.student.id}`} className="inline-flex h-8 items-center rounded-lg bg-gray-900 px-3 text-[13px] font-medium text-white hover:bg-gray-700">
+                      Exams, scores and answers
+                    </Link>
                   </div>
                 </details>
               </li>

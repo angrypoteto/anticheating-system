@@ -35,6 +35,21 @@ export function isCorrect(
   );
 }
 
+/**
+ * Whether an answer counts, all things considered: the teacher's own mark when
+ * they have made one, the key otherwise. Every score in the product goes
+ * through this, so a mark a teacher sets is the mark everything reports.
+ */
+export function counts(
+  type: QuestionType,
+  response: unknown,
+  correctAnswer: unknown,
+  teacherMark: boolean | null | undefined,
+): boolean {
+  if (teacherMark === true || teacherMark === false) return teacherMark;
+  return isCorrect(type, response, correctAnswer);
+}
+
 /** Percentage 0-100, rounded to two decimals. An exam with no questions scores 0. */
 export function scorePercentage(correct: number, total: number): number {
   if (total <= 0) return 0;

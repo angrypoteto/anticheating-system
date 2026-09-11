@@ -9,6 +9,7 @@ legitimately does.
     npm run qa:classroom  # fifty students sit one exam (needs the app running)
     npm run qa:crowd      # ten admins, ten teachers, ten students at once
     npm run qa:speed      # how fast every safeguard reaches the teacher's monitor
+    npm run qa:review     # a teacher's mark overrules the key; a student's cannot
 
 `qa:pages` loads pages over HTTP and defaults to `http://localhost:3001`; set
 `QA_BASE` to point it elsewhere.

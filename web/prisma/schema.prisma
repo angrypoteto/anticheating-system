@@ -244,6 +244,10 @@ model Answer {
   question   Question    @relation(fields: [questionId], references: [id])
   response   Json
   answeredAt DateTime    @default(now()) @updatedAt @map("answered_at") @db.Timestamptz(3)
+  /// The teacher's own mark: null means "as the key marks it".
+  markedCorrect Boolean?  @map("marked_correct")
+  markedById    String?   @map("marked_by_id") @db.Uuid
+  markedAt      DateTime? @map("marked_at") @db.Timestamptz(3)
 
   @@unique([sessionId, questionId])
   @@map("answers")

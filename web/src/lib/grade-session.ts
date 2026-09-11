@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isCorrect, scorePercentage, type QuestionType } from "@/lib/grading";
+import { counts, scorePercentage, type QuestionType } from "@/lib/grading";
 import { parseTimer } from "@/lib/exam-config";
 import type { SubmitReason } from "@/lib/submission";
 
@@ -43,23 +43,15 @@ export async function gradeAndClose(
       .from("questions")
       .select("id, type, question_answers(correct_answer)")
       .eq("exam_id", session.exam_id),
-    admin.from("answers").select("question_id, response").eq("session_id", sessionId),
+    admin
+      .from("answers")
+      .select("question_id, response, marked_correct")
+      .eq("session_id", sessionId),
     admin.from("exams").select("timer_config, closes_at").eq("id", session.exam_id).single(),
   ]);
 
-  const responses = new Map((answers ?? []).map((a) => [a.question_id, a.response]));
-
-  let correct = 0;
-  for (const q of questions ?? []) {
-    const embed = q.question_answers as
-      | { correct_answer: unknown }
-      | { correct_answer: unknown }[]
-      | null;
-    const key = (Array.isArray(embed) ? embed[0] : embed)?.correct_answer;
-    if (isCorrect(q.type as QuestionType, responses.get(q.id), key)) correct++;
-  }
-
-  const score = scorePercentage(correct, (questions ?? []).length);
+  // A sitting reopened and handed in again keeps any mark its teacher set.
+  const { score } = tally(questions ?? [], answers ?? []);
 
   // The server clock decides whether time ran out, not the client's. Two things
   // can end a sitting: the student's own timer, and the exam closing under them.
@@ -108,4 +100,63 @@ export async function gradeAndClose(
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, score, status, reason: stored };
+}
+
+type QuestionRow = { id: string; type: string; question_answers: unknown };
+type AnswerRow = { question_id: string; response: unknown; marked_correct: boolean | null };
+
+/** How many answers count, and the score that makes — key and teacher's marks together. */
+function tally(questions: QuestionRow[], answers: AnswerRow[]) {
+  const given = new Map(answers.map((a) => [a.question_id, a]));
+  let correct = 0;
+  for (const q of questions) {
+    const embed = q.question_answers as
+      | { correct_answer: unknown }
+      | { correct_answer: unknown }[]
+      | null;
+    const key = (Array.isArray(embed) ? embed[0] : embed)?.correct_answer;
+    const a = given.get(q.id);
+    if (a && counts(q.type as QuestionType, a.response, key, a.marked_correct)) correct++;
+  }
+  return { correct, total: questions.length, score: scorePercentage(correct, questions.length) };
+}
+
+/**
+ * Score a handed-in paper again, after a teacher changes a mark.
+ *
+ * Service role, like gradeAndClose: callers must have established that the
+ * person asking may manage the exam (mark_answer() does, in the database).
+ * Leaves a sitting still in progress alone — it is scored when it ends.
+ */
+export async function rescoreSession(
+  sessionId: string,
+): Promise<{ ok: true; score: number; correct: number; total: number } | { ok: false; error: string }> {
+  const admin = createAdminClient();
+  const { data: session } = await admin
+    .from("exam_sessions")
+    .select("id, exam_id, status")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (!session) return { ok: false, error: "Session not found." };
+  if (session.status === "IN_PROGRESS") return { ok: false, error: "This paper is still being sat." };
+
+  const [{ data: questions }, { data: answers }] = await Promise.all([
+    admin
+      .from("questions")
+      .select("id, type, question_answers(correct_answer)")
+      .eq("exam_id", session.exam_id),
+    admin
+      .from("answers")
+      .select("question_id, response, marked_correct")
+      .eq("session_id", sessionId),
+  ]);
+
+  const result = tally(questions ?? [], answers ?? []);
+  const { error } = await admin
+    .from("exam_sessions")
+    .update({ score: result.score })
+    .eq("id", sessionId)
+    .neq("status", "IN_PROGRESS");
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, ...result };
 }

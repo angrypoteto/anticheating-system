@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { gradeAndClose } from "@/lib/grade-session";
+import { gradeAndClose, rescoreSession } from "@/lib/grade-session";
 import { auditServerAction } from "@/lib/audit";
 
 export type MonitorState = { error?: string; success?: string };
@@ -269,5 +269,50 @@ export async function voidAllFlags(
     success: data?.length
       ? `${data.length} flag${data.length === 1 ? "" : "s"} voided.`
       : "There was nothing left to void.",
+  };
+}
+
+/**
+ * A teacher's own mark on one answer, and the score it makes.
+ *
+ * "correct" and "wrong" overrule the answer key; "key" hands the answer back to
+ * it. The database decides whether this person may (mark_answer checks they
+ * manage the exam, and that the paper has been handed in); the score is then
+ * worked out again from the key and every mark on the paper together.
+ */
+export async function markAnswer(
+  _prev: MonitorState,
+  formData: FormData,
+): Promise<MonitorState & { score?: number }> {
+  const me = await requireRole("INSTRUCTOR", "ADMIN");
+  const examId = String(formData.get("examId") ?? "");
+  const sessionId = String(formData.get("sessionId") ?? "");
+  const questionId = String(formData.get("questionId") ?? "");
+  const mark = String(formData.get("mark") ?? "");
+  const correct = mark === "correct" ? true : mark === "wrong" ? false : null;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_answer", {
+    p_session_id: sessionId,
+    p_question_id: questionId,
+    p_correct: correct,
+  });
+  if (error) return { error: error.message };
+
+  const scored = await rescoreSession(sessionId);
+  if (!scored.ok) return { error: scored.error };
+
+  await auditServerAction(me.id, "mark_answer", "answers", sessionId, {
+    question_id: questionId,
+    mark: correct === null ? "as the key" : correct ? "correct" : "wrong",
+    score: scored.score,
+  });
+
+  revalidatePath(`/exams/${examId}/monitor`);
+  revalidatePath(`/exams/${examId}/monitor/${sessionId}`);
+  revalidatePath("/students", "layout");
+  return {
+    success: `Score is now ${scored.score}% (${scored.correct} of ${scored.total}).`,
+    score: scored.score,
   };
 }

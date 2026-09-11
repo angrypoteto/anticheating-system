@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { EnrollmentToggle, StatusToggle } from "../forms";
 import { DeleteAccount } from "../delete-account";
+import Link from "next/link";
 
 export type ClassOption = { id: string; label: string };
 export type Person = {
@@ -276,9 +277,18 @@ export function Directory({
                   className="border-b border-gray-100 align-middle last:border-0"
                 >
                   <td className="px-5.5 py-3.5">
-                    <span className="block font-medium text-gray-900">
-                      {p.full_name || p.email}
-                    </span>
+                    {p.role === "STUDENT" ? (
+                      <Link
+                        href={`/students/${p.id}`}
+                        className="block font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+                      >
+                        {p.full_name || p.email}
+                      </Link>
+                    ) : (
+                      <span className="block font-medium text-gray-900">
+                        {p.full_name || p.email}
+                      </span>
+                    )}
                     {p.full_name ? (
                       <span className="mt-0.5 block text-[12.5px] text-gray-500">
                         {p.username ? `@${p.username}` : p.email}

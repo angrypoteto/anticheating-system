@@ -524,7 +524,14 @@ function StudentRow({
     <li className="border-b border-gray-100 last:border-0 dark:border-gray-800">
       <div className="flex flex-wrap items-center justify-between gap-5 px-6 py-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-medium tracking-[-0.005em] text-gray-900">{name}</p>
+          <p className="text-[15px] font-medium tracking-[-0.005em] text-gray-900">
+            <Link
+              href={`/students/${session.student_id}`}
+              className="hover:underline hover:underline-offset-[3px]"
+            >
+              {name}
+            </Link>
+          </p>
           {classes.length ? (
             <p className="mt-0.5 truncate text-xs text-accent">{classes.join(", ")}</p>
           ) : null}
@@ -537,12 +544,18 @@ function StudentRow({
         </div>
 
         <div className="flex items-center gap-4">
+          <Link
+            href={`/exams/${examId}/monitor/${session.id}`}
+            className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+          >
+            Answers
+          </Link>
           {recorded ? (
             <Link
-              href={`/exams/${examId}/monitor/${session.id}`}
+              href={`/exams/${examId}/monitor/${session.id}?view=recording`}
               className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
             >
-              Watch recording
+              Recording
             </Link>
           ) : null}
           {active.length ? (

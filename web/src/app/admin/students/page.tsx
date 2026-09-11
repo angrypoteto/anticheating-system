@@ -6,6 +6,7 @@ import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
 import { Card, Empty, PageHeader, Pill, Stat, Stats } from "../ui";
 import { ReportActions } from "./report-actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -232,7 +233,12 @@ export default async function StudentsPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {student.email}
+                        <Link
+                          href={`/students/${student.id}`}
+                          className="underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+                        >
+                          {student.email}
+                        </Link>
                         {student.status !== "ACTIVE" ? (
                           <span className="ml-2 text-xs text-gray-400">(disabled)</span>
                         ) : null}
@@ -246,6 +252,9 @@ export default async function StudentsPage() {
                         {risk.average != null ? `${risk.average}%` : "—"}
                       </span>
                       <Pill tone={BAND_TONE[risk.band]}>{BAND_LABEL[risk.band]}</Pill>
+                      <Link href={`/students/${student.id}`} className="inline-flex h-8 items-center rounded-lg bg-gray-900 px-3 text-[13px] font-medium text-white hover:bg-gray-700">
+                        Exams and answers
+                      </Link>
                     </div>
                   </div>
                   <ul className="mt-2 list-disc space-y-1 pl-4 marker:text-gray-300">

@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isCorrect, type QuestionType } from "@/lib/grading";
+import { counts, type QuestionType } from "@/lib/grading";
 import { readAll } from "@/lib/read-all";
 
 type Row = {
@@ -47,11 +47,15 @@ export async function PerQuestion({ examId }: { examId: string }) {
   // Fifty students on a twenty-five question paper is 1,250 answers, past the
   // 1,000-row reply cap. Reading it in one go reported percentages over the
   // first thousand and called them the class's.
-  const { rows: answers } = await readAll<{ question_id: string; response: unknown }>(
+  const { rows: answers } = await readAll<{
+    question_id: string;
+    response: unknown;
+    marked_correct: boolean | null;
+  }>(
     (from, to) =>
       admin
         .from("answers")
-        .select("question_id, response")
+        .select("question_id, response, marked_correct")
         .in("session_id", sessionIds)
         .range(from, to),
   );
@@ -64,8 +68,9 @@ export async function PerQuestion({ examId }: { examId: string }) {
     const key = (Array.isArray(embed) ? embed[0] : embed)?.correct_answer;
 
     const given = answers.filter((a) => a.question_id === q.id);
+    // A teacher's own mark counts here as it does in the score.
     const correct = given.filter((a) =>
-      isCorrect(q.type as QuestionType, a.response, key),
+      counts(q.type as QuestionType, a.response, key, a.marked_correct),
     ).length;
 
     return {

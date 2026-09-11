@@ -77,6 +77,8 @@ export function RecordingReview({
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [nowMs, setNowMs] = useState(segments[0].startMs);
+  // The flag last jumped to, so the list and the buttons can say which it is.
+  const [focused, setFocused] = useState<string | null>(null);
   // Where to go once the piece now loading can be seeked, in seconds into it.
   const pendingSeek = useRef<number | null>(null);
   const wantPlay = useRef(false);
@@ -149,11 +151,47 @@ export function RecordingReview({
   };
 
   const shownFlags = flags.filter((f) => f.atMs >= first - LEAD_MS && f.atMs <= end);
+  const inOrder = [...shownFlags].sort((a, b) => a.atMs - b.atMs);
+
+  const watchFlag = (f: ReviewFlag) => {
+    setFocused(f.id);
+    jumpTo(f.atMs - LEAD_MS, true);
+  };
+
+  // Previous and Next are read from the playhead, so they work however you got
+  // here — a flag, the timeline, or just watching. A jump lands five seconds
+  // before its flag, so "next" is the first flag whose lead-in is still ahead,
+  // and "previous" skips the one whose lead-in you are already in. Flags that
+  // happened in the same moment are one stop, not several.
+  const nextFlag = inOrder.find((f) => f.atMs - LEAD_MS > nowMs + 250);
+  const prevFlag = [...inOrder].reverse().find((f) => f.atMs - LEAD_MS < nowMs - 1000);
+
+  // The flag happening on screen right now, named over the video for a few
+  // seconds so the moment it was caught cannot be missed.
+  const happening = inOrder.find((f) => nowMs >= f.atMs - 300 && nowMs <= f.atMs + 3000);
+
+  const stepButton =
+    "inline-flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 text-[13px] font-medium text-gray-700 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="bg-gray-950">
+        <div className="relative bg-gray-950">
+          {happening ? (
+            <div
+              role="status"
+              className="pointer-events-none absolute top-3 left-3 z-10 flex items-center gap-2 rounded-lg bg-amber-400 px-3 py-1.5 text-[13px] font-semibold text-gray-950 shadow-lg"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M10.6 3.9 2.9 17.4A1.6 1.6 0 0 0 4.3 19.8h15.4a1.6 1.6 0 0 0 1.4-2.4L13.4 3.9a1.6 1.6 0 0 0-2.8 0Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                <path d="M12 8.5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <circle cx="12" cy="17" r="1.15" fill="currentColor" />
+              </svg>
+              <span className="first-letter:uppercase">
+                {happening.what}, warning {happening.strike}
+              </span>
+            </div>
+          ) : null}
           <video
             ref={videoRef}
             key={segment.url}
@@ -216,14 +254,38 @@ export function RecordingReview({
               </span>
               <span className="text-[13px] tabular-nums text-gray-500">{manila(nowMs)}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
-              className="h-8 rounded-lg border border-gray-200 px-2.5 text-[13px] font-semibold tabular-nums text-gray-700 hover:border-gray-400"
-              aria-label={`Playback speed ${speed} times`}
-            >
-              {speed}×
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => prevFlag && watchFlag(prevFlag)}
+                disabled={!prevFlag}
+                className={stepButton}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="m14.5 6-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Previous flag
+              </button>
+              <button
+                type="button"
+                onClick={() => nextFlag && watchFlag(nextFlag)}
+                disabled={!nextFlag}
+                className={stepButton}
+              >
+                Next flag
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="m9.5 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length])}
+                className="h-8 rounded-lg border border-gray-200 px-2.5 text-[13px] font-semibold tabular-nums text-gray-700 hover:border-gray-400"
+                aria-label={`Playback speed ${speed} times`}
+              >
+                {speed}×
+              </button>
+            </div>
           </div>
 
           {/* The sitting, not the piece: recorded stretches in grey, flags where
@@ -247,18 +309,18 @@ export function RecordingReview({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  jumpTo(f.atMs - LEAD_MS, true);
+                  watchFlag(f);
                 }}
                 title={`${f.what}, ${f.clock}`}
                 aria-label={`Watch ${f.what} at ${f.clock}`}
-                className="absolute inset-y-0 w-3 -translate-x-1/2"
+                className="group absolute inset-y-0 w-4 -translate-x-1/2"
                 style={{ left: pct(f.atMs) }}
               >
                 <span
                   aria-hidden
-                  className={`absolute inset-y-0 left-1/2 w-[3px] -translate-x-1/2 rounded-full ${
-                    f.voided ? "bg-gray-400" : "bg-amber-500"
-                  }`}
+                  className={`absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full group-hover:w-[5px] ${
+                    focused === f.id ? "w-[5px]" : "w-[3px]"
+                  } ${f.voided ? "bg-gray-400" : "bg-amber-500"}`}
                 />
               </button>
             ))}
@@ -268,6 +330,33 @@ export function RecordingReview({
               style={{ left: pct(nowMs) }}
             />
           </div>
+
+          {inOrder.length ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-[12.5px] font-medium text-gray-500">Jump to a flag</span>
+              {inOrder.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => watchFlag(f)}
+                  title={`${f.what}, ${f.clock}`}
+                  aria-label={`Watch ${f.what} at ${duration(f.atMs - first)} into the recording`}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[13px] font-semibold tabular-nums ${
+                    focused === f.id
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : f.voided
+                        ? "border-gray-200 bg-white text-gray-400"
+                        : "border-amber-300 bg-amber-50 text-amber-900 hover:border-amber-500"
+                  }`}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
+                  </svg>
+                  {duration(f.atMs - first)}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap gap-x-4.5 gap-y-1 text-[12.5px] text-gray-500">
             <span className="flex items-center gap-1.5">
@@ -291,7 +380,8 @@ export function RecordingReview({
         <div className="border-b border-gray-100 px-5 py-4">
           <h2 className="text-[15px] font-semibold text-gray-900">Flags</h2>
           <p className="mt-0.5 text-[12.5px] text-gray-500">
-            Watch each one, then void it if it was not cheating.
+            Watch each one from five seconds before it happened, then void it if it
+            was not cheating.
           </p>
         </div>
         {flags.length ? (
@@ -301,8 +391,10 @@ export function RecordingReview({
                 key={f.id}
                 examId={examId}
                 flag={f}
+                at={duration(f.atMs - first)}
+                focused={focused === f.id}
                 recorded={f.atMs >= first - LEAD_MS && f.atMs <= end}
-                onWatch={() => jumpTo(f.atMs - LEAD_MS, true)}
+                onWatch={() => watchFlag(f)}
               />
             ))}
           </ul>
@@ -317,11 +409,16 @@ export function RecordingReview({
 function FlagItem({
   examId,
   flag,
+  at,
+  focused,
   recorded,
   onWatch,
 }: {
   examId: string;
   flag: ReviewFlag;
+  /** Where in the recording it happened, as the player's clock reads. */
+  at: string;
+  focused: boolean;
   recorded: boolean;
   onWatch: () => void;
 }) {
@@ -335,7 +432,11 @@ function FlagItem({
   }, [state.success, router]);
 
   return (
-    <li className="border-b border-gray-100 px-5 py-3.5 last:border-b-0">
+    <li
+      className={`border-b border-gray-100 px-5 py-3.5 last:border-b-0 ${
+        focused ? "bg-gray-50 shadow-[inset_3px_0_0_0_#0E1116]" : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p
@@ -358,9 +459,12 @@ function FlagItem({
             <button
               type="button"
               onClick={onWatch}
-              className="text-[13px] font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-[13px] font-medium whitespace-nowrap text-white tabular-nums hover:bg-gray-700"
             >
-              Watch
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
+              </svg>
+              Watch at {at}
             </button>
           ) : (
             <span className="text-[12.5px] text-gray-400">Not recorded</span>

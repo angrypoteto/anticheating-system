@@ -110,7 +110,11 @@ export function ExamRunner({
     total: number;
     error: string | null;
   } | null>(null);
-  const demoStrikes = useRef({ count: initialStrikes, lastAt: -Infinity });
+  const demoStrikes = useRef({ count: initialStrikes, since: -Infinity });
+  // Whether the departure under way has been written down. The page-closing
+  // beacon only re-sends one that has not: re-sending one already saved would,
+  // more than five seconds on, count as a second departure.
+  const departureSaved = useRef(true);
 
   const supabase = useRef(createClient());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -213,17 +217,21 @@ export function ExamRunner({
       // one already counted, which is a judgement only the whole record can make.
       let next: number;
       if (demo) {
-        // The rule record_flag() applies, kept here instead: a honeypot is its
-        // own strike, and departure signals inside ten seconds are one.
         const tally = demoStrikes.current;
         const now = Date.now();
-        // An extension finding is evidence, never a strike, and never merges.
-        if (type !== "EXTENSION_DETECTED") {
-          if (type === "HONEYPOT" || now - tally.lastAt > 10_000) tally.count += 1;
-          if (type !== "HONEYPOT") tally.lastAt = now;
+        // The rule record_flag() applies: a honeypot is its own strike; an
+        // extension finding is none; and a departure's signals are one strike
+        // only within five seconds of the moment it *began*, so leaving again
+        // and again cannot keep folding into the first warning.
+        if (type === "HONEYPOT") tally.count += 1;
+        else if (type !== "EXTENSION_DETECTED" && now - tally.since > 5_000) {
+          tally.count += 1;
+          tally.since = now;
         }
         next = tally.count;
       } else {
+        const departure = type !== "HONEYPOT" && type !== "EXTENSION_DETECTED";
+        if (departure) departureSaved.current = false;
         const { data, error } = await supabase.current.rpc("record_flag", {
           p_session_id: sessionId,
           p_type: type,
@@ -238,6 +246,7 @@ export function ExamRunner({
           return;
         }
         next = data;
+        if (departure) departureSaved.current = true;
       }
       setStrikes(next);
 
@@ -287,9 +296,10 @@ export function ExamRunner({
    * same breath as leaving it, the browser is entitled to cancel that request
    * — and the departure that mattered most is the one that vanishes. A
    * keepalive fetch is the one kind the browser promises to finish, so the
-   * same call goes out again that way as the page dies. record_flag() merges
-   * anything inside ten seconds into one strike, so the copy cannot cost the
-   * student twice.
+   * same call goes out again that way as the page dies — but only if the
+   * first report has not already been saved. record_flag() merges signals only
+   * within five seconds of a departure's start, so a copy sent later than that
+   * would count as a second departure.
    *
    * It only ever re-sends a departure already decided on. A plain reload is
    * not a departure, and inventing one here would punish a student with a bad
@@ -451,7 +461,7 @@ export function ExamRunner({
     // Re-send, not re-detect: only a departure the tracker has already called.
     const onPageHide = () => {
       if (endedRef.current || !started) return;
-      if (!tracker.isAway) return;
+      if (!tracker.isAway || departureSaved.current) return;
       beaconFlag(tracker.reportedAs ?? "TAB_SWITCH");
     };
 

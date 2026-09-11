@@ -45,9 +45,9 @@ export function isMoreTelling(a: FlagType, b: FlagType): boolean {
  * departure is sent the moment it lands. For a short window after, a *more
  * telling* signal for the same departure is sent too — the browser often
  * reports the blur before it reports the tab switch, and the second is the
- * truer word for what happened. The server collapses everything inside its own
- * ten-second window into one strike, so sending twice cannot cost a student
- * twice; it only improves the name on the record.
+ * truer word for what happened. The server folds signals arriving within five
+ * seconds of a departure's first one into the same strike, so sending twice
+ * cannot cost a student twice; it only improves the name on the record.
  *
  * Nothing further is sent until the student is actually back on the paper.
  */
@@ -60,8 +60,8 @@ export function createDepartureTracker({
   onStrike?: (type: FlagType) => void;
   /**
    * How long after a departure a truer name for it is still worth sending.
-   * Comfortably inside the server's ten-second merge, so an upgrade can never
-   * land as a second strike.
+   * Comfortably inside the server's five-second merge (measured from the
+   * departure's first signal), so an upgrade can never land as a second strike.
    */
   upgradeMs?: number;
   setTimer?: typeof setTimeout;

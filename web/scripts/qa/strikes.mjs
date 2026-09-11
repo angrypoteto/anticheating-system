@@ -120,12 +120,16 @@ try {
   // ------------------------------------------------------------- second tab
   section("Two tabs of the same sitting, at the same instant");
 
+  // A fresh departure, reported by two tabs at once. (The merge window is
+  // anchored to a departure's first signal, so this has to begin after the
+  // replay's window has closed, or it would rightly be part of it.)
+  await sleep(5_500);
   const burst = await Promise.all([
     flag(student, session, "WINDOW_BLUR", q.id),
     flag(student, session, "TAB_SWITCH", q.id),
     flag(student, session, "FULLSCREEN_EXIT", q.id),
   ]);
-  t(burst.every((r) => !r.error && r.data === 1),
+  t(burst.every((r) => !r.error && r.data === 2),
     "simultaneous tabs cannot each start their own tally",
     `counts: ${burst.map((r) => r.data ?? r.error?.message).join(", ")}`);
 
@@ -134,22 +138,22 @@ try {
 
   await sleep(11_000); // past the settle window
   const { data: second } = await flag(student, session, "TAB_SWITCH", q.id);
-  t(second === 2, "a departure after the settle window is a second strike", `count: ${second}`);
+  t(second === 3, "a departure after the settle window is a new strike", `count: ${second}`);
 
   const { data: stillSecond } = await flag(student, session, "WINDOW_BLUR", q.id);
-  t(stillSecond === 2, "its own follow-up signals do not add a third", `count: ${stillSecond}`);
+  t(stillSecond === 3, "its own follow-up signals do not add another", `count: ${stillSecond}`);
 
   // --------------------------------------------------------------- honeypot
   section("The honeypot is not a departure");
 
   const { data: hp } = await flag(student, session, "HONEYPOT", q.id);
-  t(hp === 3, "a honeypot trip counts on its own, even inside a departure", `count: ${hp}`);
+  t(hp === 4, "a honeypot trip counts on its own, even inside a departure", `count: ${hp}`);
 
   // ------------------------------------------------------------- reload/seed
   section("Reloading the page");
 
   const { data: seeded } = await student.client.rpc("my_strikes", { p_session_id: session });
-  t(seeded === 3, "a reload resumes the count instead of starting again at zero", `count: ${seeded}`);
+  t(seeded === 4, "a reload resumes the count instead of starting again at zero", `count: ${seeded}`);
 
   const { data: nosy } = await other.client.rpc("my_strikes", { p_session_id: session });
   t(nosy === 0, "and tells nobody else about it", `count: ${nosy}`);
@@ -161,7 +165,7 @@ try {
   section("What the student is told they did");
 
   const { data: log } = await student.client.rpc("my_strike_log", { p_session_id: session });
-  t((log ?? []).length === 3, "one line per strike, not one per signal",
+  t((log ?? []).length === 4, "one line per strike, not one per signal",
     `${(log ?? []).length} lines from ${(await rows(session)).length} signals`);
   t((log ?? [])[0]?.kind === "TAB_SWITCH",
     "and each names the most telling signal of its departure", `first: ${(log ?? [])[0]?.kind}`);
@@ -176,7 +180,7 @@ try {
   await svc.from("flags").update({ resolution: "VOIDED", resolved_by_id: teacher.id })
     .eq("session_id", session).eq("strike_number", 1);
   const { data: afterVoid } = await student.client.rpc("my_strikes", { p_session_id: session });
-  t(afterVoid === 2, "voiding hands the warning back", `${all.length} signals, count now ${afterVoid}`);
+  t(afterVoid === 3, "voiding hands the warning back", `${all.length} signals, count now ${afterVoid}`);
 
   // ------------------------------------------------------------- other people
   section("Whose sitting it is");
@@ -205,6 +209,24 @@ try {
   t(last === 3, "three trips out of the window are three strikes, not nine", `count: ${last}`);
   const ninish = await rows(fresh);
   t(ninish.length === 9, "with all nine signals kept for the monitor", `${ninish.length} rows`);
+
+  // --------------------------------------------- no hiding in one strike
+  // The merge window used to be measured from the latest signal, so it slid
+  // forward with each one: leaving again every few seconds folded into the
+  // first strike for ever. It is anchored to a departure's first signal now.
+  section("Leaving again and again is not one strike");
+
+  const quick = await mk("r", "STUDENT");
+  const hurried = await sit(quick);
+  let tally = 0;
+  for (let i = 0; i < 3; i++) {
+    if (i) await sleep(6_000); // back on the paper, then away again, six seconds apart
+    for (const type of ["WINDOW_BLUR", "TAB_SWITCH"]) {
+      const { data } = await flag(quick, hurried, type, q.id);
+      tally = data;
+    }
+  }
+  t(tally === 3, "three departures six seconds apart are three strikes, not one", `count: ${tally}`);
 } catch (e) {
   bug("the run itself fell over", e.message);
 } finally {

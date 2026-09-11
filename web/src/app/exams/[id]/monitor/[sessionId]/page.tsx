@@ -71,11 +71,15 @@ export default async function SittingPage({
   searchParams,
 }: {
   params: Promise<{ id: string; sessionId: string }>;
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{ view?: string; from?: string }>;
 }) {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const { id, sessionId } = await params;
-  const view = (await searchParams).view === "recording" ? "recording" : "answers";
+  const query = await searchParams;
+  const view = query.view === "recording" ? "recording" : "answers";
+  // Back goes where the teacher came from: a student's list of papers, or the
+  // exam's monitor. Carried in the address so switching tabs keeps it.
+  const fromStudent = query.from === "student";
   const supabase = await createClient();
 
   const [{ data: exam }, { data: session }, { data: settings }] = await Promise.all([
@@ -110,27 +114,33 @@ export default async function SittingPage({
       )
     : null;
 
-  const tab = (to: "answers" | "recording", label: string) => (
-    <Link
-      href={`/exams/${exam.id}/monitor/${session.id}${to === "recording" ? "?view=recording" : ""}`}
-      aria-current={view === to ? "page" : undefined}
-      className={`inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium ${
-        view === to ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-      }`}
-    >
-      {label}
-    </Link>
-  );
+  const tab = (to: "answers" | "recording", label: string) => {
+    const q = new URLSearchParams();
+    if (to === "recording") q.set("view", "recording");
+    if (fromStudent) q.set("from", "student");
+    const suffix = q.size ? `?${q}` : "";
+    return (
+      <Link
+        href={`/exams/${exam.id}/monitor/${session.id}${suffix}`}
+        aria-current={view === to ? "page" : undefined}
+        className={`inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-medium ${
+          view === to ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+        }`}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
     <ConsoleShell role={me.role as string} email={me.email}>
       <div className="space-y-5">
         <div>
           <Link
-            href={`/exams/${exam.id}/monitor`}
+            href={fromStudent ? `/students/${session.student_id}` : `/exams/${exam.id}/monitor`}
             className="text-[13px] text-gray-500 hover:text-gray-900"
           >
-            ← Back to the monitor
+            {fromStudent ? `← ${name}'s exams and quizzes` : "← Back to the monitor"}
           </Link>
           <header className="mt-3 flex flex-wrap items-end justify-between gap-4">
             <div>

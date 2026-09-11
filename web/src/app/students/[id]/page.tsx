@@ -247,7 +247,7 @@ export default async function StudentPage({ params }: { params: Promise<{ id: st
                         </td>
                         <td className="px-5 py-3 text-right">
                           <Link
-                            href={`/exams/${s.exam_id}/monitor/${s.id}`}
+                            href={`/exams/${s.exam_id}/monitor/${s.id}?from=student`}
                             className="inline-flex h-8 items-center rounded-lg bg-gray-900 px-3 text-[13px] font-medium whitespace-nowrap text-white hover:bg-gray-700"
                           >
                             Review answers

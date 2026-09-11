@@ -1059,7 +1059,7 @@ export function ExamRunner({
           </aside>
         ) : null}
 
-      <div className="flex flex-1 justify-center px-4 py-7 sm:px-8 sm:py-10 lg:justify-start lg:px-24 lg:py-16">
+      <div className="flex flex-1 justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-12 lg:py-16">
         <div className="w-full max-w-3xl">
           {warning ? (
             <div

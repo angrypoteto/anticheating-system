@@ -75,8 +75,12 @@ export async function gradeAndClose(
   // only that cannot tell "you ran out of time" from "you were stopped for
   // leaving the window". The clock is asked first because a paper that was going
   // to end anyway was not ended by anything the student did.
+  //
+  // A teacher handing in a paper whose time had already run out — a student
+  // who closed the browser and never came back — did not end it; the clock
+  // did, and that is what the student and their record should be told.
   const stored: SubmitReason =
-    reason === "instructor"
+    reason === "instructor" && !ranOver
       ? "INSTRUCTOR"
       : pastClose
         ? "EXAM_CLOSED"

@@ -6,11 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { describeFlag } from "@/lib/submission";
 import { isCorrect, type QuestionType } from "@/lib/grading";
+import { parseTimer } from "@/lib/exam-config";
 import { RECORDING_BUCKET, parseSegmentName } from "@/lib/screen-recorder";
 import { ConsoleShell } from "@/components/console-shell";
 import { Card, Empty } from "@/app/admin/ui";
 import { RecordingReview, type ReviewFlag, type ReviewSegment } from "./player";
-import { AnswerReview, type ReviewAnswer } from "./answers";
+import { AnswerReview, HandIn, type ReviewAnswer } from "./answers";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,26 @@ const clock = (iso: string) =>
     second: "2-digit",
     timeZone: "Asia/Manila",
   });
+
+/**
+ * When an open sitting's time ran out, or null if the student still has time:
+ * the earlier of its own timer and the exam closing, unless a teacher has given
+ * this one sitting longer. The same rules gradeAndClose() applies.
+ */
+function timeRanOut(
+  startedAt: string,
+  totalMinutes: number,
+  closesAt: string | null,
+  reopenedUntil: string | null,
+): Date | null {
+  const now = Date.now();
+  if (reopenedUntil && new Date(reopenedUntil).getTime() > now) return null;
+  const ends = [
+    totalMinutes > 0 ? new Date(startedAt).getTime() + totalMinutes * 60_000 : null,
+    closesAt ? new Date(closesAt).getTime() : null,
+  ].filter((t): t is number => t != null && t <= now);
+  return ends.length ? new Date(Math.min(...ends)) : null;
+}
 
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString("en-PH", {
@@ -58,10 +79,10 @@ export default async function SittingPage({
   const supabase = await createClient();
 
   const [{ data: exam }, { data: session }, { data: settings }] = await Promise.all([
-    supabase.from("exams").select("id, title").eq("id", id).maybeSingle(),
+    supabase.from("exams").select("id, title, timer_config, closes_at").eq("id", id).maybeSingle(),
     supabase
       .from("exam_sessions")
-      .select("id, exam_id, student_id, status, started_at, submitted_at, score")
+      .select("id, exam_id, student_id, status, started_at, submitted_at, score, reopened_until")
       .eq("id", sessionId)
       .eq("exam_id", id)
       .maybeSingle(),
@@ -80,6 +101,14 @@ export default async function SittingPage({
   const name = student?.full_name || student?.email || "Student";
   const passMark = Number(settings?.pass_threshold ?? 75);
   const live = session.status === "IN_PROGRESS";
+  const ranOut = live
+    ? timeRanOut(
+        session.started_at,
+        parseTimer(exam.timer_config).totalMinutes,
+        exam.closes_at,
+        session.reopened_until,
+      )
+    : null;
 
   const tab = (to: "answers" | "recording", label: string) => (
     <Link
@@ -115,7 +144,7 @@ export default async function SittingPage({
               </h1>
               <p className="mt-1 text-sm text-gray-500">
                 {exam.title}, started {day(session.started_at)} at {clock(session.started_at)}
-                {live ? ", still in progress" : ""}
+                {live ? (ranOut ? ", never handed in" : ", still in progress") : ""}
               </p>
             </div>
             {session.score != null ? (
@@ -138,6 +167,14 @@ export default async function SittingPage({
             {tab("recording", "Screen recording")}
           </nav>
         </div>
+
+        {live ? (
+          <HandIn
+            examId={exam.id}
+            sessionId={session.id}
+            ranOutAt={ranOut ? `${clock(ranOut.toISOString())} on ${day(ranOut.toISOString())}` : null}
+          />
+        ) : null}
 
         {view === "answers" ? (
           <AnswersView examId={exam.id} sessionId={session.id} live={live} />

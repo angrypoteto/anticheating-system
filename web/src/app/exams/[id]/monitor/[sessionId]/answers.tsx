@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { markAnswer, type MonitorState } from "../actions";
+import { forceSubmit, markAnswer, type MonitorState } from "../actions";
 
 export type ReviewAnswer = {
   questionId: string;
@@ -23,6 +23,93 @@ export type ReviewAnswer = {
 };
 
 type Filter = "all" | "wrong" | "changed" | "blank";
+
+/**
+ * The way out of "marks can be changed once the paper is handed in".
+ *
+ * A paper is only handed in by the student's own browser, so one whose student
+ * closed the tab and never came back stays open for ever — and an open paper
+ * cannot be marked. When its time has already run out this says so and hands
+ * it in as time-up; while the student may still be working it asks first,
+ * because ending somebody's exam under them is not a click to make by accident.
+ */
+export function HandIn({
+  examId,
+  sessionId,
+  ranOutAt,
+}: {
+  examId: string;
+  sessionId: string;
+  /** When its time ran out, if it has; null while the student still has time. */
+  ranOutAt: string | null;
+}) {
+  const router = useRouter();
+  const [state, action, pending] = useActionState<MonitorState, FormData>(forceSubmit, {});
+  const [sure, setSure] = useState(false);
+  useEffect(() => {
+    if (state.success) router.refresh();
+  }, [state, router]);
+
+  const button = (label: string) => (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex h-9 items-center rounded-lg bg-gray-900 px-3.5 text-sm font-medium whitespace-nowrap text-white hover:bg-gray-700 disabled:opacity-50"
+    >
+      {pending ? "Handing in…" : label}
+    </button>
+  );
+
+  return (
+    <section
+      className={`flex flex-wrap items-center justify-between gap-4 rounded-xl border px-5 py-4 ${
+        ranOutAt ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-white"
+      }`}
+    >
+      <div className="min-w-0 flex-1 basis-[22rem]">
+        <p className="text-[15px] font-semibold text-gray-900">
+          {ranOutAt ? "Time ran out, but this paper was never handed in" : "This paper is still being sat"}
+        </p>
+        <p className="mt-0.5 text-[13px] leading-snug text-gray-600">
+          {ranOutAt
+            ? `Their time was up at ${ranOutAt}. The browser was probably closed before it could hand the paper in. Hand it in now to score it and check the marking.`
+            : "Marks can be changed once it is handed in. Ending it now stops the student where they are and scores what they have answered."}
+        </p>
+        {state.error ? (
+          <p role="alert" className="mt-1.5 text-[13px] text-red-700">
+            {state.error}
+          </p>
+        ) : null}
+      </div>
+      <form action={action} className="flex items-center gap-2">
+        <input type="hidden" name="examId" value={examId} />
+        <input type="hidden" name="sessionId" value={sessionId} />
+        {ranOutAt ? (
+          button("Hand it in now")
+        ) : sure ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setSure(false)}
+              className="inline-flex h-9 items-center rounded-lg border border-gray-200 px-3.5 text-sm font-medium text-gray-700 hover:border-gray-400"
+            >
+              Keep it open
+            </button>
+            {button("Yes, end it now")}
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSure(true)}
+            className="inline-flex h-9 items-center rounded-lg border border-gray-300 px-3.5 text-sm font-medium text-gray-900 hover:border-gray-900"
+          >
+            End the sitting
+          </button>
+        )}
+      </form>
+    </section>
+  );
+}
 
 const verdict = (r: ReviewAnswer) =>
   r.response == null ? "blank" : (r.teacherMark ?? r.byKey) ? "correct" : "wrong";
@@ -78,7 +165,7 @@ export function AnswerReview({
           <p className="mt-0.5 text-[12.5px] text-gray-500">
             {counted} of {rows.length} counted as correct
             {changed ? `, ${changed} ${changed === 1 ? "mark" : "marks"} changed by a teacher` : ""}.
-            {live ? " Marks can be changed once the paper is handed in." : ""}
+            {live ? " Marks can be changed once it is handed in." : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show">

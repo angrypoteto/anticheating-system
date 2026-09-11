@@ -215,6 +215,8 @@ export async function forceSubmit(
   });
 
   revalidatePath(`/exams/${examId}/monitor`);
+  revalidatePath(`/exams/${examId}/monitor/${sessionId}`);
+  revalidatePath("/students", "layout");
   return { success: `Submitted — scored ${result.score}%.` };
 }
 

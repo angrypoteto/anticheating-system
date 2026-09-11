@@ -31,6 +31,8 @@ export type FlagRow = {
   occurred_at: string;
   resolution: string | null;
   question_id: string | null;
+  /** What was seen, for flags that carry more than a type (an extension's id). */
+  detail?: string | null;
 };
 
 /**
@@ -54,6 +56,7 @@ const FLAG_LABELS: Record<string, string> = {
   WINDOW_BLUR: "window lost focus",
   HONEYPOT: "honeypot triggered",
   SCREEN_SHARE_ENDED: "stopped sharing screen",
+  EXTENSION_DETECTED: "browser extension on the page",
 };
 
 export function LiveMonitor({
@@ -163,7 +166,7 @@ export function LiveMonitor({
 
       const { data: freshFlags } = await client
         .from("flags")
-        .select("id, session_id, type, strike_number, occurred_at, resolution, question_id")
+        .select("id, session_id, type, strike_number, occurred_at, resolution, question_id, detail")
         .in("session_id", ids)
         .order("occurred_at", { ascending: false });
       if (freshFlags) setFlags(freshFlags as FlagRow[]);
@@ -649,7 +652,9 @@ function FlagLine({
   return (
     <li className="flex items-center justify-between gap-4 py-1.5 text-sm">
       <span className={voided ? "text-gray-400 line-through dark:text-gray-600" : "text-gray-700 dark:text-gray-300"}>
-        #{flag.strike_number} {FLAG_LABELS[flag.type] ?? flag.type}
+        {/* An extension finding is evidence, not a warning, so it has no number. */}
+        {flag.type === "EXTENSION_DETECTED" ? "" : `#${flag.strike_number} `}
+        {FLAG_LABELS[flag.type] ?? flag.type}
         <span className="ml-2 text-xs text-gray-400 dark:text-gray-600">
           {new Date(flag.occurred_at).toLocaleTimeString()}
         </span>
@@ -657,6 +662,9 @@ function FlagLine({
           <span className="ml-2 block text-xs text-gray-500 dark:text-gray-500">
             on {questionLabels[flag.question_id] ?? "a question"}
           </span>
+        ) : null}
+        {flag.detail ? (
+          <span className="ml-2 block text-xs break-all text-gray-500">{flag.detail}</span>
         ) : null}
       </span>
       {voided ? (

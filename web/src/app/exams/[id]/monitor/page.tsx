@@ -92,7 +92,7 @@ export default async function MonitorPage({
     sessionIds.length
       ? supabase
           .from("flags")
-          .select("id, session_id, type, strike_number, occurred_at, resolution, question_id")
+          .select("id, session_id, type, strike_number, occurred_at, resolution, question_id, detail")
           .in("session_id", sessionIds)
           .order("occurred_at", { ascending: false })
       : Promise.resolve({ data: [] as FlagRow[] }),

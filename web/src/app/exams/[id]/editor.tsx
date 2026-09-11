@@ -143,6 +143,21 @@ export function SettingsForm({
             </span>
           </span>
         </label>
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            name="detectExtensions"
+            defaultChecked={lockdown.detectExtensions}
+            className="mt-0.5"
+          />
+          <span>
+            Flag browser extensions that change the exam page
+            <span className="block text-[12.5px] text-gray-500">
+              Shown to you on the monitor, never counted as a warning. Students are
+              told to turn extensions off, or use an Incognito window, before starting.
+            </span>
+          </span>
+        </label>
         <div className="pt-1">
           <label htmlFor="maxStrikes" className={label}>
             Strikes before auto-submit

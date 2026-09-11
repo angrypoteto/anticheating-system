@@ -256,6 +256,8 @@ enum FlagType {
   HONEYPOT
   /// The student stopped sharing their screen while the exam was recording it.
   SCREEN_SHARE_ENDED
+  /// A browser extension touched the exam page. Evidence for the teacher, never a strike.
+  EXTENSION_DETECTED
 }
 
 enum FlagResolution {
@@ -289,6 +291,8 @@ model Flag {
   resolvedById String?         @map("resolved_by_id") @db.Uuid
   resolvedBy   User?           @relation("FlagResolver", fields: [resolvedById], references: [id])
   resolution   FlagResolution?
+  /// What was seen, for flags that carry more than a type (an extension's id).
+  detail       String?
 
   @@index([sessionId])
   @@map("flags")

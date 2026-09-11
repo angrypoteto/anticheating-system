@@ -107,6 +107,7 @@ export function ExamPreview({
             `${lockdown.maxStrikes} strikes`,
             lockdown.honeypot ? "honeypot" : null,
             lockdown.recordScreen ? "screen recorded" : null,
+            lockdown.detectExtensions ? "extensions flagged" : null,
           ]
             .filter(Boolean)
             .join(", ")}

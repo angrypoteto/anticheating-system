@@ -125,6 +125,7 @@ export async function createExam(
         maxStrikes: settings.default_max_strikes,
         honeypot: settings.default_honeypot,
         recordScreen: settings.default_record_screen ?? DEFAULT_LOCKDOWN.recordScreen,
+        detectExtensions: DEFAULT_LOCKDOWN.detectExtensions,
       }
     : DEFAULT_LOCKDOWN;
 
@@ -170,6 +171,7 @@ export async function updateExamSettings(
     maxStrikes: Math.max(1, Number(formData.get("maxStrikes") ?? 3)),
     honeypot: formData.get("honeypot") === "on",
     recordScreen: formData.get("recordScreen") === "on",
+    detectExtensions: formData.get("detectExtensions") === "on",
   };
 
   const supabase = await createClient();

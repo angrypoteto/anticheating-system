@@ -74,7 +74,7 @@ export default async function RecordingPage({
         .maybeSingle(),
       supabase
         .from("flags")
-        .select("id, type, strike_number, occurred_at, resolution, question_id")
+        .select("id, type, strike_number, occurred_at, resolution, question_id, detail")
         .eq("session_id", sessionId)
         .order("occurred_at"),
       supabase.from("questions").select("id, prompt").eq("exam_id", id).order("order"),
@@ -142,6 +142,9 @@ export default async function RecordingPage({
     strike: f.strike_number,
     voided: f.resolution === "VOIDED",
     question: f.question_id ? (questionLabel.get(f.question_id) ?? null) : null,
+    detail: f.detail ?? null,
+    // Evidence for the teacher to judge, never counted as a warning.
+    warning: f.type !== "EXTENSION_DETECTED",
   }));
 
   const name = student?.full_name || student?.email || "Student";

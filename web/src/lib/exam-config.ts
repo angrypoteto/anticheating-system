@@ -16,6 +16,11 @@ export type LockdownConfig = {
    * what each flag actually was. The paper will not start without it.
    */
   recordScreen: boolean;
+  /**
+   * Watch the page for browser extensions touching it, and flag them for the
+   * teacher. Never costs a strike: harmless extensions touch pages too.
+   */
+  detectExtensions: boolean;
 };
 
 export const DEFAULT_TIMER: TimerConfig = {
@@ -29,6 +34,7 @@ export const DEFAULT_LOCKDOWN: LockdownConfig = {
   maxStrikes: 3,
   honeypot: true,
   recordScreen: true,
+  detectExtensions: true,
 };
 
 export function parseTimer(value: unknown): TimerConfig {
@@ -57,5 +63,7 @@ export function parseLockdown(value: unknown): LockdownConfig {
     // the rules they were published under rather than starting to ask for a
     // screen share nobody agreed to.
     recordScreen: v.recordScreen ?? false,
+    // On unless switched off: it only ever adds evidence, never a strike.
+    detectExtensions: v.detectExtensions ?? true,
   };
 }

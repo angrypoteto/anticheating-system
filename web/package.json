@@ -25,7 +25,8 @@
     "qa:marking": "node scripts/qa/marking.mjs",
     "qa:watching": "node scripts/qa/watching.mjs",
     "qa:recording": "node scripts/qa/recording.mjs",
-    "qa:redirects": "node scripts/qa/redirects.mjs"
+    "qa:redirects": "node scripts/qa/redirects.mjs",
+    "qa:extensions": "node scripts/qa/extensions.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

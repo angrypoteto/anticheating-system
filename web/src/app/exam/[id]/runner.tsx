@@ -10,6 +10,7 @@ import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
 import { explainSubmission, type SubmitReason } from "@/lib/submission";
 import { gradeDemo } from "@/app/exams/[id]/demo/actions";
 import { ScreenRecorder, describeShareProblem } from "@/lib/screen-recorder";
+import { describeSignature, scanForExtensions, watchForExtensions } from "@/lib/extension-watch";
 import { submitExam, type SubmitState } from "./actions";
 
 export type RunnerQuestion = {
@@ -198,7 +199,7 @@ export function ExamRunner({
   }, [answers]);
 
   const recordFlag = useCallback(
-    async (type: FlagType, questionId?: string) => {
+    async (type: FlagType, questionId?: string, detail?: string) => {
       if (endedRef.current || !started || superseded) return;
 
       // Written client-direct to Supabase: a flag that waits on a serverless
@@ -216,14 +217,18 @@ export function ExamRunner({
         // own strike, and departure signals inside ten seconds are one.
         const tally = demoStrikes.current;
         const now = Date.now();
-        if (type === "HONEYPOT" || now - tally.lastAt > 10_000) tally.count += 1;
-        if (type !== "HONEYPOT") tally.lastAt = now;
+        // An extension finding is evidence, never a strike, and never merges.
+        if (type !== "EXTENSION_DETECTED") {
+          if (type === "HONEYPOT" || now - tally.lastAt > 10_000) tally.count += 1;
+          if (type !== "HONEYPOT") tally.lastAt = now;
+        }
         next = tally.count;
       } else {
         const { data, error } = await supabase.current.rpc("record_flag", {
           p_session_id: sessionId,
           p_type: type,
           p_question_id: questionId ?? currentQuestionRef.current,
+          p_detail: detail ?? null,
         });
 
         if (error || typeof data !== "number") {
@@ -235,6 +240,13 @@ export function ExamRunner({
         next = data;
       }
       setStrikes(next);
+
+      if (type === "EXTENSION_DETECTED") {
+        setWarning(
+          "A browser extension is changing this page, and your teacher has been told. It does not count as a warning. Turn extensions off, or use an Incognito window, for your next exam.",
+        );
+        return;
+      }
 
       if (next >= lockdown.maxStrikes) {
         setWarning("Strike limit reached. Submitting your exam.");
@@ -412,6 +424,39 @@ export function ExamRunner({
     noteDeparture,
     noteReturn,
   ]);
+
+  // --- extensions ---
+  //
+  // Before the start: a look at the page, so a student with an extension on can
+  // be told while they can still do something about it. After: whatever is on
+  // the page at the moment the exam starts is reported, and then anything that
+  // arrives later. Each extension is reported once; none of it costs a strike.
+  const [extensionTraces, setExtensionTraces] = useState<string[]>([]);
+  useEffect(() => {
+    if (!lockdown.detectExtensions) return;
+    // A moment's grace: extensions inject after the page has loaded.
+    const id = setTimeout(() => setExtensionTraces(scanForExtensions()), 1200);
+    return () => clearTimeout(id);
+  }, [lockdown.detectExtensions]);
+
+  const recordFlagRef = useRef(recordFlag);
+  useEffect(() => {
+    recordFlagRef.current = recordFlag;
+  }, [recordFlag]);
+
+  useEffect(() => {
+    if (!started || done || superseded || !lockdown.detectExtensions) return;
+    let reports = 0;
+    const report = (signatures: string[]) => {
+      // Enough to make the point and identify the extension; not a flood.
+      if (!signatures.length || reports >= 10) return;
+      reports++;
+      void recordFlagRef.current("EXTENSION_DETECTED", undefined, signatures.join(", "));
+    };
+    const present = scanForExtensions();
+    report(present);
+    return watchForExtensions(report, { ignore: present });
+  }, [started, done, superseded, lockdown.detectExtensions]);
 
   // --- countdown ---
   useEffect(() => {
@@ -704,6 +749,12 @@ export function ExamRunner({
               can watch it beside any warnings.
             </li>
           ) : null}
+          {lockdown.detectExtensions ? (
+            <li>
+              Browser extensions that change this page are reported to your
+              teacher. Turn them off, or use an Incognito window, before you start.
+            </li>
+          ) : null}
           <li>
             Leaving the exam window counts as one warning each time, however
             you leave it. {lockdown.maxStrikes} warnings end the attempt
@@ -714,6 +765,18 @@ export function ExamRunner({
           <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">
             {warning}
           </p>
+        ) : null}
+        {extensionTraces.length ? (
+          <div role="alert" className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="font-semibold">A browser extension is changing this page</p>
+            <p className="mt-1 leading-relaxed text-amber-800">
+              It {extensionTraces.slice(0, 2).map(describeSignature).join(", and ")}
+              {extensionTraces.length > 2 ? `, and ${extensionTraces.length - 2} more` : ""}.
+              Turn your extensions off, or open this exam in an Incognito or InPrivate
+              window, where they are off. If it is still here when you start, your
+              teacher will be told. It does not count as a warning.
+            </p>
+          </div>
         ) : null}
         {shareProblem ? (
           <p role="alert" className="mt-4 text-sm text-red-700">

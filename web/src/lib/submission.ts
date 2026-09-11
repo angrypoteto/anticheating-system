@@ -92,6 +92,8 @@ export function describeFlag(type: FlagType | string): string {
       return "a hidden field was filled in";
     case "SCREEN_SHARE_ENDED":
       return "stopped sharing their screen";
+    case "EXTENSION_DETECTED":
+      return "a browser extension changed the exam page";
     default:
       return "left the exam window";
   }

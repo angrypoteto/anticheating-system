@@ -22,6 +22,10 @@ export type ReviewFlag = {
   strike: number;
   voided: boolean;
   question: string | null;
+  /** What was seen, when a flag carries more than its type. */
+  detail: string | null;
+  /** False for evidence that never counts toward the limit (an extension). */
+  warning: boolean;
 };
 
 /** Start a little before the flag: what led up to it is the evidence. */
@@ -188,7 +192,8 @@ export function RecordingReview({
                 <circle cx="12" cy="17" r="1.15" fill="currentColor" />
               </svg>
               <span className="first-letter:uppercase">
-                {happening.what}, warning {happening.strike}
+                {happening.what}
+                {happening.warning ? `, warning ${happening.strike}` : ""}
               </span>
             </div>
           ) : null}
@@ -447,9 +452,12 @@ function FlagItem({
             {flag.what}
           </p>
           <p className="mt-0.5 text-[12.5px] tabular-nums text-gray-500">
-            Warning {flag.strike}, {flag.clock}
+            {flag.warning ? `Warning ${flag.strike}` : "Not counted as a warning"}, {flag.clock}
             {voided ? ", voided" : ""}
           </p>
+          {flag.detail ? (
+            <p className="mt-0.5 text-[12.5px] break-all text-gray-500">{flag.detail}</p>
+          ) : null}
           {flag.question ? (
             <p className="mt-0.5 truncate text-[12.5px] text-gray-400">{flag.question}</p>
           ) : null}

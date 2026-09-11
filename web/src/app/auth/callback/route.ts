@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safe-next";
 
 /**
  * Where Google sends people back to.
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   // Only ever a path on this site, so the round trip cannot be used to bounce
   // somebody somewhere else.
   const raw = searchParams.get("next") ?? "/";
-  const next = /^\/(?!\/)/.test(raw) ? raw : "/";
+  const next = safeNext(raw);
 
   // Google can decline instead of sending a code — the user cancelled, or the
   // provider is not configured yet. Say so rather than showing a blank page.

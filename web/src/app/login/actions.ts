@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safe-next";
 
 export type LoginState = { error?: string };
 
@@ -15,7 +16,7 @@ export async function login(
   // Only ever a path on this site: "//evil.example" and "https://…" are both
   // absolute to a browser, so anything but a single leading slash is dropped.
   const raw = String(formData.get("next") ?? "");
-  const next = /^\/(?!\/)/.test(raw) ? raw : "/";
+  const next = safeNext(raw);
 
   if (!email || !password) {
     return { error: "Email and password are required." };

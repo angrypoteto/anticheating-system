@@ -6,6 +6,7 @@ import { isIncomplete, whatIsMissing } from "@/lib/onboarding";
 import { AuthShell } from "@/components/auth-shell";
 import { classLabel } from "@/lib/classes";
 import { WelcomeForm } from "./form";
+import { safeNext } from "@/lib/safe-next";
 
 /** What selectable_sections() returns, before it is given a label. */
 type PickableRow = {
@@ -38,8 +39,8 @@ export default async function WelcomePage({
   const { next: rawNext } = await searchParams;
   // Only ever a path on this site, and never back to here.
   const candidate = rawNext ?? "/";
-  const next =
-    /^\/(?!\/)/.test(candidate) && !candidate.startsWith("/welcome") ? candidate : "/";
+  const safe = safeNext(candidate);
+  const next = safe.startsWith("/welcome") ? "/" : safe;
 
   const missing = await whatIsMissing(profile);
   if (!isIncomplete(missing)) redirect(next);

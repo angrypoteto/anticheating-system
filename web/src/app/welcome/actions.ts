@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { whatIsMissing } from "@/lib/onboarding";
+import { safeNext } from "@/lib/safe-next";
 
 export type WelcomeState = { error?: string };
 
@@ -24,7 +25,7 @@ export async function completeProfile(
   const fullName = String(formData.get("fullName") ?? "").replace(/\s+/g, " ").trim();
   const sectionId = String(formData.get("sectionId") ?? "").trim();
   const rawNext = String(formData.get("next") ?? "");
-  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
+  const next = safeNext(rawNext);
 
   const missing = await whatIsMissing(profile);
   const supabase = await createClient();

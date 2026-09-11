@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { classesEnabled, classSelfJoinAllowed } from "@/lib/settings";
+import { safeNext } from "@/lib/safe-next";
 
 export type SignupState = { error?: string };
 
@@ -24,7 +25,7 @@ export async function signup(
   const confirm = String(formData.get("confirm") ?? "");
   const sectionId = String(formData.get("sectionId") ?? "").trim();
   const rawNext = String(formData.get("next") ?? "");
-  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : "/";
+  const next = safeNext(rawNext);
 
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Use at least 8 characters for your password." };

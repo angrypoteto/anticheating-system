@@ -46,6 +46,12 @@ export default async function TakeExamPage({
 
   if (!exam) notFound();
 
+  // Staff do not sit exams. Opening one — from the share link, or out of
+  // curiosity — used to create a real sitting that showed up in the results and
+  // locked them out after one go. They get the demo instead, which is the same
+  // paper with nothing saved. (The database refuses a staff sitting as well.)
+  if (user.role !== "STUDENT") redirect(`/exams/${id}/demo`);
+
   const nowMs = Date.now();
   const notYet = exam.opens_at && new Date(exam.opens_at).getTime() > nowMs;
   const over = exam.closes_at && new Date(exam.closes_at).getTime() <= nowMs;

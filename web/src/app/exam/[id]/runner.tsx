@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { createDepartureTracker, type FlagType } from "@/lib/departure";
 import { ShieldMark } from "@/components/auth-shell";
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
-import { explainSubmission } from "@/lib/submission";
+import { explainSubmission, type SubmitReason } from "@/lib/submission";
+import { gradeDemo } from "@/app/exams/[id]/demo/actions";
 import { ScreenRecorder, describeShareProblem } from "@/lib/screen-recorder";
 import { submitExam, type SubmitState } from "./actions";
 
@@ -30,6 +31,7 @@ export function ExamRunner({
   startedAt,
   savedAnswers,
   initialStrikes,
+  demo,
 }: {
   sessionId: string;
   examTitle: string;
@@ -40,6 +42,12 @@ export function ExamRunner({
   savedAnswers: Record<string, string>;
   /** Warnings already standing against this sitting, counted by the database. */
   initialStrikes: number;
+  /**
+   * A teacher trying their own paper. Everything a student sees and does,
+   * with every write taken out: no sitting, no saved answers, no flags on the
+   * monitor, no recording. Marked on the server at the end, then thrown away.
+   */
+  demo?: { examId: string };
 }) {
   const [started, setStarted] = useState(false);
   /**
@@ -92,6 +100,17 @@ export function ExamRunner({
     {},
   );
 
+  // Demo only: how the attempt ended, and the count the database would have
+  // kept — one departure is one strike, however many signals it raises.
+  const [demoResult, setDemoResult] = useState<{
+    reason: SubmitReason;
+    score: number | null;
+    correct: number;
+    total: number;
+    error: string | null;
+  } | null>(null);
+  const demoStrikes = useRef({ count: initialStrikes, lastAt: -Infinity });
+
   const supabase = useRef(createClient());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -105,7 +124,7 @@ export function ExamRunner({
   // that would go stale.
   const [tracker] = useState(() => createDepartureTracker({}));
 
-  const done = submitState.submitted === true;
+  const done = submitState.submitted === true || demoResult !== null;
 
   // Out of fullscreen where fullscreen is required: the paper is hidden until
   // they are back. Leaving used to cost one warning and then buy an unwatched
@@ -126,12 +145,28 @@ export function ExamRunner({
   // debounced, so clicking Submit within that debounce — or being auto-submitted
   // — used to throw the answer away.
   const flushRef = useRef<() => Promise<void>>(async () => {});
+  // The answers as they stand, for callbacks that outlive a render. Declared
+  // before finish(), which reads it to mark a demo.
+  const answersRef = useRef<Record<string, string>>({});
 
   const finish = useCallback((reason: string) => {
     if (endedRef.current) return;
     endedRef.current = true;
 
     const send = () => {
+      if (demo) {
+        // Nothing to submit: mark it, say how it went, keep nothing.
+        const why: SubmitReason =
+          reason === "strikes" ? "STRIKES" : reason === "timeout" ? "TIME_UP" : "MANUAL";
+        void gradeDemo(demo.examId, answersRef.current).then((r) =>
+          setDemoResult(
+            "error" in r
+              ? { reason: why, score: null, correct: 0, total: 0, error: r.error }
+              : { reason: why, ...r, error: null },
+          ),
+        );
+        return;
+      }
       const form = formRef.current;
       if (!form) return;
       (form.elements.namedItem("reason") as HTMLInputElement).value = reason;
@@ -146,13 +181,12 @@ export function ExamRunner({
       Promise.all([flushRef.current(), recorderRef.current?.stop()]),
       new Promise((r) => setTimeout(r, 2000)),
     ]).then(send, send);
-  }, []);
+  }, [demo]);
 
   // Listeners and interval callbacks capture their first render's values, so the
   // live index, answers and current question are mirrored into refs they can read.
   const currentQuestionRef = useRef<string | null>(null);
   const indexRef = useRef(0);
-  const answersRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     indexRef.current = index;
@@ -176,20 +210,30 @@ export function ExamRunner({
       // against whichever tally happened to be counting. record_flag() also
       // decides whether this signal is a new departure or more evidence of the
       // one already counted, which is a judgement only the whole record can make.
-      const { data, error } = await supabase.current.rpc("record_flag", {
-        p_session_id: sessionId,
-        p_type: type,
-        p_question_id: questionId ?? currentQuestionRef.current,
-      });
+      let next: number;
+      if (demo) {
+        // The rule record_flag() applies, kept here instead: a honeypot is its
+        // own strike, and departure signals inside ten seconds are one.
+        const tally = demoStrikes.current;
+        const now = Date.now();
+        if (type === "HONEYPOT" || now - tally.lastAt > 10_000) tally.count += 1;
+        if (type !== "HONEYPOT") tally.lastAt = now;
+        next = tally.count;
+      } else {
+        const { data, error } = await supabase.current.rpc("record_flag", {
+          p_session_id: sessionId,
+          p_type: type,
+          p_question_id: questionId ?? currentQuestionRef.current,
+        });
 
-      if (error || typeof data !== "number") {
-        // Nothing was written down, so nothing has been earned. Ending a paper on
-        // a strike the record does not contain is the failure this exists to stop.
-        setWarning("Leaving the exam window is recorded. Check your connection.");
-        return;
+        if (error || typeof data !== "number") {
+          // Nothing was written down, so nothing has been earned. Ending a paper on
+          // a strike the record does not contain is the failure this exists to stop.
+          setWarning("Leaving the exam window is recorded. Check your connection.");
+          return;
+        }
+        next = data;
       }
-
-      const next = data;
       setStrikes(next);
 
       if (next >= lockdown.maxStrikes) {
@@ -206,7 +250,7 @@ export function ExamRunner({
         );
       }
     },
-    [sessionId, lockdown.maxStrikes, started, superseded, finish],
+    [sessionId, lockdown.maxStrikes, started, superseded, finish, demo],
   );
 
   useEffect(() => {
@@ -246,6 +290,7 @@ export function ExamRunner({
 
   const beaconFlag = useCallback(
     (type: FlagType) => {
+      if (demo) return;
       const token = tokenRef.current;
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -269,7 +314,7 @@ export function ExamRunner({
         // The page is going. There is nowhere left to report the failure to.
       }
     },
-    [sessionId],
+    [sessionId, demo],
   );
 
   const noteDeparture = useCallback(
@@ -385,6 +430,7 @@ export function ExamRunner({
 
   const persist = useCallback(
     async (questionId: string, value: string) => {
+      if (demo) return;
       setSaving(true);
       await supabase.current.from("answers").upsert(
         { session_id: sessionId, question_id: questionId, response: value },
@@ -392,7 +438,7 @@ export function ExamRunner({
       );
       setSaving(false);
     },
-    [sessionId],
+    [sessionId, demo],
   );
 
   const onAnswer = (questionId: string, value: string) => {
@@ -497,6 +543,7 @@ export function ExamRunner({
         supabase: supabase.current,
         sessionId,
         onEnded: () => onShareEndedRef.current(),
+        rehearsal: Boolean(demo),
         onUploadFailed: () =>
           setWarning(
             "Part of your screen recording could not be uploaded. Check your connection.",
@@ -529,6 +576,52 @@ export function ExamRunner({
 
   const question = questions[index];
   const isLast = index === questions.length - 1;
+
+  if (demoResult) {
+    const said = explainSubmission(demoResult.reason, {
+      strikes,
+      maxStrikes: lockdown.maxStrikes,
+    });
+    return (
+      <Shell title={examTitle}>
+        <DemoNote />
+        <h2 className={`mt-4 text-lg font-medium ${said.blamed ? "text-amber-800" : "text-gray-900"}`}>
+          {said.headline}
+        </h2>
+        {said.detail ? (
+          <p className="mt-2 text-sm leading-relaxed text-gray-600">{said.detail}</p>
+        ) : null}
+        <p className="mt-4 border-t border-gray-200 pt-4 text-sm text-gray-600">
+          {demoResult.error ? (
+            demoResult.error
+          ) : (
+            <>
+              A student would have scored{" "}
+              <span className="text-lg font-semibold tabular-nums text-gray-900">
+                {demoResult.score}%
+              </span>{" "}
+              ({demoResult.correct} of {demoResult.total} correct).
+            </>
+          )}
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex h-[38px] items-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
+          >
+            Try it again
+          </button>
+          <Link
+            href={`/exams/${demo?.examId ?? ""}`}
+            className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+          >
+            Back to the exam
+          </Link>
+        </div>
+      </Shell>
+    );
+  }
 
   if (done) {
     // The same words the exam page will give if they come back to it later.
@@ -588,7 +681,8 @@ export function ExamRunner({
   if (!started) {
     return (
       <Shell title={examTitle}>
-        <h2 className="text-[15px] font-semibold text-gray-900">
+        {demo ? <DemoNote /> : null}
+        <h2 className={`text-[15px] font-semibold text-gray-900 ${demo ? "mt-5" : ""}`}>
           Before you begin
         </h2>
         <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-gray-600 marker:text-gray-300">
@@ -705,6 +799,11 @@ export function ExamRunner({
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <ShieldMark className="h-5 w-5 shrink-0" ground="light" />
           <span className="truncate text-[14.5px] font-semibold">{examTitle}</span>
+          {demo ? (
+            <span className="shrink-0 rounded-full bg-gray-900 px-2 py-0.5 text-[12px] font-semibold text-white">
+              Demo, nothing is saved
+            </span>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-3.5 sm:gap-5.5">
           <span className="hidden text-[13px] text-gray-400 sm:inline" aria-live="polite">
@@ -1152,6 +1251,17 @@ function LockMark({ className }: { className?: string }) {
     </svg>
   );
 }
+/** The line that makes it impossible to mistake a demo for a sitting. */
+function DemoNote() {
+  return (
+    <p className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-gray-700">
+      <span className="font-semibold text-gray-900">Demo mode.</span> This is exactly what a
+      student sees, but nothing is saved: no sitting, no flags on the monitor, no recording.
+      Try it as often as you like.
+    </p>
+  );
+}
+
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">

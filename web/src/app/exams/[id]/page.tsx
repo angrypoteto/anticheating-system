@@ -153,6 +153,17 @@ export default async function ExamEditorPage({
               >
                 Monitor &amp; results
               </Link>
+              {qs.length ? (
+                // Opens in its own tab: the demo goes fullscreen and asks for the
+                // screen, and the editor should still be there afterwards.
+                <Link
+                  href={`/exams/${exam.id}/demo`}
+                  target="_blank"
+                  className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+                >
+                  Try as a student
+                </Link>
+              ) : null}
               <PublishControls
                 examId={exam.id}
                 status={exam.status}

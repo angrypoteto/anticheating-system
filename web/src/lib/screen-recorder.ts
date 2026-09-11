@@ -130,6 +130,11 @@ type RecorderOptions = {
   onEnded: () => void;
   /** A piece could not be uploaded after every retry. */
   onUploadFailed?: () => void;
+  /**
+   * A teacher trying the paper in demo mode: ask for the screen exactly as a
+   * student would be asked, but record nothing and upload nothing.
+   */
+  rehearsal?: boolean;
 };
 
 export class ScreenRecorder {
@@ -193,6 +198,17 @@ export class ScreenRecorder {
     if (!track || (surface && surface !== "monitor")) {
       stream.getTracks().forEach((t) => t.stop());
       return { ok: false, problem: "not-whole-screen" };
+    }
+
+    if (this.opts.rehearsal) {
+      this.stream = stream;
+      this.stopping = false;
+      track.addEventListener("ended", () => {
+        if (this.stopping) return;
+        this.stream = null;
+        this.opts.onEnded();
+      });
+      return { ok: true };
     }
 
     const sent = performance.now();

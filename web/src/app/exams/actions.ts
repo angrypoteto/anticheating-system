@@ -230,13 +230,23 @@ export async function setExamStatus(
     if (!current?.published_at) patch.published_at = new Date().toISOString();
   }
 
+  // The database refuses draft while somebody is mid-paper, with a message
+  // written for the teacher; it is passed on as it is.
   const { error } = await supabase.from("exams").update(patch).eq("id", examId);
   if (error) return { error: error.message };
 
   revalidatePath(`/exams/${examId}`);
   revalidatePath("/exams");
   revalidatePath("/admin/exams");
-  return { success: `Exam ${status.toLowerCase()}.` };
+  revalidatePath("/teacher/exams");
+  return {
+    success:
+      status === "DRAFT"
+        ? "Back in draft. Students cannot see it until you publish it again."
+        : status === "PUBLISHED"
+          ? "Published."
+          : "Archived.",
+  };
 }
 
 export async function deleteExam(
@@ -406,7 +416,16 @@ export async function deleteQuestion(
 
   const supabase = await createClient();
   const { error } = await supabase.from("questions").delete().eq("id", questionId);
-  if (error) return { error: error.message };
+  if (error) {
+    // A student's answer points at the question, so the database will not let
+    // it go. Say that, rather than repeating a foreign-key error at a teacher.
+    if (error.code === "23503") {
+      return {
+        error: "Students have already answered this question, so it can't be removed. You can still edit it.",
+      };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath(`/exams/${examId}`);
   return { success: "Question deleted." };

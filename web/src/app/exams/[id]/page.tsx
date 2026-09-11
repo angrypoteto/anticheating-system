@@ -95,11 +95,15 @@ export default async function ExamEditorPage({
   // only students the system knows about are those who already turned up.
   const [{ data: roster }, { data: sat }, { data: everyone }] = await Promise.all([
     supabase.from("exam_access").select("student_id").eq("exam_id", exam.id),
-    supabase.from("exam_sessions").select("student_id").eq("exam_id", exam.id),
+    supabase.from("exam_sessions").select("student_id, status").eq("exam_id", exam.id),
     supabase.from("users").select("id, email, full_name").eq("role", "STUDENT"),
   ]);
   const onRoster = new Set((roster ?? []).map((r) => r.student_id));
   const hasSat = new Set((sat ?? []).map((r) => r.student_id));
+  // Whether it can go back to draft right now, and what that would mean for the
+  // papers already handed in.
+  const inProgress = (sat ?? []).filter((r) => r.status === "IN_PROGRESS").length;
+  const submitted = (sat ?? []).length - inProgress;
   const people: RosterPerson[] = (everyone ?? [])
     .map((u) => ({
       id: u.id,
@@ -154,15 +158,24 @@ export default async function ExamEditorPage({
                 status={exam.status}
                 questionCount={qs.length}
                 classCount={selectedClasses.length}
+                submitted={submitted}
+                inProgress={inProgress}
               />
             </div>
           </div>
         </header>
 
         {published ? (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-            This exam is published, so its questions and answer keys are frozen and
-            it cannot return to draft. Archive it to withdraw it from students.
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            This exam is published, so its questions and answer keys are frozen. To
+            change them, press Edit: it goes back to draft, hidden from students,
+            until you publish it again.
+          </div>
+        ) : submitted ? (
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+            {submitted === 1 ? "One student has" : `${submitted} students have`} already sat
+            this exam and keep the score they were given. Questions they answered can be
+            edited, but not removed. {exam.status === "ARCHIVED" ? "Students cannot see it while it is archived." : "Students cannot see it until you publish it again."}
           </div>
         ) : null}
 

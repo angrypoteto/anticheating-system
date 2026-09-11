@@ -8,6 +8,7 @@ legitimately does.
     npm run qa:pages      # every route, as every role (needs the app running)
     npm run qa:classroom  # fifty students sit one exam (needs the app running)
     npm run qa:crowd      # ten admins, ten teachers, ten students at once
+    npm run qa:speed      # how fast every safeguard reaches the teacher's monitor
 
 `qa:pages` loads pages over HTTP and defaults to `http://localhost:3001`; set
 `QA_BASE` to point it elsewhere.
@@ -34,3 +35,12 @@ failures that survive careful single-user testing are races: two people creating
 the same thing, a check-then-insert with a gap in the middle. It measures each
 admin page alone first, so a slow number under eighty simultaneous renders can
 be read as contention on one server rather than mistaken for a slow page.
+
+`qa:speed` times each safeguard end to end: the flag being written by
+`record_flag()`, and the same row arriving on a teacher's monitor over Realtime,
+for every flag type, plus answer saving, opening a recording, uploading a
+thirty-second piece of video and a teacher fetching a link to watch it. The
+in-browser half of each detection is stated from the code, since there is no
+browser in the run. It also checks that the monitor's fifteen-second refresh
+finds every flag, including any the live feed dropped. `SPEED_RUNS` sets how
+many of each (default 8).

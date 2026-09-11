@@ -234,10 +234,11 @@ export class ScreenRecorder {
     // its Stop sharing button — never for stop() below.
     track.addEventListener("ended", () => {
       if (this.stopping) return;
-      void this.closePiece().then(() => {
-        this.stream = null;
-        this.opts.onEnded();
-      });
+      // Report first, tidy up second: the flag used to wait for the last video
+      // piece to finish encoding, which put the teacher's warning behind it.
+      this.stream = null;
+      this.opts.onEnded();
+      void this.closePiece();
     });
 
     this.startPiece();

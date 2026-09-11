@@ -258,6 +258,8 @@ enum FlagType {
   SCREEN_SHARE_ENDED
   /// A browser extension touched the exam page. Evidence for the teacher, never a strike.
   EXTENSION_DETECTED
+  /// Print Screen, or the Windows/Command + Shift screenshot shortcut, on a computer.
+  SCREENSHOT
 }
 
 enum FlagResolution {

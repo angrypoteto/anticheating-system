@@ -57,6 +57,7 @@ const FLAG_LABELS: Record<string, string> = {
   HONEYPOT: "honeypot triggered",
   SCREEN_SHARE_ENDED: "stopped sharing screen",
   EXTENSION_DETECTED: "browser extension on the page",
+  SCREENSHOT: "tried to take a screenshot",
 };
 
 export function LiveMonitor({
@@ -172,7 +173,18 @@ export function LiveMonitor({
       if (freshFlags) setFlags(freshFlags as FlagRow[]);
     }
 
+    // A safety net under the live stream. Realtime can drop an event while the
+    // socket is up — the speed drill caught one flag in fifty-six that never
+    // arrived — and nothing reconnected to reconcile it, so the teacher simply
+    // never saw that flag until they reloaded. Now anything the stream missed
+    // turns up within fifteen seconds. Skipped while the tab is hidden, when
+    // nobody is looking and a reconnect will reconcile anyway.
+    const safetyNet = setInterval(() => {
+      if (document.visibilityState === "visible") void reconcile();
+    }, 15_000);
+
     return () => {
+      clearInterval(safetyNet);
       client.removeChannel(channel);
     };
   }, [examId, initialSessions, studentNames]);

@@ -29,8 +29,12 @@ const EXTENSION_SCHEMES = [
 /** Custom elements the app itself (or Next.js) puts on the page. */
 const OWN_ELEMENTS = new Set(["next-route-announcer", "nextjs-portal"]);
 
-/** Attributes the app sets on <html> and <body>. Anything else there is foreign. */
-const OWN_ROOT_ATTRIBUTES = new Set(["lang", "class", "style", "dir", "data-theme"]);
+/**
+ * Attributes the app sets on <html> and <body>. Anything else there is foreign.
+ * data-shield is the runner's own: it hides the paper while a screenshot
+ * shortcut is being pressed.
+ */
+const OWN_ROOT_ATTRIBUTES = new Set(["lang", "class", "style", "dir", "data-theme", "data-shield"]);
 
 /** The part of an extension URL that names the extension. */
 function extensionId(url: string): string | null {
@@ -136,7 +140,9 @@ export function watchForExtensions(
         if (n instanceof Element) pending.add(n);
       });
     }
-    if (pending.size && !timer) timer = setTimeout(flush, 400);
+    // Long enough to gather a burst into one look, short enough that the
+    // teacher hears about it within a fraction of a second.
+    if (pending.size && !timer) timer = setTimeout(flush, 150);
   });
 
   observer.observe(doc.documentElement, { subtree: true, childList: true, attributes: true });

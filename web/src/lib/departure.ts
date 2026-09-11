@@ -6,7 +6,9 @@ export type FlagType =
   /** Sharing stopped while the exam was recording the screen. */
   | "SCREEN_SHARE_ENDED"
   /** A browser extension touched the exam page. Evidence, never a strike. */
-  | "EXTENSION_DETECTED";
+  | "EXTENSION_DETECTED"
+  /** Print Screen, or the Windows/Command + Shift screenshot shortcut. */
+  | "SCREENSHOT";
 
 /** Leaving for another tab or app says more than losing focus to a notification. */
 const PRECEDENCE: FlagType[] = ["TAB_SWITCH", "FULLSCREEN_EXIT", "WINDOW_BLUR"];

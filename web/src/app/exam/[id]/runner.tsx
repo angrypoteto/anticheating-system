@@ -258,7 +258,11 @@ export function ExamRunner({
         );
       } else {
         setWarning(
-          `Warning ${next} of ${lockdown.maxStrikes}: leaving the exam window is recorded.`,
+          `Warning ${next} of ${lockdown.maxStrikes}: ${
+            type === "SCREENSHOT"
+              ? "screenshots are not allowed"
+              : "leaving the exam window is recorded"
+          }.`,
         );
       }
     },
@@ -268,6 +272,13 @@ export function ExamRunner({
   useEffect(() => {
     tracker.setOnStrike(recordFlag);
   }, [tracker, recordFlag]);
+
+  // The current recordFlag, for listeners that are attached once and must not
+  // be torn down and re-attached every time it changes.
+  const recordFlagRef = useRef(recordFlag);
+  useEffect(() => {
+    recordFlagRef.current = recordFlag;
+  }, [recordFlag]);
 
   /**
    * A departure the tab may not live long enough to report.
@@ -372,7 +383,62 @@ export function ExamRunner({
       else noteReturn();
     };
     const onBlur = () => noteDeparture("WINDOW_BLUR");
-    const onFocus = () => noteReturn();
+
+    // --- screenshots ---
+    //
+    // No browser reports a screenshot, and none can stop one. What the page
+    // does get is the keys that start one. The Windows or Command key is the
+    // first key of Win+Shift+S and Cmd+Shift+3/4/5, so the moment it goes down
+    // the paper is covered (see the shield in globals.css) and stays covered
+    // while the window is away — the capture tool opens onto a blank panel.
+    // Print Screen captures on the key itself, before the page hears of it, so
+    // that one is reported and the picture on the clipboard is replaced.
+    let shieldTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastShot = -Infinity;
+    const raiseShield = () => {
+      if (shieldTimer) clearTimeout(shieldTimer);
+      shieldTimer = null;
+      document.documentElement.dataset.shield = "on";
+    };
+    const lowerShieldSoon = () => {
+      if (shieldTimer) clearTimeout(shieldTimer);
+      shieldTimer = setTimeout(() => {
+        // Still away (a capture tool has the focus): leave it up until they are back.
+        if (document.hasFocus()) delete document.documentElement.dataset.shield;
+      }, 700);
+    };
+    const noteScreenshot = (how: string) => {
+      const now = Date.now();
+      if (now - lastShot < 3000) return; // one press is one report
+      lastShot = now;
+      void recordFlagRef.current("SCREENSHOT", undefined, how);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Meta" || e.key === "OS") raiseShield();
+      if (e.key === "PrintScreen") {
+        raiseShield();
+        noteScreenshot("Print Screen");
+      } else if (e.metaKey && e.shiftKey) {
+        noteScreenshot("Windows or Command key + Shift");
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        noteScreenshot("Print Screen");
+        // The capture is already on the clipboard. Overwrite it, so pasting it
+        // somewhere gets a sentence instead of the paper.
+        void navigator.clipboard
+          ?.writeText("Screenshots are not allowed during this exam.")
+          .catch(() => {});
+        lowerShieldSoon();
+      }
+      if (e.key === "Meta" || e.key === "OS") lowerShieldSoon();
+    };
+
+    const onFocus = () => {
+      noteReturn();
+      lowerShieldSoon();
+    };
     const onFullscreenChange = () => {
       const inside = Boolean(document.fullscreenElement);
       setFullscreen(inside);
@@ -394,6 +460,8 @@ export function ExamRunner({
     window.addEventListener("focus", onFocus);
     document.addEventListener("fullscreenchange", onFullscreenChange);
     window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
 
     if (lockdown.blockCopyPaste) {
       document.addEventListener("copy", block);
@@ -408,6 +476,10 @@ export function ExamRunner({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      if (shieldTimer) clearTimeout(shieldTimer);
+      delete document.documentElement.dataset.shield;
       document.removeEventListener("copy", block);
       document.removeEventListener("paste", block);
       document.removeEventListener("cut", block);
@@ -438,11 +510,6 @@ export function ExamRunner({
     const id = setTimeout(() => setExtensionTraces(scanForExtensions()), 1200);
     return () => clearTimeout(id);
   }, [lockdown.detectExtensions]);
-
-  const recordFlagRef = useRef(recordFlag);
-  useEffect(() => {
-    recordFlagRef.current = recordFlag;
-  }, [recordFlag]);
 
   useEffect(() => {
     if (!started || done || superseded || !lockdown.detectExtensions) return;
@@ -756,6 +823,10 @@ export function ExamRunner({
             </li>
           ) : null}
           <li>
+            Screenshots are not allowed. Print Screen, or the Windows or Command
+            key with Shift, counts as a warning.
+          </li>
+          <li>
             Leaving the exam window counts as one warning each time, however
             you leave it. {lockdown.maxStrikes} warnings end the attempt
             automatically.
@@ -858,6 +929,19 @@ export function ExamRunner({
 
   return (
     <main className="flex min-h-screen flex-col bg-gray-50">
+      {/* Shown by CSS, not state, the instant a screenshot key goes down. */}
+      <div
+        data-exam-shield
+        aria-hidden
+        className="fixed inset-0 z-[100] flex-col items-center justify-center gap-2 bg-white px-6 text-center"
+      >
+        <p className="text-[22px] font-semibold tracking-[-0.015em] text-gray-900">
+          Screenshots are not allowed
+        </p>
+        <p className="max-w-sm text-sm text-gray-500">
+          Let go of the key to carry on. This has been recorded.
+        </p>
+      </div>
       <header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-gray-200 bg-white px-4 py-3 text-gray-900 sm:px-7">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <ShieldMark className="h-5 w-5 shrink-0" ground="light" />

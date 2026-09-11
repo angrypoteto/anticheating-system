@@ -133,6 +133,19 @@ a, button {
   outline-offset: 2px;
 }
 
+/* The screenshot shield. The runner sets data-shield on <html> the moment the
+   Windows or Command key goes down — the first key of Win+Shift+S and
+   Cmd+Shift+3/4/5 — so a capture taken with that shortcut shows this panel, not
+   the paper. It is an attribute and a stylesheet rule rather than React state
+   because it has to be on screen in the very next frame, before the capture
+   tool opens, and a render could miss that. */
+[data-exam-shield] {
+  display: none;
+}
+html[data-shield="on"] [data-exam-shield] {
+  display: flex;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     transition-duration: 0ms !important;

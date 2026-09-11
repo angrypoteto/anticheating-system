@@ -94,6 +94,8 @@ export function describeFlag(type: FlagType | string): string {
       return "stopped sharing their screen";
     case "EXTENSION_DETECTED":
       return "a browser extension changed the exam page";
+    case "SCREENSHOT":
+      return "tried to take a screenshot";
     default:
       return "left the exam window";
   }

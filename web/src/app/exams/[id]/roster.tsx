@@ -43,12 +43,12 @@ export function Roster({
   const missing = assigned.filter((p) => !p.sat);
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+    <section className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">Who it is for</h2>
+        <h2 className="text-[15px] font-semibold text-gray-900">Who it is for</h2>
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {assigned.length} assigned
-          {assigned.length ? ` · ${missing.length} yet to sit it` : ""}
+          {assigned.length ? `, ${missing.length} yet to sit it` : ""}
         </span>
       </div>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -66,7 +66,7 @@ export function Roster({
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search students…"
-        className="mt-4 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+        className="mt-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
       />
 
       {state.error ? (
@@ -86,14 +86,14 @@ export function Roster({
                 <button
                   type="submit"
                   disabled={pending}
-                  title={p.sat ? "Has sat it — remove from the roster" : "Remove from the roster"}
+                  title={p.sat ? "Has sat it. Remove from the roster" : "Remove from the roster"}
                   className={`rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-50 ${
                     p.sat
                       ? "border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/60 dark:text-green-300"
                       : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300"
                   }`}
                 >
-                  {p.sat ? "✓ " : "· "}
+                  {p.sat ? "✓ " : ""}
                   {p.name} ×
                 </button>
               </form>
@@ -131,7 +131,7 @@ export function Roster({
           </ul>
           {off.length > 60 ? (
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Showing 60 — search to narrow it down.
+              Showing 60. Search to narrow it down.
             </p>
           ) : null}
         </details>

@@ -13,10 +13,10 @@ import {
 import type { LockdownConfig, TimerConfig } from "@/lib/exam-config";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
+  "rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
 const checkbox = "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300";
 
 function Feedback({ state }: { state: ActionState }) {
@@ -298,7 +298,7 @@ export function QuestionForm({
           <button
             type="button"
             onClick={onDone}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             Cancel
           </button>
@@ -345,9 +345,9 @@ export function QuestionRow({
           <span className="mr-2 text-gray-400 dark:text-gray-600">{index + 1}.</span>
           {question.prompt}
         </p>
-        <p className="mt-1 text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+        <p className="mt-1 text-[12.5px] text-gray-400">
           {question.type.replace("_", " ").toLowerCase()}
-          {question.choices?.length ? ` · ${question.choices.length} choices` : ""}
+          {question.choices?.length ? `, ${question.choices.length} choices` : ""}
         </p>
         {state.error ? (
           <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
@@ -362,7 +362,7 @@ export function QuestionRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
         >
           Edit
         </button>
@@ -372,7 +372,7 @@ export function QuestionRow({
           <button
             type="submit"
             disabled={pending}
-            className="text-gray-600 underline underline-offset-4 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
+            className="text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
           >
             {pending ? "…" : "Delete"}
           </button>

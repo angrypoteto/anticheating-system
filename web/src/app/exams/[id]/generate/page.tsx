@@ -26,7 +26,7 @@ export async function generateMetadata({
     .select("title")
     .eq("id", id)
     .maybeSingle();
-  return { title: data?.title ? `${data.title} — generating` : "Generating questions" };
+  return { title: data?.title ? `${data.title} (generating)` : "Generating questions" };
 }
 
 export default async function GeneratePage({
@@ -60,11 +60,11 @@ export default async function GeneratePage({
         <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
           <Link
             href={`/exams/${exam.id}`}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             ← Back to exam
           </Link>
-          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+          <h1 className="mt-3 text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-50">
             Generate questions
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -73,7 +73,7 @@ export default async function GeneratePage({
         </header>
 
         {!activeKeys ? (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
             No active AI provider key is configured, so generation will fail. An
             administrator can add one under Admin console → AI provider keys.
           </div>

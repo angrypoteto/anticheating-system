@@ -18,6 +18,7 @@ import {
   Reachable,
   RowWhen,
   Stat,
+  Stats,
 } from "./ui";
 import { FirstRun } from "./first-run";
 import { LiveStatus } from "./live-status";
@@ -157,7 +158,7 @@ export default async function AdminOverview() {
           { label: "Add people", note: "Instructors first, then students.", done: false },
           {
             label: "Add a provider key",
-            note: `${activeKeysAtSetup} stored — generation needs at least one.`,
+            note: `${activeKeysAtSetup} stored. Generation needs at least one.`,
             done: activeKeysAtSetup > 0,
           },
         ]}
@@ -203,16 +204,16 @@ export default async function AdminOverview() {
       const ids = new Set<string>((e.exam_sections ?? []).map((t) => t.section_id));
       if (e.section_id) ids.add(e.section_id);
       const embed = Array.isArray(e.subjects) ? e.subjects[0] : e.subjects;
-      const sittings = sittingsPerExam.get(e.id) ?? 0;
-      const parts = [
-        embed?.name,
-        useClasses
+      return {
+        ...e,
+        state: windowOf(e),
+        subject: embed?.name ?? null,
+        classes: useClasses
           ? [...ids].map((id) => sectionName.get(id) ?? "unknown class").join(", ")
           : null,
-        e.created_by_id ? personName.get(e.created_by_id) : null,
-        `${sittings} sitting${sittings === 1 ? "" : "s"}`,
-      ].filter(Boolean);
-      return { ...e, state: windowOf(e), detail: parts.join(" · ") };
+        by: e.created_by_id ? (personName.get(e.created_by_id) ?? null) : null,
+        sittings: sittingsPerExam.get(e.id) ?? 0,
+      };
     });
 
   // --- needs a look ---------------------------------------------------------
@@ -236,7 +237,7 @@ export default async function AdminOverview() {
       who: personName.get(sitting.student_id) ?? "unknown student",
       why: `${n} open warning${n === 1 ? "" : "s"} on ${
         examTitle.get(sitting.exam_id) ?? "an exam"
-      } — ${kinds}`,
+      }: ${kinds}`,
     });
   }
 
@@ -253,7 +254,7 @@ export default async function AdminOverview() {
       who: personName.get(s.student_id) ?? "unknown student",
       why: `Submitted by the system on ${
         examTitle.get(s.exam_id) ?? "an exam"
-      } — the warnings ran out`,
+      } after the warnings ran out`,
     });
   }
 
@@ -309,35 +310,25 @@ export default async function AdminOverview() {
     .sort((a, b) => b.published + b.drafts - (a.published + a.drafts));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Overview"
         subtitle={`Everything sat, flagged and generated across ${
           settings?.institution_name ?? "Proctorly"
         }.`}
         action={
-          <PrimaryAction href="/admin/exams/new">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M12 5.5v13M5.5 12h13"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-            Generate exams &amp; quizzes
-          </PrimaryAction>
+          <PrimaryAction href="/admin/exams/new">Generate exams &amp; quizzes</PrimaryAction>
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Stats>
         <Stat
           label="Students"
           value={String(students.length)}
           note={
             useClasses
-              ? `across ${sections?.length ?? 0} class${sections?.length === 1 ? "" : "es"}`
-              : "all students"
+              ? `Across ${sections?.length ?? 0} class${sections?.length === 1 ? "" : "es"}`
+              : "All students"
           }
         />
         <Stat
@@ -349,16 +340,16 @@ export default async function AdminOverview() {
           label="Open flags"
           value={String((openFlags ?? []).length)}
           tone={(openFlags ?? []).length ? "warn" : "plain"}
-          note={`on ${flaggedSittings} sitting${flaggedSittings === 1 ? "" : "s"}`}
+          note={`On ${flaggedSittings} sitting${flaggedSittings === 1 ? "" : "s"}`}
         />
         <Stat
           label="Average score"
           value={average === null ? "—" : `${average}%`}
-          note={`pass mark ${passThreshold}%`}
+          note={`Pass mark ${passThreshold}%`}
         />
-      </div>
+      </Stats>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <div className="space-y-5">
           <Card
             title="Recently given"
@@ -366,20 +357,52 @@ export default async function AdminOverview() {
             action={<CardLink href="/admin/exams">All exams &amp; quizzes</CardLink>}
           >
             {recentExams.length ? (
-              recentExams.map((e) => (
-                <ListRow key={e.id} title={e.title} detail={e.detail}>
-                  {e.state === "open" ? (
-                    <Pill tone="good" dot>
-                      Open
-                    </Pill>
-                  ) : e.state === "scheduled" ? (
-                    <Pill tone="warn">Scheduled</Pill>
-                  ) : (
-                    <Pill tone="muted">Closed</Pill>
-                  )}
-                  <RowWhen>{shortDate(e.published_at ?? e.created_at)}</RowWhen>
-                </ListRow>
-              ))
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[600px] text-left text-[13px]">
+                  <thead className="text-[12.5px] text-gray-400">
+                    <tr className="border-b border-gray-100">
+                      <th className="px-5 py-2.5 font-medium">Exam</th>
+                      {useClasses ? <th className="px-3 py-2.5 font-medium">Class</th> : null}
+                      <th className="px-3 py-2.5 font-medium">Set by</th>
+                      <th className="px-3 py-2.5 font-medium">Sat</th>
+                      <th className="px-3 py-2.5 font-medium">Status</th>
+                      <th className="px-5 py-2.5 font-medium">Published</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentExams.map((e) => (
+                      <tr key={e.id} className="border-b border-gray-100 last:border-b-0">
+                        <td className="px-5 py-2.5">
+                          <span className="block text-sm font-medium text-gray-900">{e.title}</span>
+                          {e.subject ? (
+                            <span className="block text-[12.5px] text-gray-400">{e.subject}</span>
+                          ) : null}
+                        </td>
+                        {useClasses ? (
+                          <td className="px-3 py-2.5 text-gray-700">{e.classes || "—"}</td>
+                        ) : null}
+                        <td className="px-3 py-2.5 text-gray-700">{e.by ?? "—"}</td>
+                        <td className="px-3 py-2.5 tabular-nums text-gray-900">{e.sittings}</td>
+                        <td className="px-3 py-2.5">
+                          {e.state === "open" ? (
+                            <span className="inline-flex items-center gap-1.75 font-medium text-green-700">
+                              <span aria-hidden className="h-1.75 w-1.75 rounded-full bg-current" />
+                              Open
+                            </span>
+                          ) : e.state === "scheduled" ? (
+                            <span className="font-medium text-amber-800">Scheduled</span>
+                          ) : (
+                            <span className="text-gray-500">Closed</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-2.5">
+                          <RowWhen>{shortDate(e.published_at ?? e.created_at)}</RowWhen>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <Empty>Nothing published yet.</Empty>
             )}
@@ -441,11 +464,13 @@ export default async function AdminOverview() {
               keys.map((k) => (
                 <div
                   key={k.id}
-                  className="flex items-center justify-between gap-3 border-b border-gray-100 px-5.5 py-3 last:border-b-0"
+                  className="flex min-h-11 items-center justify-between gap-3 border-b border-gray-100 px-5 py-2 last:border-b-0"
                 >
                   <span className="text-[13.5px] text-gray-900">{k.label}</span>
-                  <span className="flex items-center gap-2.5">
-                    <span className="font-mono text-xs text-gray-500">····{k.key_hint}</span>
+                  <span className="flex items-center gap-3.5">
+                    <span className="text-[12.5px] tabular-nums text-gray-400">
+                      ends {k.key_hint}
+                    </span>
                     {k.status === "ACTIVE" && !k.last_error ? (
                       <Pill tone="good" dot>
                         Active
@@ -457,7 +482,7 @@ export default async function AdminOverview() {
                 </div>
               ))
             ) : (
-              <Empty>No keys stored — question generation will fail until one is added.</Empty>
+              <Empty>No keys stored. Question generation will fail until one is added.</Empty>
             )}
           </Card>
 
@@ -479,11 +504,11 @@ export default async function AdminOverview() {
         </div>
       </div>
 
-      <div className={`grid gap-5 ${useClasses ? "lg:grid-cols-2" : ""}`}>
+      <div className={`grid items-start gap-5 ${useClasses ? "lg:grid-cols-2" : ""}`}>
         {useClasses ? (
           <Card
             title="Where each class stands"
-            hint="Every student in a class, split by whether they have finished, are sitting an exam now, or have not started."
+            hint="Every student, by whether they have finished, are sitting now, or have not started."
           >
             <ClassProgressChart rows={classRows} />
           </Card>

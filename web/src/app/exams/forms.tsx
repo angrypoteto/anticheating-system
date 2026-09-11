@@ -7,10 +7,10 @@ import { useActionState } from "react";
 import { createExam, type ActionState } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
+  "rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
 
 export function CreateExamForm({
   sections,
@@ -51,7 +51,7 @@ export function CreateExamForm({
             </label>
             <select id="sectionId" name="sectionId" required defaultValue="" className={field}>
               <option value="" disabled>
-                {sections.length ? "— pick one —" : "— no classes assigned —"}
+                {sections.length ? "Pick one" : "No classes assigned"}
               </option>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>

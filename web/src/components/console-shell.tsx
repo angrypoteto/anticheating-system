@@ -35,11 +35,11 @@ export async function ConsoleShell({
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 lg:flex-row">
       {role === "ADMIN" ? (
-        <AdminNav email={email} useClasses={useClasses} />
+        <AdminNav email={email} name={profile?.full_name ?? null} useClasses={useClasses} />
       ) : (
         <TeacherNav email={email} name={profile?.full_name ?? null} useClasses={useClasses} />
       )}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 bg-gray-50">
         <div className="p-6 lg:px-10 lg:pt-7.5 lg:pb-11">{children}</div>
       </div>
     </div>

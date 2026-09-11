@@ -11,10 +11,10 @@ import {
 } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
+  "rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300";
 
 function Feedback({ state }: { state: ActionState }) {
   if (state.error) {
@@ -80,7 +80,7 @@ export function CreateAccountForm({
             First class (optional)
           </label>
           <select id="sectionId" name="sectionId" defaultValue="" className={field}>
-            <option value="">— none —</option>
+            <option value="">None</option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.label}
@@ -144,7 +144,7 @@ export function CreateSectionForm({
             Teacher (optional)
           </label>
           <select id="instructorId" name="instructorId" defaultValue="" className={field}>
-            <option value="">— assign later —</option>
+            <option value="">Assign later</option>
             {instructors.map((i) => (
               <option key={i.id} value={i.id}>
                 {i.email}
@@ -183,7 +183,7 @@ export function StatusToggle({
       <button
         type="submit"
         disabled={pending}
-        className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+        className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
       >
         {pending ? "…" : status === "ACTIVE" ? "Disable" : "Enable"}
       </button>
@@ -218,9 +218,9 @@ export function AssignInstructor({
       <select
         name="instructorId"
         defaultValue={current ?? ""}
-        className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
       >
-        <option value="">— no teacher —</option>
+        <option value="">No teacher</option>
         {instructors.map((i) => (
           <option key={i.id} value={i.id}>
             {i.full_name || i.email}
@@ -230,7 +230,7 @@ export function AssignInstructor({
       <button
         type="submit"
         disabled={pending}
-        className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+        className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
       >
         {pending ? "…" : "Save"}
       </button>

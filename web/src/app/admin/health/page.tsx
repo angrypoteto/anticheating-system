@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "../ui";
+import { Card, Empty, FactRow, FactValue, PageHeader, Pill, Stat, Stats } from "../ui";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -8,6 +8,9 @@ export const dynamic = "force-dynamic";
 function since(hours: number) {
   return new Date(Date.now() - hours * 3600_000).toISOString();
 }
+
+const olderThan = (iso: string, hours: number) =>
+  Date.now() - new Date(iso).getTime() > hours * 3600_000;
 
 export const metadata: Metadata = { title: "System health" };
 
@@ -51,131 +54,142 @@ export default async function HealthPage() {
   const activeKeys = (keys.data ?? []).filter((k) => k.status === "ACTIVE").length;
 
   const lastBackup = backups.data?.[0];
-  const backupStale =
-    !lastBackup ||
-    Date.now() - new Date(lastBackup.started_at).getTime() > 48 * 3600_000;
+  const backupStale = !lastBackup || olderThan(lastBackup.started_at, 48);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         title="System health"
         subtitle={`Snapshot at ${new Date().toLocaleString()}`}
       />
 
-        <div className="grid gap-4 sm:grid-cols-4">
-          <Stat label="Live exams" value={String(liveSessions.count ?? 0)} />
-          <Stat label="Submitted (24h)" value={String(submittedToday.count ?? 0)} />
-          <Stat label="Flags (24h)" value={String(flagsToday.count ?? 0)} />
-          <Stat label="Open flags" value={String(openFlags.count ?? 0)} />
-        </div>
+      <Stats>
+        <Stat label="Sitting now" value={String(liveSessions.count ?? 0)} />
+        <Stat label="Submitted in the last day" value={String(submittedToday.count ?? 0)} />
+        <Stat label="Flags in the last day" value={String(flagsToday.count ?? 0)} />
+        <Stat
+          label="Open flags"
+          value={String(openFlags.count ?? 0)}
+          tone={openFlags.count ? "warn" : "plain"}
+        />
+      </Stats>
 
-        <section className="grid gap-4 sm:grid-cols-2">
-          <Panel title="Accounts">
-            <Row k="Students" v={String(byRole("STUDENT"))} />
-            <Row k="Instructors" v={String(byRole("INSTRUCTOR"))} />
-            <Row k="Admins" v={String(byRole("ADMIN"))} />
-            <Row k="Disabled" v={String(disabled)} warn={disabled > 0} />
-          </Panel>
+      <div className="grid items-start gap-5 lg:grid-cols-3">
+        <Card title="Accounts" flush>
+          <FactRow label="Students">
+            <Count n={byRole("STUDENT")} />
+          </FactRow>
+          <FactRow label="Instructors">
+            <Count n={byRole("INSTRUCTOR")} />
+          </FactRow>
+          <FactRow label="Administrators">
+            <Count n={byRole("ADMIN")} />
+          </FactRow>
+          <FactRow label="Disabled">
+            <Count n={disabled} warn={disabled > 0} />
+          </FactRow>
+        </Card>
 
-          <Panel title="AI provider keys">
-            <Row k="Active" v={String(activeKeys)} warn={activeKeys === 0} />
-            <Row k="With errors" v={String(keyProblems.length)} warn={keyProblems.length > 0} />
-            {keyProblems.map((k) => (
-              <p key={k.label} className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                {k.label}: {k.last_error}
-              </p>
-            ))}
-            {activeKeys === 0 ? (
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                Question generation is unavailable until a key is added.
-              </p>
-            ) : null}
-          </Panel>
-        </section>
+        <Card title="AI provider keys" flush>
+          <FactRow label="Active">
+            <Count n={activeKeys} warn={activeKeys === 0} />
+          </FactRow>
+          <FactRow label="With errors">
+            <Count n={keyProblems.length} warn={keyProblems.length > 0} />
+          </FactRow>
+          {keyProblems.length || activeKeys === 0 ? (
+            <div className="space-y-1 border-t border-gray-100 px-5 py-3 text-[12.5px] text-amber-800">
+              {keyProblems.map((k) => (
+                <p key={k.label}>
+                  {k.label}: {k.last_error}
+                </p>
+              ))}
+              {activeKeys === 0 ? (
+                <p>Question generation is unavailable until a key is added.</p>
+              ) : null}
+            </div>
+          ) : null}
+        </Card>
 
-        <Panel title="Backups">
+        <Card title="Backups" flush>
           {lastBackup ? (
             <>
-              <Row
-                k="Last run"
-                v={`${new Date(lastBackup.started_at).toLocaleString()} · ${lastBackup.status.toLowerCase()}`}
-                warn={backupStale || lastBackup.status === "FAILED"}
-              />
+              <FactRow label="Last run">
+                {backupStale || lastBackup.status === "FAILED" ? (
+                  <Pill tone="warn">{new Date(lastBackup.started_at).toLocaleString()}</Pill>
+                ) : (
+                  <FactValue>{new Date(lastBackup.started_at).toLocaleString()}</FactValue>
+                )}
+              </FactRow>
+              <FactRow label="Result">
+                {lastBackup.status === "FAILED" ? (
+                  <Pill tone="bad">Failed</Pill>
+                ) : (
+                  <FactValue>{sentence(lastBackup.status)}</FactValue>
+                )}
+              </FactRow>
               {lastBackup.storage_path ? (
-                <p className="mt-1 font-mono text-xs text-gray-500 dark:text-gray-400">
+                <p className="border-t border-gray-100 px-5 py-3 font-mono text-xs break-all text-gray-500">
                   {lastBackup.storage_path}
                 </p>
               ) : null}
             </>
           ) : (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
+            <p className="p-5 text-sm text-amber-800">
               No backup has been recorded yet. The scheduled workflow needs the
               SUPABASE_DB_URL secret set on the repository before it can run.
             </p>
           )}
-        </Panel>
+        </Card>
+      </div>
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-              Recent activity
-            </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Append-only. Nobody, including an administrator, can edit or delete
-              these rows.
-            </p>
+      <Card
+        title="Recent activity"
+        hint="Append-only. Nobody, including an administrator, can edit or delete these rows."
+        flush
+      >
+        {recentAudit.data?.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-[13.5px]">
+              <thead className="text-[12.5px] text-gray-400">
+                <tr className="border-b border-gray-100">
+                  <th className="px-5 py-2.5 font-medium">Action</th>
+                  <th className="px-3 py-2.5 font-medium">By</th>
+                  <th className="px-5 py-2.5 text-right font-medium">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentAudit.data.map((a) => (
+                  <tr key={a.id} className="border-b border-gray-100 last:border-b-0">
+                    <td className="px-5 py-2.5 font-mono text-xs text-gray-700">{a.action}</td>
+                    <td className="px-3 py-2.5 text-gray-900">
+                      {actorName.get(a.actor_id) ?? "Unknown"}
+                    </td>
+                    <td className="px-5 py-2.5 text-right text-[13px] whitespace-nowrap tabular-nums text-gray-500">
+                      {new Date(a.created_at).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {recentAudit.data?.length ? (
-            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-              {recentAudit.data.map((a) => (
-                <li key={a.id} className="flex items-baseline justify-between gap-4 px-6 py-3 text-sm">
-                  <span className="text-gray-900 dark:text-gray-100">
-                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400">
-                      {a.action}
-                    </span>{" "}
-                    · {actorName.get(a.actor_id) ?? "unknown"}
-                  </span>
-                  <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-                    {new Date(a.created_at).toLocaleString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="p-6 text-sm text-gray-500 dark:text-gray-400">
-              Nothing recorded yet.
-            </p>
-          )}
-        </section>
+        ) : (
+          <Empty>Nothing recorded yet.</Empty>
+        )}
+      </Card>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Count({ n, warn }: { n: number; warn?: boolean }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-gray-900 dark:text-gray-50">{value}</p>
-    </div>
+    <span className={`font-semibold tabular-nums ${warn ? "text-amber-800" : "text-gray-900"}`}>
+      {n}
+    </span>
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-      <h2 className="mb-3 text-lg font-medium text-gray-900 dark:text-gray-50">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function Row({ k, v, warn }: { k: string; v: string; warn?: boolean }) {
-  return (
-    <div className="flex justify-between py-1 text-sm">
-      <span className="text-gray-600 dark:text-gray-400">{k}</span>
-      <span className={warn ? "font-medium text-amber-700 dark:text-amber-400" : "text-gray-900 dark:text-gray-100"}>
-        {v}
-      </span>
-    </div>
-  );
+/** "SUCCEEDED" reads as "Succeeded". */
+function sentence(word: string) {
+  return word.charAt(0) + word.slice(1).toLowerCase();
 }

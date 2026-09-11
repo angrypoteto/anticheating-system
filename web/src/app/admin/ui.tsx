@@ -3,10 +3,11 @@ import Link from "next/link";
 /**
  * The pieces every console screen is built from.
  *
- * These carry the design's proportions, which is most of what makes a set of
- * screens read as one product: 12px on a card and 8px on the controls inside
- * it, a 22px gutter, a label that is small and spaced rather than merely grey,
- * and a figure large enough to be read before the label that names it.
+ * These carry the Instrument proportions, which is most of what makes a set of
+ * screens read as one product: 12px on a panel and 8px on the controls inside
+ * it, a 20px gutter, one hairline weight around a panel and a lighter one
+ * inside it, labels in sentence case, and a figure large enough to be read
+ * before the label that names it.
  */
 
 export function PageHeader({
@@ -19,13 +20,13 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-6 border-b border-gray-200 pb-5.5">
+    <header className="flex flex-wrap items-end justify-between gap-6">
       <div>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
           {title}
         </h1>
         {subtitle ? (
-          <p className="mt-1.5 max-w-[62ch] text-sm text-gray-500">{subtitle}</p>
+          <p className="mt-1 max-w-[62ch] text-sm text-gray-500">{subtitle}</p>
         ) : null}
       </div>
       {action}
@@ -51,20 +52,35 @@ export function Card({
   return (
     <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
       {title ? (
-        <div
-          className={`flex items-baseline justify-between gap-4 px-5.5 ${
-            flush ? "border-b border-gray-100 py-4.5" : "pt-4.5 pb-3"
-          }`}
-        >
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-gray-900">{title}</h2>
-            {hint ? <p className="mt-1 max-w-[64ch] text-sm text-gray-500">{hint}</p> : null}
+            <h2 className="text-[15px] font-semibold text-gray-900">{title}</h2>
+            {hint ? (
+              <p className="mt-0.5 max-w-[64ch] text-[12.5px] text-gray-500">{hint}</p>
+            ) : null}
           </div>
           {action}
         </div>
       ) : null}
-      <div className={flush ? "" : title ? "px-5.5 pb-5.5" : "p-5.5"}>{children}</div>
+      <div className={flush ? "" : "p-5"}>{children}</div>
     </section>
+  );
+}
+
+/**
+ * A row of figures, as one strip rather than four cards.
+ *
+ * Four bordered boxes side by side read as four separate things to look at;
+ * one panel divided by rules reads as one reading of the same moment, which is
+ * what they are.
+ */
+export function Stats({ children }: { children: React.ReactNode }) {
+  return (
+    // The rules are the 1px gaps letting the grey behind show through, so they
+    // land in the right places at one, two or four across without a rule per cell.
+    <div className="grid gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-100 sm:grid-cols-2 lg:grid-cols-4 [&>*]:rounded-none! [&>*]:border-0!">
+      {children}
+    </div>
   );
 }
 
@@ -72,7 +88,8 @@ export function Card({
  * A figure, its name, and what it is a figure *of*.
  *
  * The qualifier underneath is not decoration: "78%" and "78% of those who
- * submitted" are different claims, and a teacher acts on the second.
+ * submitted" are different claims, and a teacher acts on the second. On its own
+ * it is a small panel; inside <Stats> it becomes one cell of the strip.
  */
 export function Stat({
   label,
@@ -88,19 +105,19 @@ export function Stat({
   const toneClass = {
     plain: "text-gray-900",
     good: "text-green-700",
-    warn: "text-amber-700",
+    warn: "text-amber-800",
     bad: "text-red-700",
   }[tone];
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4.5">
-      <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
-        {label}
-      </p>
-      <p className={`mt-2 text-3xl font-semibold tracking-tight tabular-nums ${toneClass}`}>
+    <div className="rounded-xl border border-gray-200 bg-white px-5.5 py-4.5">
+      <p className="text-[13px] font-medium text-gray-500">{label}</p>
+      <p
+        className={`mt-2 text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums ${toneClass}`}
+      >
         {value}
       </p>
-      {note ? <p className="mt-1 text-xs text-gray-500">{note}</p> : null}
+      {note ? <p className="mt-1.5 text-[12.5px] text-gray-400">{note}</p> : null}
     </div>
   );
 }
@@ -124,16 +141,16 @@ export function Pill({
   children: React.ReactNode;
 }) {
   const cls = {
-    good: "border-green-200 bg-green-50 text-green-800",
-    warn: "border-amber-200 bg-amber-50 text-amber-900",
-    bad: "border-red-200 bg-red-50 text-red-800",
-    muted: "border-gray-200 bg-gray-100 text-gray-600",
-    brand: "border-teal-100 bg-teal-50 text-teal-800",
+    good: "bg-green-50 text-green-800",
+    warn: "bg-amber-50 text-amber-800",
+    bad: "bg-red-50 text-red-800",
+    muted: "bg-gray-100 text-gray-600",
+    brand: "bg-gray-100 text-gray-900",
   }[tone];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium whitespace-nowrap ${cls}`}
+      className={`inline-flex h-5.5 items-center gap-1.5 rounded-full px-2 text-[12.5px] font-semibold whitespace-nowrap ${cls}`}
     >
       {dot ? (
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -154,7 +171,7 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
   return (
     <Link
       href={href}
-      className="shrink-0 text-sm text-teal-700 hover:text-teal-800 hover:underline hover:underline-offset-[3px]"
+      className="shrink-0 text-[13.5px] font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
     >
       {children}
     </Link>
@@ -166,7 +183,7 @@ export function PrimaryAction({ href, children }: { href: string; children: Reac
   return (
     <Link
       href={href}
-      className="inline-flex h-[42px] shrink-0 items-center gap-2.25 rounded-[9px] bg-teal-700 px-4.5 text-sm font-medium text-white hover:bg-teal-800"
+      className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
     >
       {children}
     </Link>
@@ -192,11 +209,11 @@ export function ListRow({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 border-b border-gray-100 px-5.5 py-3.5 last:border-b-0">
+    <div className="flex items-center gap-4 border-b border-gray-100 px-5 py-3 last:border-b-0">
       <span className="min-w-0 flex-1">
-        <span className="block text-[14.5px] font-medium text-gray-900">{title}</span>
+        <span className="block text-sm font-medium text-gray-900">{title}</span>
         {detail ? (
-          <span className="mt-[3px] block text-[12.5px] text-gray-500">{detail}</span>
+          <span className="mt-0.5 block text-[12.5px] text-gray-500">{detail}</span>
         ) : null}
       </span>
       {children}
@@ -204,9 +221,9 @@ export function ListRow({
   );
 }
 
-/** The date on the right of a list row. Mono so dates line up down the column. */
+/** The date on the right of a list row. Tabular so dates line up down the column. */
 export function RowWhen({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 font-mono text-xs text-gray-500">{children}</span>;
+  return <span className="shrink-0 text-[13px] tabular-nums text-gray-500">{children}</span>;
 }
 
 /**
@@ -217,7 +234,7 @@ export function RowWhen({ children }: { children: React.ReactNode }) {
  */
 export function FactRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5.5 py-[13px] text-sm text-gray-900 last:border-b-0">
+    <div className="flex min-h-11 items-center justify-between gap-3 border-b border-gray-100 px-5 py-2 text-[13.5px] text-gray-900 last:border-b-0">
       <span>{label}</span>
       {children}
     </div>
@@ -246,15 +263,11 @@ export function Reachable({ ok, children }: { ok: boolean; children: React.React
   );
 }
 
-/** The label above a subject or class — the one place the accent is used. */
+/** The label above a subject or class. Sentence case: it names, it does not shout. */
 export function SubjectLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
-      {children}
-    </span>
-  );
+  return <span className="text-[12.5px] font-medium text-accent">{children}</span>;
 }
 
 export function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="p-5.5 text-sm text-gray-500">{children}</p>;
+  return <p className="p-5 text-sm text-gray-500">{children}</p>;
 }

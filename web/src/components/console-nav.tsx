@@ -27,11 +27,10 @@ export type NavGroup = { label: string; links: NavLink[] };
  *
  * Three things about it are deliberate.
  *
- * It is navy, not a white panel with a tinted active row. A console is the
- * furniture around the work; giving it its own dark ground means the page it
- * frames reads as the page, and the active item can be a filled block rather
- * than a coloured word — position and fill are found faster than hue, from
- * across a desk and by somebody who cannot separate the hues at all.
+ * It is quiet. A console is the furniture around the work, so the rail is white
+ * with one hairline between it and the page, and the active item is a filled
+ * block rather than a coloured word — position and fill are found faster than
+ * hue, from across a desk and by somebody who cannot separate the hues at all.
  *
  * It is grouped. Nine flat destinations is past the point where a list is
  * read rather than scanned, so they arrive in threes under a heading: the eye
@@ -51,7 +50,7 @@ export function ConsoleNav({
   email,
 }: {
   groups: NavGroup[];
-  /** "Administrator" — omitted for an instructor, whose console needs no badge. */
+  /** "Administrator", "Instructor", "Student" — shown under the name. */
   role?: string;
   name?: string | null;
   email: string;
@@ -73,20 +72,25 @@ export function ConsoleNav({
     (l.also ?? []).some((p) => pathname.startsWith(p));
 
   const here = groups.flatMap((g) => g.links).find(isActive)?.label;
+  const initials = (name || email)
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
 
   return (
     // Pinned on desktop so it stays put while the page scrolls; it scrolls
     // internally only if the nav itself outgrows the viewport.
-    <aside className="flex w-full shrink-0 flex-col bg-navy-800 text-white lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:self-start lg:overflow-y-auto">
-      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-4 lg:pt-5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <ShieldMark className="h-7 w-7 shrink-0" />
-          <span className="truncate text-base font-semibold tracking-tight">Proctorly</span>
+    <aside className="relative z-10 flex w-full shrink-0 flex-col border-b border-gray-200 bg-white text-gray-900 lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:self-start lg:overflow-y-auto lg:border-r lg:border-b-0">
+      <div className="flex items-center justify-between gap-3 px-6 py-3.5 lg:pt-5.5 lg:pb-2">
+        <div className="flex min-w-0 items-center gap-2.25">
+          <ShieldMark className="h-5 w-5 shrink-0" ground="light" />
+          <span className="truncate text-[15.5px] font-bold tracking-tight">Proctorly</span>
           {/* Shut, the bar still has to say where you are, or the only way to
               find out is to open the thing you just closed. */}
           {here ? (
-            <span className="truncate text-sm text-navy-300 lg:hidden">
-              <span aria-hidden> · </span>
+            <span className="truncate border-l border-gray-200 pl-2.5 text-sm text-gray-500 lg:hidden">
               {here}
             </span>
           ) : null}
@@ -97,7 +101,7 @@ export function ConsoleNav({
           onClick={() => setOpenAt(open ? null : pathname)}
           aria-expanded={open}
           aria-controls="console-rail"
-          className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-navy-100 transition hover:bg-white/10 hover:text-white lg:hidden"
+          className="-mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 lg:hidden"
         >
           <span className="sr-only">{open ? "Close the menu" : "Open the menu"}</span>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -120,19 +124,13 @@ export function ConsoleNav({
         </button>
       </div>
 
-      {role ? (
-        <span className="mx-5 mb-3 hidden self-start rounded-full border border-white/25 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium tracking-[0.06em] text-navy-100 uppercase lg:inline-flex">
-          {role}
-        </span>
-      ) : null}
-
       <nav
         id="console-rail"
-        className={`flex-1 flex-col pb-4 lg:flex ${open ? "flex" : "hidden"}`}
+        className={`flex-1 flex-col gap-5.5 px-3.5 pt-4 pb-4 lg:flex lg:pt-6 ${open ? "flex" : "hidden"}`}
       >
         {groups.map((group) => (
-          <div key={group.label} className="px-3 pt-3">
-            <div className="px-3 pb-2 text-[11px] font-medium tracking-[0.08em] text-navy-300 uppercase">
+          <div key={group.label} className="flex flex-col gap-0.5">
+            <div className="px-2.5 pb-1.5 text-[12.5px] font-medium text-gray-400">
               {group.label}
             </div>
             {group.links.map((l) => {
@@ -143,15 +141,15 @@ export function ConsoleNav({
                   href={l.href}
                   aria-current={active ? "page" : undefined}
                   // 44px on a phone: the floor for something a thumb has to hit.
-                  className={`flex min-h-11 items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition lg:min-h-[38px] ${
+                  className={`flex min-h-11 items-center justify-between gap-2 rounded-[7px] px-2.5 text-sm lg:min-h-[34px] ${
                     active
-                      ? "bg-navy-600 font-medium text-white"
-                      : "text-[#C6D5EA] hover:bg-white/8 hover:text-white"
+                      ? "bg-gray-100 font-semibold text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
                   {l.label}
                   {l.tag ? (
-                    <span className="rounded-full bg-amber-400/15 px-1.5 py-px text-[11px] font-medium tabular-nums text-amber-200">
+                    <span className="text-xs font-semibold tabular-nums text-amber-800">
                       {l.tag}
                     </span>
                   ) : null}
@@ -162,31 +160,59 @@ export function ConsoleNav({
         ))}
       </nav>
 
-      <div
-        className={`mt-auto border-t border-white/10 px-5 py-4 lg:block ${
+      <details
+        className={`group relative mt-auto border-t border-gray-100 lg:block ${
           open ? "block" : "hidden"
         }`}
       >
-        <p className="truncate text-sm text-[#DCE7F5]" title={email}>
-          {name || email}
-        </p>
-        {name ? <p className="truncate text-xs text-navy-300">{email}</p> : null}
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 px-6 py-3.5 hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
+          <span
+            aria-hidden
+            className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-900"
+          >
+            {initials}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13.5px] font-semibold text-gray-900" title={email}>
+              {name || email}
+            </p>
+            {/* The role used to be a badge at the top of the rail; it reads
+                better as the second line of who is signed in. */}
+            <p className="truncate text-[12.5px] text-gray-400">{role ?? (name ? email : "")}</p>
+          </div>
+          <svg
+            className="h-4 w-4 shrink-0 text-gray-400 transition-transform group-open:rotate-180"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </summary>
         {/* Only Sign out. There used to be an "Exit to app" beside it, meant
             to take an admin back to the student-facing root — but / redirects
             an admin straight to /admin, so it returned you to the page you
             were already on. A link that goes nowhere teaches people not to
             trust the ones that do. */}
-        <div className="mt-2 text-xs">
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="text-navy-300 underline underline-offset-4 transition hover:text-white"
-            >
-              Sign out
-            </button>
-          </form>
+        <div className="absolute right-3 bottom-full left-3 z-20 mb-2 text-[13px]">
+          <div className="rounded-lg border border-gray-200 bg-white p-1 shadow-[0_8px_24px_-12px_rgba(14,17,22,0.25)]">
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      </details>
     </aside>
   );
 }

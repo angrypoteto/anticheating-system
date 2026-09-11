@@ -82,9 +82,9 @@ export function ExamWindow({
   const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+    <section className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">Availability</h2>
+        <h2 className="text-[15px] font-semibold text-gray-900">Availability</h2>
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${tone}`}>
           {status.label}
         </span>
@@ -99,10 +99,10 @@ export function ExamWindow({
           <button
             type="submit"
             disabled={pending || !published}
-            className={`rounded-md px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
+            className={`rounded-lg px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
               isOpen
                 ? "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
-                : "bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+                : "bg-teal-700 hover:bg-teal-800"
             }`}
           >
             {pending ? "…" : isOpen ? "Close now" : "Open now"}
@@ -143,7 +143,7 @@ export function ExamWindow({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
         >
           {pending ? "Saving…" : "Save schedule"}
         </button>

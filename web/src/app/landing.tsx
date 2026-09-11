@@ -104,7 +104,7 @@ const STEPS: [string, string][] = [
 
 const PROMISES = [
   "Fullscreen papers that pause the moment a student leaves them",
-  "One departure is one warning — never three for the same glance away",
+  "One departure is one warning, never three for the same glance away",
   "Answer keys unreadable to students by design",
 ];
 
@@ -132,7 +132,7 @@ const YEAR = new Date().getFullYear();
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-[11px] font-medium tracking-[0.09em] text-teal-300 uppercase">
+      <h2 className="text-[13px] font-semibold text-white">
         {title}
       </h2>
       <ul className="mt-4 flex flex-col gap-2.5">{children}</ul>
@@ -145,7 +145,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
     <li>
       <Link
         href={href}
-        className="text-[13.5px] text-teal-100 transition hover:text-white"
+        className="text-[13.5px] text-gray-300 transition hover:text-white"
       >
         {children}
       </Link>
@@ -160,45 +160,34 @@ export function Landing() {
       {/* The hero is the product's own chrome, so the first screen after   */}
       {/* signing in is recognisably the same place.                        */}
       {/* ---------------------------------------------------------------- */}
-      <div className="relative overflow-hidden bg-teal-800 text-white">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-40 -right-56 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(78,121,184,0.34),transparent_68%)]"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-72 -left-40 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_50%_50%,rgba(15,111,107,0.22),transparent_70%)]"
-        />
+      <div className="bg-gray-900 text-white">
 
-        <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-5.5">
-          <span className="flex items-center gap-2.5 text-[17px] font-semibold tracking-tight">
-            <ShieldMark className="h-6.5 w-6.5" />
+        <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5.5">
+          <span className="flex items-center gap-2.5 text-[16px] font-bold tracking-tight">
+            <ShieldMark className="h-6 w-6" />
             Proctorly
           </span>
           <nav className="flex items-center gap-2.5 sm:gap-5">
             <Link
               href="/login"
-              className="px-1 text-sm text-teal-100 transition hover:text-white"
+              className="px-1 text-sm text-gray-300 hover:text-white"
             >
               Sign in
             </Link>
             <Link
               href="/signup"
-              className="inline-flex h-9.5 items-center rounded-lg bg-white px-4 text-sm font-medium text-teal-800 transition hover:bg-teal-50"
+              className="inline-flex h-9.5 items-center rounded-lg bg-white px-4 text-sm font-medium text-gray-900 hover:bg-gray-100"
             >
               Create account
             </Link>
           </nav>
         </header>
 
-        <section className="relative mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-24 sm:pb-20">
-          <p className="text-[11px] font-medium tracking-[0.14em] text-teal-300 uppercase">
-            Web-based anti-cheating system
-          </p>
-          <h1 className="mt-5 max-w-[19ch] font-serif text-[40px] leading-[1.08] font-semibold tracking-[-0.02em] text-pretty sm:text-[58px]">
+        <section className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-24 sm:pb-20">
+          <h1 className="max-w-[19ch] text-[40px] leading-[1.05] font-semibold tracking-[-0.035em] text-white sm:text-[60px]">
             Online exams that notice when something is wrong.
           </h1>
-          <p className="mt-6 max-w-[56ch] text-[17px] leading-relaxed text-teal-100">
+          <p className="mt-6 max-w-[56ch] text-[17px] leading-relaxed text-gray-300">
             Generic quiz tools collect answers. They cannot tell an honest
             submission from a dishonest one. Proctorly watches the session
             itself, tells the instructor the moment something looks off, and
@@ -208,34 +197,25 @@ export function Landing() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/signup"
-              className="inline-flex h-13 items-center justify-center gap-2.5 rounded-xl bg-white px-7 text-[15px] font-medium text-teal-800 transition hover:bg-teal-50"
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-white px-6 text-[15px] font-medium text-gray-900 hover:bg-gray-100"
             >
               Create a student account
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
             </Link>
             <Link
               href="/login"
-              className="inline-flex h-13 items-center justify-center rounded-xl border border-white/25 px-7 text-[15px] font-medium text-white transition hover:border-white/50 hover:bg-white/5"
+              className="inline-flex h-12 items-center justify-center rounded-lg border border-white/20 px-6 text-[15px] font-medium text-white hover:border-white/50"
             >
               Instructor sign in
             </Link>
           </div>
-          <p className="mt-4 text-[13px] text-teal-300">
+          <p className="mt-4 text-[13px] text-gray-400">
             Students need a class code from their instructor.
           </p>
 
           <ul className="mt-14 grid gap-4 border-t border-white/12 pt-8 sm:grid-cols-3 sm:gap-8">
             {PROMISES.map((p) => (
-              <li key={p} className="flex gap-3 text-sm leading-relaxed text-teal-100">
-                <Tick className="mt-0.5 h-4.5 w-4.5 shrink-0 text-teal-400" />
+              <li key={p} className="flex gap-3 text-sm leading-relaxed text-gray-300">
+                <Tick className="mt-0.5 h-4.5 w-4.5 shrink-0 text-white" />
                 {p}
               </li>
             ))}
@@ -246,19 +226,16 @@ export function Landing() {
       {/* ---------------------------------------------------------------- */}
       <section id="capabilities" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20 sm:py-24">
         <div className="max-w-[52ch]">
-          <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
-            Capabilities
-          </p>
-          <h2 className="mt-3 font-serif text-[27px] leading-tight font-semibold tracking-tight text-gray-900 sm:text-[34px]">
+          <h2 className="text-[27px] leading-tight font-semibold tracking-[-0.025em] text-gray-900 sm:text-[34px]">
             What it actually does
           </h2>
         </div>
 
-        <div className="mt-11 grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <article key={f.title} className="bg-white px-7 py-8">
-              <Icon name={f.icon} className="h-5.5 w-5.5 text-accent" />
-              <h3 className="mt-4.5 text-[17px] font-semibold tracking-tight text-gray-900">
+            <article key={f.title} className="bg-white p-7">
+              <Icon name={f.icon} className="h-6 w-6 text-gray-900" />
+              <h3 className="mt-4 text-[16px] font-semibold tracking-tight text-gray-900">
                 {f.title}
               </h3>
               <p className="mt-2.5 text-sm leading-relaxed text-gray-600">{f.body}</p>
@@ -271,10 +248,7 @@ export function Landing() {
       <section id="how-it-runs" className="scroll-mt-8 border-y border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
           <div className="max-w-[52ch]">
-            <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
-              The flow
-            </p>
-            <h2 className="mt-3 font-serif text-[27px] leading-tight font-semibold tracking-tight text-gray-900 sm:text-[34px]">
+            <h2 className="text-[27px] leading-tight font-semibold tracking-[-0.025em] text-gray-900 sm:text-[34px]">
               How an exam runs
             </h2>
           </div>
@@ -310,10 +284,7 @@ export function Landing() {
       <section id="limits" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20 sm:py-24">
         <div className="grid gap-10 rounded-2xl border border-gray-200 bg-white px-8 py-10 sm:px-12 sm:py-12 lg:grid-cols-[minmax(0,22ch)_minmax(0,1fr)] lg:gap-16">
           <div>
-            <p className="text-[11px] font-medium tracking-[0.09em] text-accent uppercase">
-              Plainly
-            </p>
-            <h2 className="mt-3 font-serif text-[28px] leading-tight font-semibold tracking-tight text-gray-900">
+            <h2 className="text-[28px] leading-tight font-semibold tracking-[-0.025em] text-gray-900">
               What it does not claim to do
             </h2>
           </div>
@@ -340,19 +311,19 @@ export function Landing() {
       {/* links that 404 is worse than a short footer: it is the first      */}
       {/* promise the site breaks.                                          */}
       {/* ---------------------------------------------------------------- */}
-      <footer className="bg-teal-900 text-white">
+      <footer className="bg-gray-900 text-white">
         <div className="mx-auto max-w-6xl px-6 py-14 sm:py-16">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] lg:gap-12">
             <div>
-              <span className="flex items-center gap-2.5 text-[16px] font-semibold tracking-tight">
+              <span className="flex items-center gap-2.5 text-[16px] font-bold tracking-tight">
                 <ShieldMark className="h-6 w-6" />
                 Proctorly
               </span>
-              <p className="mt-3.5 max-w-[42ch] text-[13.5px] leading-relaxed text-teal-100">
+              <p className="mt-3.5 max-w-[42ch] text-[13.5px] leading-relaxed text-gray-300">
                 Lockdown exams, live proctoring and question sets drafted from
-                your own lesson files — with a record that holds up afterwards.
+                your own lesson files, with a record that holds up afterwards.
               </p>
-              <p className="mt-4 text-[12.5px] leading-relaxed text-teal-300">
+              <p className="mt-4 text-[12.5px] leading-relaxed text-gray-400">
                 Built as a System Administration project. It is run for one
                 school, not sold as a service.
               </p>
@@ -371,11 +342,11 @@ export function Landing() {
             </FooterColumn>
 
             <FooterColumn title="Students">
-              <li className="text-[13.5px] leading-relaxed text-teal-100">
+              <li className="text-[13.5px] leading-relaxed text-gray-300">
                 You need a class code from your instructor before an exam will
                 appear.
               </li>
-              <li className="text-[13.5px] leading-relaxed text-teal-100">
+              <li className="text-[13.5px] leading-relaxed text-gray-300">
                 Exams run fullscreen. Leaving the window is recorded, and three
                 warnings submit the paper as it stands.
               </li>
@@ -383,10 +354,10 @@ export function Landing() {
           </div>
 
           <div className="mt-12 flex flex-col gap-4 border-t border-white/12 pt-7 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[12.5px] text-teal-300">
-              &copy; {YEAR} Proctorly · BSIT 4C &mdash; Group 2
+            <p className="text-[12.5px] text-gray-400">
+              &copy; {YEAR} Proctorly, BSIT 4C Group 2
             </p>
-            <p className="text-[12.5px] text-teal-300">
+            <p className="text-[12.5px] text-gray-400">
               Detects and escalates in the browser; it does not physically
               prevent, and there is no camera proctoring.
             </p>

@@ -14,10 +14,10 @@ import {
 import type { DraftQuestion } from "@/lib/ai/gemini";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const button =
-  "rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900";
+  "rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900";
 
 const ACCEPT = ".pdf,.docx,.pptx,.txt,.md";
 
@@ -99,9 +99,9 @@ export function GenerateStudio({ examId }: { examId: string }) {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-          1 · Upload lesson material
+      <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="text-[15px] font-semibold text-gray-900">
+          1. Upload lesson material
         </h2>
         <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
           Deleted as soon as its text has been read — only the text is kept, and
@@ -133,7 +133,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
             accept={ACCEPT}
             onChange={onFile}
             disabled={uploading}
-            className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-700 dark:text-gray-400 dark:file:bg-gray-100 dark:file:text-gray-900"
+            className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-lg file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-gray-700 dark:text-gray-400 dark:file:bg-gray-100 dark:file:text-gray-900"
           />
         </div>
 
@@ -152,9 +152,9 @@ export function GenerateStudio({ examId }: { examId: string }) {
         ) : null}
       </section>
 
-      <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-          2 · Generate drafts
+      <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <h2 className="text-[15px] font-semibold text-gray-900">
+          2. Generate drafts
         </h2>
         <form action={generate} className="mt-4 space-y-4">
           <input type="hidden" name="examId" value={examId} />
@@ -202,8 +202,8 @@ export function GenerateStudio({ examId }: { examId: string }) {
           {/* What this order will cost, before committing to waiting for it. */}
           {requests > 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {mcCount + identCount} question{mcCount + identCount === 1 ? "" : "s"} ·{" "}
-              {requests} request{requests === 1 ? "" : "s"} · usually about{" "}
+              {mcCount + identCount} question{mcCount + identCount === 1 ? "" : "s"},{" "}
+              {requests} request{requests === 1 ? "" : "s"}, usually about{" "}
               {humanDuration(estimateTotalMs(requests, MAX_PARALLEL))}
             </p>
           ) : null}
@@ -220,7 +220,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
                 // A short order in green beside a tick reads as "all done" when
                 // a third of it did not arrive.
                 genState.partial
-                  ? "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                  ? "rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
                   : "text-sm text-green-700 dark:text-green-400"
               }
             >
@@ -239,10 +239,10 @@ export function GenerateStudio({ examId }: { examId: string }) {
       </section>
 
       {shown?.length ? (
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
-              3 · Review before adding
+        <section className="rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-gray-900">
+              3. Review before adding
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Nothing is added to the exam until you accept it. Edit anything that
@@ -259,7 +259,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
             {shown.map((d, i) => (
               <li key={i} className="space-y-3 border-b border-gray-100 p-6 last:border-0 dark:border-gray-800">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                  <span className="text-[12.5px] text-gray-400">
                     {d.type.replace("_", " ").toLowerCase()}
                   </span>
                   <span className="flex shrink-0 gap-4">
@@ -271,7 +271,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
                       <button
                         type="submit"
                         disabled={regenerating}
-                        className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                        className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
                       >
                         {regenerating ? "…" : "Regenerate"}
                       </button>
@@ -279,7 +279,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
                     <button
                       type="button"
                       onClick={() => setDrafts((p) => (p ?? []).filter((_, j) => j !== i))}
-                      className="text-sm text-gray-500 underline underline-offset-4 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                      className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
                     >
                       Drop
                     </button>
@@ -318,7 +318,7 @@ export function GenerateStudio({ examId }: { examId: string }) {
                               ...(wasCorrect ? { answer: e.target.value } : {}),
                             });
                           }}
-                          className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-950"
+                          className="flex-1 rounded-lg border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-950"
                         />
                       </label>
                     ))}

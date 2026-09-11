@@ -92,8 +92,8 @@ export default async function AccountsPage() {
                         {s.subject ?? s.name}
                       </p>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {s.subject ? `${s.name} · ` : ""}
-                        {owner ? owner.full_name || owner.email : "no teacher yet"} · {roll}{" "}
+                        {s.subject ? `${s.name}, ` : ""}
+                        {owner ? owner.full_name || owner.email : "no teacher yet"}, {roll}{" "}
                         student{roll === 1 ? "" : "s"}
                       </p>
                     </div>
@@ -127,7 +127,7 @@ export default async function AccountsPage() {
           {sections.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between rounded-md border border-gray-200 px-4 py-3 dark:border-gray-700"
+              className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700"
             >
               <div>
                 <span className="text-sm text-gray-900 dark:text-gray-100">

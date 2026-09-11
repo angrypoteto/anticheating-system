@@ -167,7 +167,7 @@ export function ExamRunner({
       if (error || typeof data !== "number") {
         // Nothing was written down, so nothing has been earned. Ending a paper on
         // a strike the record does not contain is the failure this exists to stop.
-        setWarning("Leaving the exam window is recorded — check your connection.");
+        setWarning("Leaving the exam window is recorded. Check your connection.");
         return;
       }
 
@@ -175,7 +175,7 @@ export function ExamRunner({
       setStrikes(next);
 
       if (next >= lockdown.maxStrikes) {
-        setWarning("Strike limit reached — submitting your exam.");
+        setWarning("Strike limit reached. Submitting your exam.");
         finish("strikes");
       } else if (next === lockdown.maxStrikes - 1) {
         // The last warning has to say what happens next, not just count.
@@ -495,7 +495,7 @@ export function ExamRunner({
         ) : null}
         <Link
           href="/"
-          className="mt-6 inline-block text-sm text-gray-600 underline underline-offset-4 dark:text-gray-400"
+          className="mt-6 inline-block text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-gray-400"
         >
           Back to home
         </Link>
@@ -506,7 +506,7 @@ export function ExamRunner({
   if (superseded) {
     return (
       <Shell title={examTitle}>
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <h2 className="text-[15px] font-semibold text-gray-900">
           Opened in another tab
         </h2>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -521,24 +521,24 @@ export function ExamRunner({
   if (!started) {
     return (
       <Shell title={examTitle}>
-        <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <h2 className="text-[15px] font-semibold text-gray-900">
           Before you begin
         </h2>
-        <ul className="mt-3 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-          <li>· {questions.length} questions, answered one at a time.</li>
-          <li>· You cannot return to a question once you move on.</li>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-gray-600 marker:text-gray-300">
+          <li>{questions.length} questions, answered one at a time.</li>
+          <li>You cannot return to a question once you move on.</li>
           {timer.totalMinutes > 0 ? (
-            <li>· Time limit: {timer.totalMinutes} minutes.</li>
+            <li>Time limit: {timer.totalMinutes} minutes.</li>
           ) : null}
           {timer.perQuestionSeconds ? (
             <li>
-              · {timer.perQuestionSeconds} seconds per question — it moves on by
+              {timer.perQuestionSeconds} seconds per question. It moves on by
               itself when the time is up.
             </li>
           ) : null}
-          {lockdown.fullscreenRequired ? <li>· Fullscreen is required.</li> : null}
+          {lockdown.fullscreenRequired ? <li>Fullscreen is required.</li> : null}
           <li>
-            · Leaving the exam window counts as one warning each time, however
+            Leaving the exam window counts as one warning each time, however
             you leave it. {lockdown.maxStrikes} warnings end the attempt
             automatically.
           </li>
@@ -551,7 +551,7 @@ export function ExamRunner({
         <button
           type="button"
           onClick={startExam}
-          className="mt-6 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="mt-6 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
         >
           Start exam
         </button>
@@ -561,9 +561,10 @@ export function ExamRunner({
   }
 
   // The paper a student actually sits, and the only screen in the product
-  // with no product on it: no sidebar, no breadcrumb, no navigation. One
-  // dominant element, and the chrome cut back to the two facts that change
-  // what they do next — how long is left, and how many warnings they carry.
+  // with no product on it: no breadcrumb, no navigation. One dominant element,
+  // and the chrome cut back to the facts that change what they do next — how
+  // long is left, how many warnings they carry, and (on a wide screen) a map of
+  // the paper that shows where they are without letting them go anywhere.
   const answered = questions.filter(
     (q) => answers[q.id] != null && answers[q.id] !== "",
   ).length;
@@ -588,16 +589,18 @@ export function ExamRunner({
   const through = Math.round(((index + 1) / Math.max(questions.length, 1)) * 100);
 
   return (
-    <main className="flex min-h-screen flex-col bg-gray-950">
-      <header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 bg-gray-900 px-4 py-3 text-white sm:px-8 sm:py-3.5">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 text-sm sm:gap-3">
-          <ShieldMark className="h-5 w-5 shrink-0" />
-          <span className="truncate font-medium">{examTitle}</span>
+    <main className="flex min-h-screen flex-col bg-gray-50">
+      <header className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-b border-gray-200 bg-white px-4 py-3 text-gray-900 sm:px-7">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <ShieldMark className="h-5 w-5 shrink-0" ground="light" />
+          <span className="truncate text-[14.5px] font-semibold">{examTitle}</span>
         </div>
-        <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-          {saving ? <span className="text-xs text-teal-300">saving…</span> : null}
+        <div className="flex shrink-0 items-center gap-3.5 sm:gap-5.5">
+          <span className="hidden text-[13px] text-gray-400 sm:inline" aria-live="polite">
+            {saving ? "Saving…" : "Saved"}
+          </span>
           {strikes > 0 ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/15 px-2.5 py-1 text-[13px] font-medium text-amber-200">
+            <span className="inline-flex h-6.5 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 text-[13px] font-semibold text-amber-800">
               <WarnMark className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Warning </span>
               {strikes} of {lockdown.maxStrikes}
@@ -606,38 +609,100 @@ export function ExamRunner({
           {questionRemaining != null ? (
             <span
               title="Time left on this question"
-              className={`font-mono text-sm tabular-nums ${
-                questionRemaining < 10000 ? "text-red-300" : "text-teal-200"
+              className={`text-sm font-medium tabular-nums ${
+                questionRemaining < 10000 ? "text-red-700" : "text-gray-500"
               }`}
             >
-              Q {Math.ceil(questionRemaining / 1000)}s
+              {Math.ceil(questionRemaining / 1000)}s on this question
             </span>
           ) : null}
           {remaining != null ? (
-            <span
-              title="Time left on the whole exam"
-              className="flex items-baseline gap-2 font-mono text-lg font-medium tabular-nums sm:text-xl"
-            >
-              <span className="hidden font-sans text-[11px] font-medium tracking-[0.07em] text-teal-300 uppercase sm:inline">
-                Time left
-              </span>
-              <span className={remaining < 60000 ? "text-red-300" : "text-white"}>
+            <span title="Time left on the whole exam" className="flex items-baseline gap-1.5">
+              <span
+                className={`text-[22px] font-semibold tracking-[-0.01em] tabular-nums ${
+                  remaining < 60000 ? "text-red-700" : "text-gray-900"
+                }`}
+              >
                 {formatTime(remaining)}
               </span>
+              <span className="text-[13px] text-gray-400">left</span>
             </span>
           ) : null}
         </div>
       </header>
 
       {/* Where they are, without a number to read. */}
-      <div className="h-[3px] bg-white/12">
+      <div className="h-[3px] bg-gray-200">
         <div
-          className="h-full bg-teal-400 transition-[width] duration-500"
+          className="h-full bg-gray-900 transition-[width] duration-500"
           style={{ width: `${Math.max(2, through)}%` }}
         />
       </div>
 
-      <div className="flex flex-1 justify-center bg-gray-50 px-4 py-7 sm:px-8 sm:py-10">
+      <div className="flex flex-1">
+        {/* The whole paper at a glance. Display only: it cannot be used to read
+            ahead, because the questions past this one are not reachable until
+            they are reached — it only says where you are and what is done. */}
+        {question && !paused ? (
+          <aside className="hidden w-[300px] shrink-0 flex-col border-r border-gray-200 bg-white px-6 py-7 lg:flex">
+            <h2 className="text-sm font-semibold text-gray-900">Your paper</h2>
+            <p className="mt-0.5 text-[12.5px] text-gray-400">
+              {answered} answered, {questions.length} in all
+            </p>
+            <div className="mt-4.5 grid grid-cols-5 gap-2">
+              {questions.map((q, i) => {
+                const current = !reviewing && i === index;
+                const done = !!answers[q.id];
+                const reachable = seen || i <= index;
+                return (
+                  <span
+                    key={q.id}
+                    aria-hidden
+                    className={`flex h-10 items-center justify-center rounded-lg text-[13.5px] font-medium tabular-nums ${
+                      current
+                        ? "bg-gray-900 text-white"
+                        : done
+                          ? "bg-gray-100 text-gray-900"
+                          : reachable
+                            ? "bg-amber-50 text-amber-800"
+                            : "border border-gray-200 text-gray-400"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="mt-4.5 flex flex-wrap gap-x-4 gap-y-2 text-[12.5px] text-gray-500">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-gray-100" />
+                Answered
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-[3px] bg-gray-900" />
+                This one
+              </span>
+              {seen ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-[3px] bg-amber-100" />
+                  Blank
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-[3px] border border-gray-300" />
+                  Not reached
+                </span>
+              )}
+            </div>
+            <p className="mt-auto pt-6 text-[13px] leading-normal text-gray-500">
+              {seen
+                ? "You are on your one pass over the paper. Blank questions score nothing."
+                : "You cannot read ahead. After the last question you get one pass over every answer before you submit."}
+            </p>
+          </aside>
+        ) : null}
+
+      <div className="flex flex-1 justify-center px-4 py-7 sm:px-8 sm:py-10 lg:justify-start lg:px-24 lg:py-16">
         <div className="w-full max-w-3xl">
           {warning ? (
             <div
@@ -653,8 +718,8 @@ export function ExamRunner({
 
           {paused ? (
             <div className="rounded-xl border border-amber-300 bg-amber-50 p-8 text-center dark:border-amber-800 dark:bg-amber-950">
-              <h2 className="font-serif text-2xl font-semibold text-amber-900 dark:text-amber-200">
-                Fullscreen ended — your exam is paused
+              <h2 className="text-[22px] font-semibold tracking-[-0.015em] text-amber-900">
+                Fullscreen ended, so your exam is paused
               </h2>
               <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-amber-800 dark:text-amber-300">
                 The questions are hidden until you are back in fullscreen. This has
@@ -672,10 +737,10 @@ export function ExamRunner({
           ) : question ? (
             reviewing ? (
             <div className="select-none">
-              <span className="mb-2.5 block text-xs font-medium tracking-[0.08em] text-gray-500 uppercase">
+              <span className="mb-2.5 block text-[13.5px] font-medium text-gray-400">
                 All {questions.length} questions seen
               </span>
-              <h2 className="font-serif text-[24px] leading-[1.3] font-semibold tracking-tight text-gray-900 sm:text-[31px] sm:leading-[1.25]">
+              <h2 className="text-[24px] leading-[1.35] font-medium tracking-[-0.015em] text-gray-900 sm:text-[30px]">
                 {blanks.length === 0
                   ? "Everything is answered."
                   : blanks.length === 1
@@ -690,9 +755,7 @@ export function ExamRunner({
 
               <div className="mt-6.5 rounded-xl border border-gray-200 bg-white px-6 py-5.5">
                 <div className="mb-4 flex flex-wrap items-baseline justify-between gap-4">
-                  <h3 className="text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
-                    Your paper
-                  </h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Your paper</h3>
                   <div className="flex items-center gap-4 text-[12.5px] text-gray-500">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2.75 w-2.75 rounded-[3px] border-[1.5px] border-teal-100 bg-teal-50" />
@@ -737,7 +800,7 @@ export function ExamRunner({
                   <b className="font-medium text-gray-900">
                     {answered} of {questions.length}
                   </b>{" "}
-                  answered{blanks.length ? ` · ${blanks.length} blank` : ""}
+                  answered{blanks.length ? `, ${blanks.length} blank` : ""}
                 </span>
                 <div className="flex flex-wrap items-center gap-4">
                   {blanks.length ? (
@@ -747,9 +810,8 @@ export function ExamRunner({
                         setReviewing(false);
                         setIndex(blanks[0]!);
                       }}
-                      className="inline-flex h-[52px] items-center gap-2.5 rounded-xl border-[1.5px] border-teal-100 bg-white px-5.5 text-[15px] font-medium text-teal-700 transition hover:border-teal-300"
+                      className="inline-flex h-[46px] items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-5 text-[15px] font-medium text-gray-900 hover:border-gray-400"
                     >
-                      <ArrowMark className="h-4 w-4 rotate-180" />
                       Answer question {blanks[0]! + 1}
                     </button>
                   ) : null}
@@ -757,7 +819,7 @@ export function ExamRunner({
                     type="button"
                     disabled={submitting}
                     onClick={() => finish("manual")}
-                    className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600 disabled:opacity-50"
+                    className="inline-flex h-[46px] items-center gap-2.5 rounded-lg bg-gray-900 px-5.5 text-[15px] font-medium text-white hover:bg-gray-700 disabled:opacity-50"
                   >
                     {submitting ? "Submitting…" : "Submit my paper"}
                     <TickMark className="h-4 w-4" />
@@ -768,7 +830,7 @@ export function ExamRunner({
           ) : (
             <div className="select-none">
               <div className="mb-3.5 flex items-baseline justify-between gap-4">
-                <span className="text-xs font-medium tracking-[0.08em] text-gray-500 uppercase dark:text-gray-400">
+                <span className="text-[13.5px] font-medium text-gray-400">
                   Question {index + 1} of {questions.length}
                 </span>
                 {answers[question.id] ? (
@@ -779,21 +841,21 @@ export function ExamRunner({
                 ) : null}
               </div>
 
-              <h2 className="font-serif text-[24px] leading-[1.3] font-semibold tracking-tight text-pretty text-gray-900 sm:text-[31px] sm:leading-[1.28]">
+              <h2 className="text-[24px] leading-[1.35] font-medium tracking-[-0.015em] text-pretty text-gray-900 sm:text-[30px]">
                 {question.prompt}
               </h2>
 
               {question.type === "MULTIPLE_CHOICE" ? (
-                <div className="mt-7 flex flex-col gap-3">
+                <div className="mt-8 flex flex-col gap-2.5">
                   {(question.choices ?? []).map((choice, i) => {
                     const picked = answers[question.id] === choice;
                     return (
                       <label
                         key={choice}
-                        className={`flex min-h-16 cursor-pointer items-center gap-3.5 rounded-xl border-[1.5px] px-4 py-3.5 text-[15px] transition sm:gap-4 sm:px-5 sm:text-base ${
+                        className={`flex min-h-15 cursor-pointer items-center gap-3.5 rounded-[10px] px-4.5 py-3 text-[15px] has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gray-900 sm:text-base ${
                           picked
-                            ? "border-teal-600 bg-teal-50 text-gray-900 shadow-[0_0_0_3px_rgba(27,65,121,0.10)] dark:bg-teal-950/60 dark:text-gray-50"
-                            : "border-gray-200 bg-white text-gray-800 hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                            ? "border-[1.5px] border-gray-900 bg-teal-50 font-medium text-gray-900"
+                            : "border border-gray-200 bg-white text-gray-800 hover:border-gray-400"
                         }`}
                       >
                         <input
@@ -805,10 +867,10 @@ export function ExamRunner({
                           className="sr-only"
                         />
                         <span
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[1.5px] text-[13px] font-medium transition ${
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[13px] font-semibold ${
                             picked
-                              ? "border-teal-700 bg-teal-700 text-white"
-                              : "border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-400"
+                              ? "bg-gray-900 text-white"
+                              : "border border-gray-200 bg-white text-gray-500"
                           }`}
                         >
                           {String.fromCharCode(65 + i)}
@@ -825,7 +887,7 @@ export function ExamRunner({
                   onChange={(e) => onAnswer(question.id, e.target.value)}
                   autoComplete="off"
                   placeholder="Type your answer"
-                  className="mt-7 h-16 w-full rounded-xl border-[1.5px] border-gray-200 bg-white px-5 text-base text-gray-900 outline-none transition focus:border-teal-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                  className="mt-8 h-15 w-full rounded-[10px] border border-gray-200 bg-white px-4.5 text-base text-gray-900 outline-none focus:border-[1.5px] focus:border-gray-900"
                 />
               )}
 
@@ -839,7 +901,7 @@ export function ExamRunner({
                       The sentence says what to do, not what went wrong. */}
                   {hasAnswer ? (
                     <>
-                      {answered} of {questions.length} answered ·{" "}
+                      {answered} of {questions.length} answered.{" "}
                       {seen
                         ? "you can go back to this one from the review at the end"
                         : "you cannot read ahead, but you get one pass over your answers at the end"}
@@ -858,10 +920,9 @@ export function ExamRunner({
                   aria-disabled={!hasAnswer}
                   title={hasAnswer ? undefined : "Answer this question first"}
                   onClick={() => (seen ? setReviewing(true) : void advance())}
-                  className="inline-flex h-[52px] items-center gap-2.5 rounded-xl bg-teal-700 px-7 text-[15px] font-medium text-white transition hover:bg-teal-600 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:hover:bg-gray-200"
+                  className="inline-flex h-[46px] items-center gap-2.5 rounded-lg bg-gray-900 px-5.5 text-[15px] font-medium text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:hover:bg-gray-200"
                 >
                   {seen ? "Back to review" : isLast ? "Review my paper" : "Next question"}
-                  <ArrowMark className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -875,12 +936,13 @@ export function ExamRunner({
           ) : null}
         </div>
       </div>
+      </div>
 
-      <footer className="flex items-center justify-center gap-2.5 bg-gray-950 px-4 py-4 text-center text-xs text-teal-300 sm:px-8">
-        <LockMark className="h-3.5 w-3.5" />
-        {lockdown.fullscreenRequired ? "Fullscreen is required · " : ""}
-        leaving this window is recorded
-        {lockdown.blockCopyPaste ? " · copy and paste are disabled" : ""}
+      <footer className="flex items-center justify-center gap-2 border-t border-gray-200 bg-white px-4 py-3 text-center text-[12.5px] text-gray-500 sm:px-8">
+        <LockMark className="h-3.5 w-3.5 shrink-0" />
+        {lockdown.fullscreenRequired ? "Fullscreen is required. " : ""}
+        Leaving this window is recorded
+        {lockdown.blockCopyPaste ? ", and copy and paste are off." : "."}
       </footer>
 
       <SubmitForm ref={formRef} sessionId={sessionId} action={submit} />
@@ -947,14 +1009,6 @@ function TickMark({ className }: { className?: string }) {
   );
 }
 
-function ArrowMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
-      <path d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function LockMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
@@ -967,10 +1021,10 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-6 border-b border-gray-200 pb-4 font-serif text-2xl font-semibold tracking-tight text-gray-900 dark:border-gray-800 dark:text-gray-50">
+        <h1 className="mb-6 border-b border-gray-200 pb-4 text-[22px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:border-gray-800 dark:text-gray-50">
           {title}
         </h1>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
           {children}
         </div>
       </div>

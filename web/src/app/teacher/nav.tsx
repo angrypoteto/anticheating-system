@@ -39,5 +39,7 @@ export function TeacherNav({
   name: string | null;
   useClasses: boolean;
 }) {
-  return <ConsoleNav groups={GROUPS(useClasses)} name={name} email={email} />;
+  return (
+    <ConsoleNav groups={GROUPS(useClasses)} role="Instructor" name={name} email={email} />
+  );
 }

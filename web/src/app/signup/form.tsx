@@ -48,7 +48,7 @@ export function SignupForm({
             {sections.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
-                {s.instructor ? ` — ${s.instructor}` : ""}
+                {s.instructor ? `, ${s.instructor}` : ""}
               </option>
             ))}
           </select>
@@ -93,7 +93,7 @@ export function SignupForm({
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
         >
           {state.error}
         </p>

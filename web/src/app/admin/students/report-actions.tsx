@@ -6,14 +6,14 @@ export function ReportActions() {
     <div className="flex gap-2 print:hidden">
       <a
         href="/admin/students/export"
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
       >
         Export CSV
       </a>
       <button
         type="button"
         onClick={() => window.print()}
-        className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+        className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
       >
         Print
       </button>

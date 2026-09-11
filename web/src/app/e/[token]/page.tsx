@@ -49,7 +49,7 @@ export default async function ExamLinkPage({
         footer={
           <Link
             href="/"
-            className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="font-medium text-teal-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-teal-400"
           >
             Go to your dashboard
           </Link>

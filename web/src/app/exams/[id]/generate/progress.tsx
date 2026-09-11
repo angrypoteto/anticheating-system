@@ -103,11 +103,11 @@ export function GenerationProgress({ runId }: { runId: string }) {
       className="rounded-xl border border-gray-200 bg-white px-6 py-5.5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <span className="font-serif text-[23px] font-semibold tracking-tight text-gray-900">
+        <span className="text-[23px] font-semibold tracking-[-0.02em] text-gray-900">
           {remaining ?? "Reading your lesson file…"}
         </span>
         {known ? (
-          <span className="font-mono text-sm tabular-nums text-gray-500">
+          <span className="text-sm font-medium tabular-nums text-gray-500">
             {done} of {total} written
           </span>
         ) : null}
@@ -134,7 +134,7 @@ export function GenerationProgress({ runId }: { runId: string }) {
             ? "Re-estimated from the batches already done, not from a fixed guess."
             : "Working out how much there is to read."}
         </span>
-        <span className="font-mono text-xs tabular-nums">elapsed {formatClock(seconds * 1000)}</span>
+        <span className="text-[12.5px] tabular-nums">Elapsed {formatClock(seconds * 1000)}</span>
       </div>
 
       <p className="mt-4 border-t border-gray-100 pt-4 text-[13px] leading-relaxed text-gray-600">

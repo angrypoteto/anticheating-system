@@ -18,28 +18,28 @@ export default async function ExamsPage() {
     <main className="min-h-screen bg-gray-50 p-8 dark:bg-gray-950">
       <div className="mx-auto max-w-4xl space-y-10">
         <header className="flex items-baseline justify-between border-b border-gray-200 pb-4 dark:border-gray-800">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+          <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-50">
             Exams &amp; quizzes
           </h1>
           <div className="flex items-center gap-4">
             <Link
               href={buildHref}
-              className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
+              className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
             >
               Generate an exam
             </Link>
             <Link
               href={backHref}
-              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             >
               Back
             </Link>
           </div>
         </header>
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-gray-900">
               Your exams
             </h2>
           </div>

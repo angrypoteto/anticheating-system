@@ -5,7 +5,7 @@ import { loadEnrolment } from "@/lib/enrolment";
 import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
-import { Card, Empty, PageHeader, Pill, Stat } from "@/app/admin/ui";
+import { Card, Empty, PageHeader, Pill, Stat, Stats } from "@/app/admin/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -133,13 +133,13 @@ export default async function TeacherStudentsPage() {
       <div className="flex flex-wrap gap-3">
         <a
           href="/teacher/students/export"
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
         >
           Download CSV
         </a>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Stats>
         <Stat
           label="Your students"
           value={String(roll.length)}
@@ -156,7 +156,7 @@ export default async function TeacherStudentsPage() {
           tone="warn"
         />
         <Stat label="Sitting now" value={String(inProgress)} />
-      </div>
+      </Stats>
 
       {useClasses && sectionRisks.length ? (
         <Card
@@ -166,7 +166,7 @@ export default async function TeacherStudentsPage() {
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+              <thead className="border-b border-gray-200 text-[12.5px] font-medium text-gray-400">
                 <tr>
                   <th className="px-6 py-3 font-medium">Class</th>
                   <th className="px-6 py-3 font-medium">Students</th>
@@ -207,9 +207,9 @@ export default async function TeacherStudentsPage() {
                         {name(a.student)}
                       </span>
                       <span className="mt-0.5 block truncate text-xs text-gray-500 dark:text-gray-400">
-                        {useClasses ? `${enrolment.labelsFor(a.student.id).join(", ") || "No class"} · ` : ""}
+                        {useClasses ? `${enrolment.labelsFor(a.student.id).join(", ") || "No class"}, ` : ""}
                         {a.risk.graded} graded
-                        {a.risk.average == null ? "" : ` · average ${a.risk.average}%`}
+                        {a.risk.average == null ? "" : `, average ${a.risk.average}%`}
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
@@ -228,8 +228,8 @@ export default async function TeacherStudentsPage() {
                       {a.risk.reasons.join(" ")}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Confidence: {a.risk.confidence} · {a.risk.notTaken} not taken ·{" "}
-                      {a.risk.autoSubmitted} auto-submitted · {a.risk.flags} flag
+                      Confidence {a.risk.confidence}, {a.risk.notTaken} not taken,{" "}
+                      {a.risk.autoSubmitted} auto-submitted, {a.risk.flags} flag
                       {a.risk.flags === 1 ? "" : "s"}
                     </p>
                     {a.missing.length ? (

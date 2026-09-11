@@ -32,16 +32,16 @@ export function FirstRun({
   return (
     <div>
       <header>
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
           {greeting}
         </h1>
         <p className="mt-1.75 max-w-[62ch] text-sm text-gray-500">{lede}</p>
       </header>
 
       {/* One action, at the size of one action. */}
-      <div className="mt-6.5 flex flex-wrap items-center justify-between gap-8 rounded-[14px] border border-teal-100 bg-white px-8 py-7.5 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)]">
+      <div className="mt-6.5 flex flex-wrap items-center justify-between gap-8 rounded-xl border-[1.5px] border-gray-900 bg-white px-8 py-7">
         <div className="min-w-0">
-          <p className="font-serif text-2xl font-semibold tracking-tight text-gray-900">
+          <p className="text-[22px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
             {action.title}
           </p>
           <p className="mt-2.25 max-w-[56ch] text-[14.5px] leading-relaxed text-gray-700">
@@ -50,18 +50,9 @@ export function FirstRun({
         </div>
         <Link
           href={action.href}
-          className="inline-flex h-12.5 shrink-0 items-center gap-2.25 rounded-[10px] bg-teal-700 px-6.5 text-[15px] font-medium text-white transition hover:bg-teal-800"
+          className="inline-flex h-[46px] shrink-0 items-center rounded-lg bg-gray-900 px-6 text-[15px] font-medium text-white hover:bg-gray-700"
         >
           {action.label}
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-              d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
         </Link>
       </div>
 
@@ -114,7 +105,7 @@ export function FirstRun({
         ))}
       </ol>
 
-      <h2 className="mt-8.5 mb-3 text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+      <h2 className="mt-8.5 mb-3 text-[15px] font-semibold text-gray-900">
         What will be here
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -123,7 +114,7 @@ export function FirstRun({
             key={s.label}
             className="rounded-xl border border-dashed border-gray-200 bg-white px-5.5 py-5"
           >
-            <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+            <p className="text-[12.5px] font-medium text-gray-500">
               {s.label}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-gray-700">{s.says}</p>

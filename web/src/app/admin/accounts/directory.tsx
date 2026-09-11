@@ -206,7 +206,7 @@ export function Directory({
               setStatus("ALL");
               setClassId("ALL");
             }}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900"
+            className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900"
           >
             Clear
           </button>
@@ -260,7 +260,7 @@ export function Directory({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50/60 text-[11px] tracking-[0.07em] text-gray-500 uppercase">
+            <thead className="border-b border-gray-100 bg-gray-50/60 text-[12.5px] font-medium text-gray-400">
               <tr>
                 <th className="w-[32%] px-5.5 py-3 font-medium">Person</th>
                 <th className="px-5.5 py-3 font-medium">Role</th>
@@ -280,7 +280,7 @@ export function Directory({
                       {p.full_name || p.email}
                     </span>
                     {p.full_name ? (
-                      <span className="mt-0.5 block font-mono text-[12.5px] text-gray-500">
+                      <span className="mt-0.5 block text-[12.5px] text-gray-500">
                         {p.username ? `@${p.username}` : p.email}
                       </span>
                     ) : null}
@@ -289,12 +289,12 @@ export function Directory({
                     {/* A role is what somebody IS; a status is what their account is
                         doing. Different shapes, so a glance never confuses them. */}
                     <span
-                      className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-medium ${
+                      className={`inline-flex h-5.5 items-center rounded-lg border px-2 text-[12.5px] font-medium ${
                         p.role === "ADMIN"
-                          ? "border-teal-100 bg-teal-50 text-teal-800"
+                          ? "border-gray-900 bg-gray-900 text-white"
                           : p.role === "INSTRUCTOR"
-                            ? "border-accent-line bg-accent-soft text-[#0B5B57]"
-                            : "border-gray-200 bg-gray-100 text-gray-600"
+                            ? "border-gray-200 bg-gray-100 text-gray-900"
+                            : "border-gray-200 bg-white text-gray-600"
                       }`}
                     >
                       {ROLE_WORD[p.role] ?? p.role.toLowerCase()}

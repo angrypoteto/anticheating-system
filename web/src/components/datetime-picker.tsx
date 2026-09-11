@@ -91,7 +91,7 @@ export function DateTimePicker({
   const isPm = current.hh >= 12;
 
   const select =
-    "rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
+    "rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
 
   return (
     <div className="relative" ref={box}>
@@ -103,7 +103,7 @@ export function DateTimePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-describedby={describedBy}
-        className="mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-gray-300 px-3 py-2 text-left text-sm text-gray-900 transition hover:border-gray-400 focus:border-gray-900 focus:outline-none dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:hover:border-gray-600 dark:focus:border-gray-400"
+        className="mt-1 flex w-full items-center justify-between gap-2 rounded-lg border border-gray-300 px-3 py-2 text-left text-sm text-gray-900 transition hover:border-gray-400 focus:border-gray-900 focus:outline-none dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:hover:border-gray-600 dark:focus:border-gray-400"
       >
         <span className={picked ? "" : "text-gray-400 dark:text-gray-500"}>
           {picked ? labelParts(picked) : "Not set"}
@@ -160,7 +160,7 @@ export function DateTimePicker({
                   aria-current={isPicked ? "date" : undefined}
                   className={`rounded py-1.5 text-sm transition ${
                     isPicked
-                      ? "bg-teal-700 font-medium text-white dark:bg-teal-600"
+                      ? "bg-teal-700 font-medium text-white"
                       : isToday
                         ? "bg-gray-100 text-gray-900 ring-1 ring-inset ring-gray-300 dark:bg-gray-800 dark:text-gray-100 dark:ring-gray-600"
                         : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
@@ -231,14 +231,14 @@ export function DateTimePicker({
                 setValue("");
                 setOpen(false);
               }}
-              className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+              className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
             >
               Done
             </button>

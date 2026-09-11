@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { isIncomplete, whatIsMissing } from "@/lib/onboarding";
 import { Landing } from "./landing";
-import { ShieldMark } from "@/components/auth-shell";
+import { ConsoleNav } from "@/components/console-nav";
 import { createClient } from "@/lib/supabase/server";
 import { classLabel } from "@/lib/classes";
 import { JoinClassForm } from "./join-class";
@@ -52,15 +52,15 @@ async function MyClasses() {
   ).map((c) => ({ id: c.id, label: classLabel(c), instructor: c.instructor }));
 
   return (
-    <div className="mt-5 mb-7.5">
+    <div className="mt-5 mb-8">
       <div className="flex flex-wrap items-center gap-2">
         {sections?.length ? (
           sections.map((s) => (
             <span
               key={s.id}
-              className="inline-flex items-center gap-1.75 rounded-full border border-accent-line bg-accent-soft px-3.25 py-1.5 text-[13px] font-medium text-[#0B5B57]"
+              className="inline-flex h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 text-[13px] font-medium text-gray-900"
             >
-              <CapMark className="h-3.25 w-3.25" />
+              <CapMark className="h-4 w-4 text-gray-500" />
               {classLabel(s)}
             </span>
           ))
@@ -74,7 +74,7 @@ async function MyClasses() {
 
         {selfJoin ? (
           <details className="group">
-            <summary className="ml-1 cursor-pointer list-none text-[13px] text-teal-700 hover:underline hover:underline-offset-[3px] group-open:hidden">
+            <summary className="ml-1 cursor-pointer list-none text-[13px] font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 group-open:hidden">
               Add a section
             </summary>
             <div className="mt-3">
@@ -104,18 +104,9 @@ export default async function Home() {
   if (role === "ADMIN") redirect("/admin");
   if (role === "INSTRUCTOR") redirect("/teacher");
 
-  // A student has one destination and one action, so there is no rail here —
-  // navigation would be furniture around an empty room. The bar carries the
-  // mark and who they are; the page opens on the thing they came for.
+  // A student now has a side navigation rail to match the other consoles.
   const name = (profile.full_name ?? "").trim();
   const firstName = name.split(/\s+/)[0];
-  const initials =
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w: string) => w[0]!.toUpperCase())
-      .join("") || (profile.email?.[0] ?? "?").toUpperCase();
 
   // Manila time, because that is the morning the student is having.
   const hour = Number(
@@ -143,43 +134,30 @@ export default async function Home() {
         }`;
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="flex h-15 items-center justify-between bg-teal-800 px-6 text-white sm:px-10">
-        <div className="flex items-center gap-2.5">
-          <ShieldMark className="h-5.25 w-5.25" />
-          <span className="font-semibold tracking-tight">Proctorly</span>
-        </div>
-        <div className="flex items-center gap-3.5 text-[13px] text-teal-100">
-          <span className="hidden truncate sm:inline">{profile.email}</span>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="text-[13px] text-teal-100 underline underline-offset-4 transition hover:text-white"
-            >
-              Sign out
-            </button>
-          </form>
-          <span
-            aria-hidden
-            className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-teal-600 text-xs font-semibold text-white"
-          >
-            {initials}
-          </span>
+    <div className="flex min-h-screen flex-col bg-gray-50 lg:flex-row">
+      <ConsoleNav
+        email={profile.email!}
+        name={profile.full_name}
+        role="Student"
+        groups={[
+          {
+            label: "Menu",
+            links: [{ href: "/", label: "Dashboard", exact: true }],
+          },
+        ]}
+      />
+      <div className="min-w-0 flex-1 bg-gray-50">
+        <div className="mx-auto max-w-5xl px-6 pt-8 pb-12 sm:px-10">
+          <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 sm:text-[30px]">
+            {firstName ? `${partOfDay}, ${firstName}` : partOfDay}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-[15px] text-gray-500">{standing}</p>
+
+          {(await classesEnabled()) ? <MyClasses /> : <div className="mb-8" />}
+
+          <StudentExams rows={rows} error={error} />
         </div>
       </div>
-
-      <div className="mx-auto max-w-[1000px] px-6 pt-9 pb-12 sm:px-10">
-        <h1 className="font-serif text-[24px] font-semibold tracking-tight text-gray-900 sm:text-[32px]">
-          {firstName ? `${partOfDay}, ${firstName}` : partOfDay}
-        </h1>
-        <p className="mt-1.5 text-[13.5px] leading-relaxed text-gray-500 sm:mt-1.75 sm:text-[15px]">
-          {standing}
-        </p>
-
-        {(await classesEnabled()) ? <MyClasses /> : <div className="mb-7.5" />}
-
-        <StudentExams rows={rows} error={error} />
-      </div>
-    </main>
+    </div>
   );
 }

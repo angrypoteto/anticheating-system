@@ -42,7 +42,7 @@ export async function ExamBuilder() {
       {me.role === "ADMIN" ? (
         <Link
           href="/admin/accounts"
-          className="mt-2 inline-block font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+          className="mt-2 inline-block font-medium text-teal-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-teal-400"
         >
           Create a class
         </Link>

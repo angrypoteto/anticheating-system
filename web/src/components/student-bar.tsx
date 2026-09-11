@@ -28,7 +28,7 @@ export function StudentBar({ email, name }: { email: string; name?: string | nul
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="text-[13px] text-teal-100 underline underline-offset-4 transition hover:text-white"
+            className="text-[13px] text-teal-100 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 transition hover:text-white"
           >
             Sign out
           </button>

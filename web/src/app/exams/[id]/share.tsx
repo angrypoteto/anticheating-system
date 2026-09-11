@@ -42,7 +42,7 @@ export function ShareLink({
           : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
       }`}
     >
-      <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+      <h2 className="text-[15px] font-semibold text-gray-900">
         {live ? "Send this to your students" : "Link to this exam"}
       </h2>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -59,12 +59,12 @@ export function ShareLink({
           value={url}
           aria-label="Share link"
           onFocus={(e) => e.currentTarget.select()}
-          className="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+          className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
         />
         <button
           type="button"
           onClick={copy}
-          className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+          className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
         >
           {copied ? "Copied" : "Copy link"}
         </button>

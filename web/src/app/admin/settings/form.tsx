@@ -18,7 +18,7 @@ export type Settings = {
 };
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const hint = "mt-1 text-xs text-gray-500 dark:text-gray-400";
 const check = "flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300";
@@ -30,7 +30,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   return (
     <form action={action} className="space-y-8">
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-[15px] font-semibold text-gray-900">
           General
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -62,7 +62,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-[15px] font-semibold text-gray-900">
           Defaults for new exams
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -134,7 +134,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-[15px] font-semibold text-gray-900">
           Classes
         </h3>
         <label className={check}>
@@ -155,7 +155,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <h3 className="text-[15px] font-semibold text-gray-900">
           Registration
         </h3>
         <label className={check}>
@@ -194,12 +194,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </section>
 
       {state.error ? (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p role="status" className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+        <p role="status" className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
           {state.success}
         </p>
       ) : null}
@@ -207,7 +207,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-teal-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600 dark:hover:bg-teal-500"
+        className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save settings"}
       </button>

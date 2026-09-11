@@ -62,7 +62,7 @@ const duration = (minutes: number) => {
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+      <dt className="text-[12.5px] font-medium text-gray-500">
         {label}
       </dt>
       <dd className="mt-1.25 text-sm text-gray-900">{children}</dd>
@@ -160,7 +160,7 @@ export async function ExamList() {
           e.status === "PUBLISHED" ? `${sat} sitting${sat === 1 ? "" : "s"}` : "not published",
         ]
           .filter(Boolean)
-          .join(" · ");
+          .join(", ");
 
         const availability =
           e.status !== "PUBLISHED"
@@ -181,7 +181,7 @@ export async function ExamList() {
                   {/* The subject is a kicker: it says what this belongs to, so it
                       is read before the name and not mistaken for part of it. */}
                   {subject ? (
-                    <p className="truncate text-xs font-medium tracking-[0.06em] text-accent uppercase">
+                    <p className="truncate text-[12.5px] font-medium text-accent">
                       {subject}
                     </p>
                   ) : null}
@@ -250,8 +250,7 @@ export async function ExamList() {
                     {duration(timer.totalMinutes)}
                     {timer.perQuestionSeconds ? (
                       <span className="text-gray-500 dark:text-gray-400">
-                        {" "}
-                        · {timer.perQuestionSeconds}s per question
+                        , {timer.perQuestionSeconds}s per question
                       </span>
                     ) : null}
                   </Detail>
@@ -264,7 +263,7 @@ export async function ExamList() {
                     {e.status === "PUBLISHED" ? (
                       <a
                         href={`${base}/e/${e.share_token}`}
-                        className="break-all font-mono text-xs text-teal-700 underline underline-offset-4 dark:text-teal-400"
+                        className="break-all font-mono text-xs text-teal-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-teal-400"
                       >
                         {`${base}/e/${e.share_token}`}
                       </a>
@@ -278,7 +277,7 @@ export async function ExamList() {
                   <Detail label={published ? "Given on" : "Not yet given"}>
                     {published ?? (
                       <span className="text-gray-500 dark:text-gray-400">
-                        Made {when(e.created_at)} — publish it to send it out
+                        Made {when(e.created_at)}. Publish it to send it out.
                       </span>
                     )}
                   </Detail>

@@ -58,7 +58,7 @@ export function GoogleButton({
         type="button"
         onClick={go}
         disabled={busy}
-        className="flex w-full items-center justify-center gap-2.5 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
       >
         <svg viewBox="0 0 18 18" aria-hidden className="h-4.5 w-4.5" width="18" height="18">
           <path
@@ -95,7 +95,7 @@ export function AuthDivider({ children = "or" }: { children?: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-      <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">
+      <span className="text-[12.5px] text-gray-400">
         {children}
       </span>
       <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />

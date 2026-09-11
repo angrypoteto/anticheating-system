@@ -26,8 +26,8 @@ export default async function KeysPage() {
         subtitle={`${activeCount} active. Generation tries each active key in turn, moving to the next when one is rate-limited — which is why it is worth adding several.`}
       />
 
-        <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="text-[15px] font-semibold text-gray-900">
             Add a key
           </h2>
           <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
@@ -38,9 +38,9 @@ export default async function KeysPage() {
           <AddKeyForm />
         </section>
 
-        <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">
+        <section className="rounded-xl border border-gray-200 bg-white">
+          <div className="border-b border-gray-100 px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-gray-900">
               Stored keys
             </h2>
             <p className="mt-1 max-w-[62ch] text-sm text-gray-500">

@@ -70,7 +70,7 @@ export default async function TakeExamPage({
       <main className="min-h-screen bg-gray-50">
         <StudentBar email={user.email} name={user.full_name} />
         <div className="mx-auto max-w-[800px] px-6 pt-9 pb-12 sm:px-10">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
+          <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
             {exam.title}
           </h1>
           <p className="mt-2.5 max-w-[62ch] text-[15px] leading-relaxed text-gray-500">
@@ -152,7 +152,7 @@ export default async function TakeExamPage({
         <StudentBar email={user.email} name={user.full_name} />
 
         <div className="mx-auto max-w-[800px] px-6 pt-9.5 pb-12 sm:px-10">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900">
+          <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
             {exam.title}
           </h1>
 
@@ -187,7 +187,7 @@ export default async function TakeExamPage({
               ) : null}
               <div>
                 <p
-                  className={`font-serif text-[19px] font-semibold tracking-tight ${
+                  className={`text-[19px] font-semibold tracking-[-0.015em] ${
                     said.blamed ? "text-amber-900" : "text-gray-900"
                   }`}
                 >
@@ -207,7 +207,7 @@ export default async function TakeExamPage({
 
             <div className="grid grid-cols-1 sm:grid-cols-3">
               <div className="border-b border-gray-100 px-6.5 py-5.5 sm:border-r sm:border-b-0">
-                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                <p className="text-[12.5px] font-medium text-gray-500">
                   Score
                 </p>
                 <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
@@ -217,7 +217,7 @@ export default async function TakeExamPage({
               </div>
 
               <div className="border-b border-gray-100 px-6.5 py-5.5 sm:border-r sm:border-b-0">
-                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                <p className="text-[12.5px] font-medium text-gray-500">
                   Answered
                 </p>
                 <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
@@ -230,7 +230,7 @@ export default async function TakeExamPage({
               </div>
 
               <div className="px-6.5 py-5.5">
-                <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+                <p className="text-[12.5px] font-medium text-gray-500">
                   Time used
                 </p>
                 <p className="mt-2 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-gray-900">
@@ -245,7 +245,7 @@ export default async function TakeExamPage({
 
             {warnings.length ? (
               <div className="border-t border-gray-100 px-6.5 py-5">
-                <p className="mb-3 text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+                <p className="mb-3 text-[15px] font-semibold text-gray-900">
                   What was recorded
                 </p>
                 {warnings.map((w, i) => (
@@ -257,7 +257,7 @@ export default async function TakeExamPage({
                       {warnings.length - i}.
                     </span>
                     <span className="flex-1 text-gray-900">You {describeFlag(w.kind)}</span>
-                    <span className="font-mono text-xs text-gray-500">{when(w.at)}</span>
+                    <span className="text-[12.5px] tabular-nums text-gray-500">{when(w.at)}</span>
                   </div>
                 ))}
               </div>
@@ -266,8 +266,8 @@ export default async function TakeExamPage({
 
           {/* The end of the experience, which is what it is remembered by. */}
           {said.blamed ? (
-            <div className="mt-5.5 rounded-[14px] border border-teal-100 bg-white px-6.5 py-6 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)]">
-              <h2 className="font-serif text-xl font-semibold tracking-tight text-gray-900">
+            <div className="mt-5.5 rounded-xl border border-gray-200 bg-white px-6.5 py-6">
+              <h2 className="text-xl font-semibold tracking-[-0.015em] text-gray-900">
                 If that was not what happened
               </h2>
               <p className="mt-2 max-w-[64ch] text-sm leading-relaxed text-gray-700">

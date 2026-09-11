@@ -13,12 +13,12 @@ import {
 } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
+  "mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100";
 const label = "block text-sm font-medium text-gray-700 dark:text-gray-300";
 const button =
-  "rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900";
+  "rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900";
 const linkBtn =
-  "text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100";
+  "text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100";
 
 function Feedback({ state }: { state: KeyState }) {
   if (state.error)
@@ -165,16 +165,23 @@ export function KeyRow({
         <div className="min-w-0">
           <p className="font-medium text-gray-900 dark:text-gray-100">
             {keyLabel}{" "}
-            <span className="ml-1 font-mono text-xs text-gray-400 dark:text-gray-500">
-              ••••{hint}
+            <span className="ml-1.5 text-[12.5px] font-normal tabular-nums text-gray-400">
+              ends {hint}
             </span>
           </p>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-            {provider} ·{" "}
-            <span className={active ? "text-green-700 dark:text-green-400" : "text-gray-400"}>
-              {status.toLowerCase()}
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-500">
+            <span>{provider}</span>
+            <span
+              className={`inline-flex items-center gap-1.5 font-medium ${
+                active ? "text-green-700" : "text-gray-400"
+              }`}
+            >
+              {active ? <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" /> : null}
+              {status.charAt(0) + status.slice(1).toLowerCase()}
             </span>
-            {lastUsed ? ` · last used ${new Date(lastUsed).toLocaleString()}` : " · never used"}
+            <span>
+              {lastUsed ? `Last used ${new Date(lastUsed).toLocaleString()}` : "Never used"}
+            </span>
           </p>
           {lastError ? (
             <p className="mt-1 max-w-xl text-xs text-amber-700 dark:text-amber-400">
@@ -202,7 +209,7 @@ export function KeyRow({
             <button
               type="submit"
               disabled={delPending}
-              className="text-sm text-gray-600 underline underline-offset-4 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
+              className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-red-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-red-400"
             >
               {delPending ? "…" : "Delete"}
             </button>

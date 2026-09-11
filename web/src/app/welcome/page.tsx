@@ -93,7 +93,7 @@ export default async function WelcomePage({
           <form action="/auth/signout" method="post" className="inline">
             <button
               type="submit"
-              className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+              className="font-medium text-teal-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-teal-400"
             >
               Not you?
             </button>

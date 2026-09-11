@@ -116,7 +116,7 @@ export default async function ExamEditorPage({
         <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
           <Link
             href={me.role === "ADMIN" ? "/admin/exams" : "/teacher/exams"}
-            className="text-sm text-gray-500 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
           >
             ← All exams &amp; quizzes
           </Link>
@@ -127,25 +127,25 @@ export default async function ExamEditorPage({
                   {subjectName}
                 </p>
               ) : null}
-              <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+              <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-50">
                 {exam.title}
               </h1>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {qs.length} question{qs.length === 1 ? "" : "s"} ·{" "}
-                {selectedClasses.length} class{selectedClasses.length === 1 ? "" : "es"} ·{" "}
+                {qs.length} question{qs.length === 1 ? "" : "s"},{" "}
+                {selectedClasses.length} class{selectedClasses.length === 1 ? "" : "es"},{" "}
                 {exam.status.toLowerCase()}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 href={`/exams/${exam.id}/generate`}
-                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 Generate with AI
               </Link>
               <Link
                 href={`/exams/${exam.id}/monitor`}
-                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 Monitor &amp; results
               </Link>
@@ -160,7 +160,7 @@ export default async function ExamEditorPage({
         </header>
 
         {published ? (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
             This exam is published, so its questions and answer keys are frozen and
             it cannot return to draft. Archive it to withdraw it from students.
           </div>
@@ -181,9 +181,9 @@ export default async function ExamEditorPage({
         {/* Editor on the left, the student's view on the right. */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
           <div className="space-y-6">
-            <section className="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-              <div className="border-b border-gray-200 p-6 dark:border-gray-800">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-50">Questions</h2>
+            <section className="rounded-xl border border-gray-200 bg-white">
+              <div className="border-b border-gray-100 px-5 py-4">
+                <h2 className="text-[15px] font-semibold text-gray-900">Questions</h2>
               </div>
               {qs.length ? (
                 <ul>
@@ -209,16 +209,16 @@ export default async function ExamEditorPage({
             </section>
 
             {!published ? (
-              <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-                <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-gray-50">
+              <section className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="mb-4 text-[15px] font-semibold text-gray-900">
                   Add question
                 </h2>
                 <QuestionForm examId={exam.id} />
               </section>
             ) : null}
 
-            <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-gray-50">Settings</h2>
+            <section className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="mb-4 text-[15px] font-semibold text-gray-900">Settings</h2>
               <SettingsForm
                 examId={exam.id}
                 title={exam.title}
@@ -233,7 +233,7 @@ export default async function ExamEditorPage({
           {/* Sticky so it stays beside the questions while they scroll. */}
           <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
             <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h2 className="mb-1 text-[15px] font-semibold text-gray-900">
                 Student preview
               </h2>
               <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
@@ -254,7 +254,7 @@ export default async function ExamEditorPage({
 
             {useClasses ? (
               <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <h2 className="mb-1 text-[15px] font-semibold text-gray-900">
                 Classes
               </h2>
               <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">

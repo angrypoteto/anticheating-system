@@ -84,7 +84,7 @@ export async function PerQuestion({ examId }: { examId: string }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+        <thead className="border-b border-gray-200 text-[12.5px] font-medium text-gray-400">
           <tr>
             <th className="px-6 py-3 font-medium">Question</th>
             <th className="px-6 py-3 font-medium">Correct</th>

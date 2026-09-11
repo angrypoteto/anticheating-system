@@ -48,7 +48,7 @@ export function DeleteExam({
             name="confirm"
             value="yes"
             disabled={pending}
-            className="rounded-md bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
+            className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-50"
           >
             {pending ? "Deleting…" : "Yes, delete"}
           </button>
@@ -56,7 +56,7 @@ export function DeleteExam({
             type="button"
             onClick={() => setDismissed(state)}
             disabled={pending}
-            className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
           >
             Cancel
           </button>
@@ -65,7 +65,7 @@ export function DeleteExam({
         <button
           type="submit"
           disabled={pending}
-          className="text-sm text-red-700 underline underline-offset-4 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+          className="text-sm text-red-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-red-800 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
         >
           {pending ? "…" : "Delete"}
         </button>

@@ -64,7 +64,7 @@ export default async function SignupPage({
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-teal-700 underline underline-offset-4 dark:text-teal-400"
+            className="font-medium text-teal-700 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 dark:text-teal-400"
           >
             Sign in
           </Link>

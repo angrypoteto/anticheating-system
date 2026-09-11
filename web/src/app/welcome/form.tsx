@@ -47,7 +47,7 @@ export function WelcomeForm({
             defaultValue={suggestedName}
             autoComplete="name"
             placeholder="Juan D. Dela Cruz"
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             This is the name your teacher sees beside your score.
@@ -72,7 +72,7 @@ export function WelcomeForm({
             required
             autoFocus={!askName}
             defaultValue=""
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
           >
             <option value="" disabled>
               Choose your section…
@@ -100,7 +100,7 @@ export function WelcomeForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-600 disabled:opacity-50"
+        className="w-full inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
       >
         {pending ? "Saving…" : "Finish setting up"}
       </button>

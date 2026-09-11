@@ -38,7 +38,7 @@ export function JoinClassForm({ sections }: { sections: PickableSection[] }) {
           name="sectionId"
           required
           defaultValue=""
-          className="mt-1 min-w-56 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          className="mt-1 min-w-56 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
         >
           <option value="" disabled>
             Choose a section…
@@ -46,7 +46,7 @@ export function JoinClassForm({ sections }: { sections: PickableSection[] }) {
           {sections.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
-              {s.instructor ? ` — ${s.instructor}` : ""}
+              {s.instructor ? `, ${s.instructor}` : ""}
             </option>
           ))}
         </select>
@@ -54,7 +54,7 @@ export function JoinClassForm({ sections }: { sections: PickableSection[] }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
+        className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
       >
         {pending ? "Joining…" : "Join"}
       </button>

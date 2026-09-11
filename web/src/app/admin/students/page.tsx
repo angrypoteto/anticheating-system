@@ -4,7 +4,7 @@ import { loadEnrolment } from "@/lib/enrolment";
 import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { assessSection, assessStudent, BAND_LABEL, type Risk } from "@/lib/risk";
-import { Card, Empty, PageHeader, Pill, Stat } from "../ui";
+import { Card, Empty, PageHeader, Pill, Stat, Stats } from "../ui";
 import { ReportActions } from "./report-actions";
 
 export const dynamic = "force-dynamic";
@@ -116,7 +116,7 @@ export default async function StudentsPage() {
         action={<ReportActions />}
       />
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <Stats>
         <Stat label="Students" value={String(students.length)} />
         <Stat
           label="At risk"
@@ -129,7 +129,7 @@ export default async function StudentsPage() {
           tone="warn"
         />
         <Stat label="Sitting now" value={String(inProgress)} />
-      </div>
+      </Stats>
 
       {/* Class projection only means something when exams are organised by class. */}
       {useClasses ? (
@@ -141,7 +141,7 @@ export default async function StudentsPage() {
         {sectionRisks.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-200 text-xs uppercase tracking-wide text-gray-500 dark:border-gray-800 dark:text-gray-400">
+              <thead className="border-b border-gray-200 text-[12.5px] font-medium text-gray-400">
                 <tr>
                   <th className="px-6 py-3 font-medium">Class</th>
                   <th className="px-6 py-3 font-medium">Students</th>
@@ -169,8 +169,8 @@ export default async function StudentsPage() {
                       )}
                     </td>
                     <td className="px-6 py-3 text-xs text-gray-600 dark:text-gray-400">
-                      {s.atRisk} at risk · {s.watch} watch · {s.onTrack} on track
-                      {s.noData ? ` · ${s.noData} unexamined` : ""}
+                      {s.atRisk} at risk, {s.watch} watch, {s.onTrack} on track
+                      {s.noData ? `, ${s.noData} unexamined` : ""}
                     </td>
                     <td className="px-6 py-3 text-xs text-gray-500 dark:text-gray-400">{s.confidence}</td>
                   </tr>
@@ -203,9 +203,7 @@ export default async function StudentsPage() {
                 <div className="min-w-0">
                   <p className="text-sm text-gray-900 dark:text-gray-100">{o.student.email}</p>
                   <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {classesText(o.student.id)} ·
-                    {" "}
-                    {o.missing.join(", ")}
+                    {classesText(o.student.id)}: {o.missing.join(", ")}
                   </p>
                 </div>
                 <Pill tone="warn">
@@ -240,8 +238,7 @@ export default async function StudentsPage() {
                         ) : null}
                       </p>
                       <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {classesText(student.id)} ·{" "}
-                        {risk.graded} graded · confidence: {risk.confidence}
+                        {classesText(student.id)}, {risk.graded} graded, {risk.confidence} confidence
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -251,10 +248,10 @@ export default async function StudentsPage() {
                       <Pill tone={BAND_TONE[risk.band]}>{BAND_LABEL[risk.band]}</Pill>
                     </div>
                   </div>
-                  <ul className="mt-2 space-y-1">
+                  <ul className="mt-2 list-disc space-y-1 pl-4 marker:text-gray-300">
                     {risk.reasons.map((r) => (
-                      <li key={r} className="text-xs text-gray-600 dark:text-gray-400">
-                        · {r}
+                      <li key={r} className="text-[12.5px] text-gray-600">
+                        {r}
                       </li>
                     ))}
                   </ul>

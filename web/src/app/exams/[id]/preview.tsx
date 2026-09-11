@@ -63,7 +63,7 @@ export function ExamPreview({
             {choices.map((c) => (
               <div
                 key={c}
-                className="flex items-center gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
               >
                 <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-gray-400 dark:border-gray-500" />
                 {c}
@@ -71,7 +71,7 @@ export function ExamPreview({
             ))}
           </div>
         ) : (
-          <div className="mt-3 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-400 dark:border-gray-700 dark:bg-gray-900">
+          <div className="mt-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-400 dark:border-gray-700 dark:bg-gray-900">
             short answer…
           </div>
         )}
@@ -81,30 +81,34 @@ export function ExamPreview({
             type="button"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
-            className="text-xs text-gray-500 underline underline-offset-4 disabled:opacity-40 dark:text-gray-400"
+            className="text-xs text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 disabled:opacity-40 dark:text-gray-400"
           >
             ← previous
           </button>
-          <span className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
+          <span className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
             {index >= ordered.length - 1 ? "Submit exam" : "Next question"}
           </span>
           <button
             type="button"
             onClick={() => setIndex((i) => Math.min(ordered.length - 1, i + 1))}
             disabled={index >= ordered.length - 1}
-            className="text-xs text-gray-500 underline underline-offset-4 disabled:opacity-40 dark:text-gray-400"
+            className="text-xs text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 disabled:opacity-40 dark:text-gray-400"
           >
-            next →
+            Next
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
         <span>
-          {lockdown.fullscreenRequired ? "Fullscreen · " : ""}
-          {lockdown.blockCopyPaste ? "No copy-paste · " : ""}
-          {lockdown.maxStrikes} strikes
-          {lockdown.honeypot ? " · honeypot" : ""}
+          {[
+            lockdown.fullscreenRequired ? "Fullscreen" : null,
+            lockdown.blockCopyPaste ? "No copy-paste" : null,
+            `${lockdown.maxStrikes} strikes`,
+            lockdown.honeypot ? "honeypot" : null,
+          ]
+            .filter(Boolean)
+            .join(", ")}
         </span>
         <button
           type="button"
@@ -112,7 +116,7 @@ export function ExamPreview({
             setSeed(`preview-session-${Math.random().toString(36).slice(2, 8)}`);
             setIndex(0);
           }}
-          className="underline underline-offset-4 hover:text-gray-900 dark:hover:text-gray-100"
+          className="underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:hover:text-gray-100"
         >
           Shuffle as another student
         </button>

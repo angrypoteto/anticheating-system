@@ -79,7 +79,7 @@ const duration = (m: number) => {
 /** The heading over a band of the page. Small, spaced, and not a title. */
 function Band({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 text-[13px] font-medium tracking-[0.08em] text-gray-500 uppercase">
+    <h2 className="mb-3 text-[15px] font-semibold text-gray-900">
       {children}
     </h2>
   );
@@ -116,7 +116,7 @@ function Chevron() {
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+      <dt className="text-[12.5px] font-medium text-gray-400">
         {label}
       </dt>
       <dd className="mt-1.25 text-sm text-gray-900">{children}</dd>
@@ -139,10 +139,15 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
 
   if (!rows.length) {
     return (
-      <p className="text-sm text-gray-500">
-        Nothing yet. An exam appears here once your teacher publishes one for
-        you — usually by sending you a link.
-      </p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-14 text-center">
+        <svg className="mb-4 h-7 w-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 className="text-base font-semibold text-gray-900">No exams yet</h3>
+        <p className="mt-1.5 max-w-[320px] text-sm leading-relaxed text-gray-500">
+          An exam appears here once your teacher publishes one. They usually send you a link.
+        </p>
+      </div>
     );
   }
 
@@ -176,20 +181,20 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
               return (
                 <div
                   key={r.exam_id}
-                  className="flex flex-col gap-5 rounded-[14px] border border-teal-100 bg-white px-5.5 py-5.5 shadow-[0_1px_2px_rgba(13,21,36,0.04),0_8px_24px_-16px_rgba(13,21,36,0.25)] sm:flex-row sm:items-center sm:justify-between sm:gap-7 sm:px-7 sm:py-6.5"
+                  className="flex flex-col gap-5 rounded-xl border-[1.5px] border-gray-900 bg-white px-5.5 py-5.5 sm:flex-row sm:items-center sm:justify-between sm:gap-7 sm:px-7 sm:py-6"
                 >
                   <div className="min-w-0">
-                    <span className="mb-1.75 block text-[11px] font-medium tracking-[0.07em] text-accent uppercase">
-                      {[r.subject, r.teacher].filter(Boolean).join(" · ")}
+                    <span className="mb-1.5 block text-[12.5px] font-medium text-gray-500">
+                      {[r.subject, r.teacher].filter(Boolean).join(", ")}
                     </span>
-                    <p className="font-serif text-[19px] leading-[1.25] font-semibold tracking-tight text-gray-900 sm:text-[23px]">
+                    <p className="text-[19px] leading-[1.3] font-semibold tracking-[-0.015em] text-gray-900 sm:text-[22px]">
                       {r.title}
                     </p>
                     <p className="mt-2 text-sm text-gray-500">
-                      {facts.slice(0, 2).join(" · ")}
+                      {facts.slice(0, 2).join(", ")}
                       {closes ? (
                         <>
-                          <span className="hidden sm:inline"> · </span>
+                          <span className="hidden sm:inline">, </span>
                           <span className="block sm:inline">{closes}</span>
                         </>
                       ) : null}
@@ -197,18 +202,9 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                   </div>
                   <Link
                     href={`/exam/${r.exam_id}`}
-                    className="inline-flex h-12.5 shrink-0 items-center justify-center gap-2.25 rounded-[10px] bg-teal-700 px-6.5 text-[15px] font-medium text-white transition hover:bg-teal-800"
+                    className="inline-flex h-[46px] shrink-0 items-center justify-center rounded-lg bg-gray-900 px-6 text-[15px] font-medium text-white hover:bg-gray-700"
                   >
                     {started ? "Resume exam" : "Start exam"}
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path
-                        d="M5 12h13m0 0-5.5-5.5M18 12l-5.5 5.5"
-                        stroke="currentColor"
-                        strokeWidth="1.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
                   </Link>
                 </div>
               );
@@ -229,7 +225,7 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-medium text-gray-900">{r.title}</span>
                   <span className="mt-[3px] block text-[12.5px] text-gray-500">
-                    {[r.subject, r.teacher].filter(Boolean).join(" · ")}
+                    {[r.subject, r.teacher].filter(Boolean).join(", ")}
                   </span>
                 </span>
                 <span className="shrink-0 text-[13px] text-gray-500">
@@ -276,11 +272,11 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                           takenAt ? `taken ${longDay(takenAt)}, ${clock(takenAt)}` : null,
                         ]
                           .filter(Boolean)
-                          .join(" · ")}
+                          .join(", ")}
                       </span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1.25 sm:flex-row sm:items-center sm:gap-4.5">
-                      <span className="font-mono text-[15px] font-medium tabular-nums text-gray-900 sm:w-14 sm:text-right sm:text-[17px]">
+                      <span className="text-[15px] font-semibold tabular-nums text-gray-900 sm:w-14 sm:text-right sm:text-[17px]">
                         {r.score != null ? `${r.score}%` : "—"}
                       </span>
                       <span className="flex justify-end sm:w-[78px]">
@@ -300,7 +296,7 @@ export function StudentExams({ rows, error }: { rows: Row[]; error: string | nul
                       {r.score != null ? (
                         <>
                           {r.score}%{" "}
-                          <span className="text-gray-500">· pass mark {Number(r.pass_mark)}%</span>
+                          <span className="text-gray-500">(pass mark {Number(r.pass_mark)}%)</span>
                         </>
                       ) : (
                         "Not marked yet"

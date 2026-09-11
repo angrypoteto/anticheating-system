@@ -28,7 +28,7 @@ export function PublishControls({
     return (
       <div className="flex flex-wrap items-center gap-3">
         <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-800 dark:bg-green-950/60 dark:text-green-300">
-          Published · locked
+          Published and locked
         </span>
         <form action={action}>
           <input type="hidden" name="examId" value={examId} />
@@ -36,7 +36,7 @@ export function PublishControls({
           <button
             type="submit"
             disabled={pending}
-            className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
           >
             {pending ? "…" : "Archive"}
           </button>
@@ -62,7 +62,7 @@ export function PublishControls({
         type="button"
         onClick={() => setConfirming(true)}
         disabled={questionCount === 0}
-        className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600 dark:hover:bg-teal-500"
+        className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
       >
         Publish
       </button>
@@ -81,7 +81,7 @@ export function PublishControls({
             aria-labelledby="publish-title"
             className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900"
           >
-            <h2 id="publish-title" className="text-lg font-medium text-gray-900 dark:text-gray-50">
+            <h2 id="publish-title" className="text-[15px] font-semibold text-gray-900">
               Publish this exam?
             </h2>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -90,17 +90,17 @@ export function PublishControls({
               exam cannot be returned to draft. Students may begin answering
               immediately, which is exactly why it is frozen.
             </p>
-            <ul className="mt-3 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              <li>· {questionCount} question{questionCount === 1 ? "" : "s"} will be locked</li>
-              <li>· Visible to {classCount} class{classCount === 1 ? "" : "es"}</li>
-              <li>· You can still archive it later to withdraw it</li>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-600 marker:text-gray-300">
+              <li>{questionCount} question{questionCount === 1 ? "" : "s"} will be locked</li>
+              <li>Visible to {classCount} class{classCount === 1 ? "" : "es"}</li>
+              <li>You can still archive it later to withdraw it</li>
             </ul>
 
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >
                 Keep editing
               </button>
@@ -110,7 +110,7 @@ export function PublishControls({
                 <button
                   type="submit"
                   disabled={pending}
-                  className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-50 dark:bg-teal-600"
+                  className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
                 >
                   {pending ? "Publishing…" : "Publish and lock"}
                 </button>
@@ -172,13 +172,13 @@ export function ClassTargets({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           {pending ? "Saving…" : "Save classes"}
         </button>
       ) : (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Locked — the exam is published.
+          Locked, because the exam is published.
         </p>
       )}
     </form>

@@ -111,7 +111,7 @@ export function LiveMonitor({
             const who = studentNames[
               initialSessions.find((s) => s.id === row.session_id)?.student_id ?? ""
             ];
-            setToast(`${who ?? "A student"} — ${FLAG_LABELS[row.type] ?? row.type}`);
+            setToast(`${who ?? "A student"}: ${FLAG_LABELS[row.type] ?? row.type}`);
           }
         },
       )
@@ -230,7 +230,7 @@ export function LiveMonitor({
       {toast ? (
         <div
           role="status"
-          className="fixed right-6 top-6 z-50 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-lg dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+          className="fixed right-6 top-6 z-50 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-lg dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
         >
           {toast}
         </div>
@@ -277,7 +277,7 @@ export function LiveMonitor({
             connected ? "bg-green-700 ring-3 ring-green-50" : "bg-gray-300 ring-3 ring-gray-100"
           }`}
         />
-        {connected ? "Live — updates stream in as they happen" : "Connecting…"}
+        {connected ? "Live. Updates stream in as they happen." : "Connecting…"}
       </p>
 
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -398,7 +398,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-5 py-4.5">
-      <p className="text-[11px] font-medium tracking-[0.07em] text-gray-500 uppercase">
+      <p className="text-[12.5px] font-medium text-gray-500">
         {label}
       </p>
       <p
@@ -503,9 +503,9 @@ function StudentRow({
           ) : null}
           <p className="mt-[3px] text-[13px] tabular-nums text-gray-500">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
-            {session.score != null ? ` · ${session.score}%` : ""}
-            {minutes != null ? ` · ${Math.round(minutes / 60000)} min` : ""}
-            {live && asked ? ` · ${answered} of ${asked} answered` : ""}
+            {session.score != null ? `, ${session.score}%` : ""}
+            {minutes != null ? `, ${Math.round(minutes / 60000)} min` : ""}
+            {live && asked ? `, ${answered} of ${asked} answered` : ""}
           </p>
         </div>
 
@@ -539,7 +539,7 @@ function StudentRow({
                     name="end"
                     value="yes"
                     disabled={extending}
-                    className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                    className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
                   >
                     {extending ? "…" : "Take it back"}
                   </button>
@@ -549,7 +549,7 @@ function StudentRow({
                   type="submit"
                   disabled={extending}
                   title="Lets this student answer even after the exam closes"
-                  className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                  className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
                 >
                   {extending ? "…" : "Give an hour"}
                 </button>
@@ -564,7 +564,7 @@ function StudentRow({
               <button
                 type="submit"
                 disabled={pending}
-                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 {pending ? "…" : "Force submit"}
               </button>
@@ -580,7 +580,7 @@ function StudentRow({
                 type="submit"
                 disabled={reopening}
                 title="Reopens this sitting: answers kept, warnings cleared, clock restarted"
-                className="text-sm text-gray-600 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
               >
                 {reopening ? "…" : "Let them back in"}
               </button>
@@ -648,7 +648,7 @@ function FlagLine({
           <button
             type="submit"
             disabled={pending}
-            className="text-xs text-gray-500 underline underline-offset-4 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-xs text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-100"
           >
             {pending ? "…" : state.error ? "retry" : "void"}
           </button>
@@ -677,7 +677,7 @@ function ClearAllFlags({ examId, open }: { examId: string; open: number }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
       >
         {pending ? "Clearing…" : `Void all ${open} open flag${open === 1 ? "" : "s"}`}
       </button>

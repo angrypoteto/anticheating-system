@@ -51,7 +51,7 @@ export async function generateMetadata({
     .select("title")
     .eq("id", id)
     .maybeSingle();
-  return { title: data?.title ? `${data.title} — live monitor` : "Live monitor" };
+  return { title: data?.title ? `${data.title} (live)` : "Live monitor" };
 }
 
 export default async function MonitorPage({
@@ -228,15 +228,15 @@ export default async function MonitorPage({
         <header className="flex flex-wrap items-start justify-between gap-6 border-b border-gray-200 pb-5">
           <div className="min-w-0">
             {subject ? (
-              <span className="mb-1.5 block text-xs font-medium tracking-[0.06em] text-accent uppercase">
+              <span className="mb-1.5 block text-[12.5px] font-medium text-accent">
                 {subject}
               </span>
             ) : null}
-            <h1 className="font-serif text-3xl leading-tight font-semibold tracking-tight text-gray-900">
+            <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
               {exam.title}
             </h1>
             <p className="mt-1.5 text-sm text-gray-500">
-              {["Live monitoring and results", ...facts].join(" · ")}
+              {["Live monitoring and results", ...facts].join(", ")}
             </p>
           </div>
 

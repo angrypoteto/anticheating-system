@@ -40,8 +40,16 @@ const GROUPS = (useClasses: boolean): NavGroup[] => [
   },
 ];
 
-export function AdminNav({ email, useClasses }: { email: string; useClasses: boolean }) {
+export function AdminNav({
+  email,
+  name,
+  useClasses,
+}: {
+  email: string;
+  name?: string | null;
+  useClasses: boolean;
+}) {
   return (
-    <ConsoleNav groups={GROUPS(useClasses)} role="Administrator" email={email} />
+    <ConsoleNav groups={GROUPS(useClasses)} role="Administrator" name={name} email={email} />
   );
 }

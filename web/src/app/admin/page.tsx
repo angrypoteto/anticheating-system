@@ -4,6 +4,7 @@ import { loadEnrolment } from "@/lib/enrolment";
 import { readAllRows } from "@/lib/read-all";
 import { classesEnabled } from "@/lib/settings";
 import { classLabel } from "@/lib/classes";
+import { presetFor } from "@/lib/ai/providers";
 import { describeFlag, parseReason } from "@/lib/submission";
 import {
   Card,
@@ -265,6 +266,22 @@ export default async function AdminOverview() {
   const backupStale =
     !lastBackup || now - new Date(lastBackup.started_at).getTime() > 48 * 3600_000;
 
+  // One line per provider rather than per key. A school rotating a dozen free
+  // keys made this card a column of near-identical rows, twice the height of
+  // everything beside it; what an administrator needs from the overview is
+  // whether generation will work, and which keys to go and fix if not.
+  const keyGroups = [...new Set((keys ?? []).map((k) => k.provider))].map((provider) => {
+    const own = (keys ?? []).filter((k) => k.provider === provider);
+    const failing = own.filter((k) => k.status !== "ACTIVE" || k.last_error).length;
+    return {
+      provider,
+      name: presetFor(provider)?.label ?? provider,
+      total: own.length,
+      working: own.length - failing,
+      failing,
+    };
+  });
+
   // --- charts ---------------------------------------------------------------
   const sessionsByStudent = new Map<string, { status: string }[]>();
   for (const x of sessions ?? []) {
@@ -349,7 +366,7 @@ export default async function AdminOverview() {
         />
       </Stats>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
         <div className="space-y-5">
           <Card
             title="Recently given"
@@ -460,25 +477,30 @@ export default async function AdminOverview() {
             flush
             action={<CardLink href="/admin/keys">Manage</CardLink>}
           >
-            {keys?.length ? (
-              keys.map((k) => (
+            {keyGroups.length ? (
+              keyGroups.map((g) => (
                 <div
-                  key={k.id}
-                  className="flex min-h-11 items-center justify-between gap-3 border-b border-gray-100 px-5 py-2 last:border-b-0"
+                  key={g.provider}
+                  className="flex min-h-11 items-center justify-between gap-3 border-b border-gray-100 px-5 py-2.5 last:border-b-0"
                 >
-                  <span className="text-[13.5px] text-gray-900">{k.label}</span>
-                  <span className="flex items-center gap-3.5">
-                    <span className="text-[12.5px] tabular-nums text-gray-400">
-                      ends {k.key_hint}
+                  <span className="min-w-0">
+                    <span className="block text-[13.5px] text-gray-900">{g.name}</span>
+                    <span className="block text-[12.5px] text-gray-400">
+                      {g.total} key{g.total === 1 ? "" : "s"}
+                      {g.failing ? `, ${g.failing} not working` : ""}
                     </span>
-                    {k.status === "ACTIVE" && !k.last_error ? (
-                      <Pill tone="good" dot>
-                        Active
-                      </Pill>
-                    ) : (
-                      <Pill tone="bad">{k.last_error ? "Erroring" : "Disabled"}</Pill>
-                    )}
                   </span>
+                  {g.failing === 0 ? (
+                    <Pill tone="good" dot>
+                      {g.total === 1 ? "Active" : "All active"}
+                    </Pill>
+                  ) : g.working ? (
+                    <Pill tone="warn">
+                      {g.working} of {g.total} working
+                    </Pill>
+                  ) : (
+                    <Pill tone="bad">None working</Pill>
+                  )}
                 </div>
               ))
             ) : (
@@ -504,7 +526,11 @@ export default async function AdminOverview() {
         </div>
       </div>
 
-      <div className={`grid items-start gap-5 ${useClasses ? "lg:grid-cols-2" : ""}`}>
+      <div
+        className={`grid grid-cols-[minmax(0,1fr)] items-start gap-5 ${
+          useClasses ? "lg:grid-cols-[repeat(2,minmax(0,1fr))]" : ""
+        }`}
+      >
         {useClasses ? (
           <Card
             title="Where each class stands"

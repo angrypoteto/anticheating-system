@@ -266,13 +266,25 @@ function AnswerRow({
               {row.choices.map((c, i) => (
                 <li
                   key={c}
-                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm ${
-                    picked(c) ? (v === "correct" ? "bg-green-50" : "bg-red-50") : ""
+                  // The key's choice is green whether or not they picked it, so
+                  // a wrong answer shows the right one beside it at a glance.
+                  className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-sm ${
+                    isKey(c)
+                      ? "border-green-200 bg-green-50"
+                      : picked(c)
+                        ? v === "correct"
+                          ? "border-green-200 bg-green-50"
+                          : "border-red-100 bg-red-50"
+                        : "border-transparent"
                   }`}
                 >
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[12px] font-semibold ${
-                      picked(c) ? "bg-gray-900 text-white" : "border border-gray-200 text-gray-500"
+                      picked(c)
+                        ? "bg-gray-900 text-white"
+                        : isKey(c)
+                          ? "border border-green-300 bg-white text-green-800"
+                          : "border border-gray-200 text-gray-500"
                     }`}
                   >
                     {String.fromCharCode(65 + i)}
@@ -297,7 +309,15 @@ function AnswerRow({
                 {row.response == null ? "Left blank" : row.response}
               </dd>
               <dt className="text-gray-500">The key accepts</dt>
-              <dd className="text-gray-700">{row.accepted.length ? row.accepted.join(", or ") : "Nothing set"}</dd>
+              <dd>
+                {row.accepted.length ? (
+                  <span className="inline-flex rounded-md border border-green-200 bg-green-50 px-2 py-0.5 font-medium text-green-800">
+                    {row.accepted.join(", or ")}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">Nothing set</span>
+                )}
+              </dd>
             </dl>
           )}
         </div>

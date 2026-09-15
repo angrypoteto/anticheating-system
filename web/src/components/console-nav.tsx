@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShieldMark } from "@/components/auth-shell";
 
 export type NavLink = {
@@ -66,6 +66,28 @@ export function ConsoleNav({
    */
   const [openAt, setOpenAt] = useState<string | null>(null);
   const open = openAt === pathname;
+
+  /**
+   * A native <details> only shuts when its own summary is clicked, so the
+   * account menu stayed up over the rail until you went back and aimed at the
+   * name again. Anywhere else — or Escape — now shuts it, as a menu should.
+   */
+  const account = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const shut = (e: Event) => {
+      const menu = account.current;
+      if (!menu?.open) return;
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !menu.contains(e.target as Node)) {
+        menu.open = false;
+      }
+    };
+    document.addEventListener("pointerdown", shut);
+    document.addEventListener("keydown", shut);
+    return () => {
+      document.removeEventListener("pointerdown", shut);
+      document.removeEventListener("keydown", shut);
+    };
+  }, []);
 
   const isActive = (l: NavLink) =>
     (l.exact ? pathname === l.href : pathname.startsWith(l.href)) ||
@@ -161,6 +183,7 @@ export function ConsoleNav({
       </nav>
 
       <details
+        ref={account}
         className={`group relative mt-auto border-t border-gray-100 lg:block ${
           open ? "block" : "hidden"
         }`}

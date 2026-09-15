@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AuthShell } from "@/components/auth-shell";
+import { describeLinkedExam, examForLink } from "@/lib/exam-link";
+import { siteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,25 @@ export const dynamic = "force-dynamic";
  * Signed out, we bounce through the login page and come straight back here,
  * because the grant has to attach to a person.
  */
-export const metadata: Metadata = { title: "Opening your exam" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const { token } = await params;
+  const exam = await examForLink(token);
+  if (!exam) return { title: "Opening your exam" };
+
+  const description = `${describeLinkedExam(exam)}. Sign in to Proctorly to take it.`;
+  return {
+    // Absolute, so the preview image resolves on whichever domain served the link.
+    metadataBase: new URL(await siteUrl()),
+    title: exam.title,
+    description,
+    openGraph: { title: exam.title, description, siteName: "Proctorly", type: "website" },
+    twitter: { card: "summary_large_image", title: exam.title, description },
+  };
+}
 
 export default async function ExamLinkPage({
   params,
@@ -32,7 +52,39 @@ export default async function ExamLinkPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect(`/login?next=${encodeURIComponent(here)}`);
+  // Signed out: say what the link is before asking them to sign in. It used to
+  // bounce straight to the login page, which is also what a chat app fetching
+  // the link for its preview saw — so every shared paper previewed as a bare
+  // domain. A link to nothing still goes straight to sign in.
+  if (!user) {
+    const exam = await examForLink(token);
+    if (!exam) redirect(`/login?next=${encodeURIComponent(here)}`);
+    const next = encodeURIComponent(here);
+    return (
+      <AuthShell
+        title={exam.title}
+        subtitle={`${describeLinkedExam(exam)}. Sign in to start.`}
+        footer={
+          <>
+            New here?{" "}
+            <Link
+              href={`/signup?next=${next}`}
+              className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+            >
+              Create an account
+            </Link>
+          </>
+        }
+      >
+        <Link
+          href={`/login?next=${next}`}
+          className="flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 text-sm font-semibold text-white hover:bg-gray-700"
+        >
+          Sign in to start
+        </Link>
+      </AuthShell>
+    );
+  }
 
   const { data: examId, error } = await supabase.rpc("open_exam_link", { token });
 

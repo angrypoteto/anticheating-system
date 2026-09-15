@@ -45,8 +45,14 @@ export async function proxy(request: NextRequest) {
 
   // "/" serves the public landing page to visitors and the dashboard once signed
   // in, so it is reachable either way; the page itself decides what to render.
+  // An exam link (/e/<token>) is too: it says which paper it is before asking
+  // anyone to sign in, and chat apps building a preview of it are never signed in.
   const isPublic =
-    path === "/" || path === "/login" || path === "/signup" || path.startsWith("/auth");
+    path === "/" ||
+    path === "/login" ||
+    path === "/signup" ||
+    path.startsWith("/auth") ||
+    path.startsWith("/e/");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

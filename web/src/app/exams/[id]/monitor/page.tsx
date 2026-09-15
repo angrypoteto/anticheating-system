@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classesEnabled } from "@/lib/settings";
 import { classLabel } from "@/lib/classes";
+import { progressOf } from "@/lib/grade-session";
 import { parseLockdown, parseTimer } from "@/lib/exam-config";
 import { ConsoleShell } from "@/components/console-shell";
 import { LiveMonitor, type FlagRow, type SessionRow } from "./live";
@@ -80,14 +81,14 @@ export default async function MonitorPage({
 
   const { data: sessions } = await supabase
     .from("exam_sessions")
-    .select("id, student_id, status, started_at, submitted_at, score, reopened_until")
+    .select("id, student_id, status, started_at, submitted_at, score, reopened_until, current_question")
     .eq("exam_id", id)
     .order("started_at");
 
   const sessionIds = (sessions ?? []).map((s) => s.id);
   const studentIds = [...new Set((sessions ?? []).map((s) => s.student_id))];
 
-  const [{ data: flags }, { data: students }, { data: questions }, { data: given }] =
+  const [{ data: flags }, { data: students }, { data: questions }, progress] =
     await Promise.all([
     sessionIds.length
       ? supabase
@@ -107,18 +108,11 @@ export default async function MonitorPage({
       ? createAdminClient().from("users").select("id, email, full_name").in("id", studentIds)
       : Promise.resolve({ data: [] as { id: string; email: string; full_name: string | null }[] }),
     supabase.from("questions").select("id, prompt").eq("exam_id", id).order("order"),
-    // How many questions each sitting has answered so far. Counted here rather
-    // than in the browser: an answer row is not readable by the teacher's
-    // client, and the monitor only needs the tally.
-    sessionIds.length
-      ? supabase.from("answers").select("session_id").in("session_id", sessionIds)
-      : Promise.resolve({ data: [] as { session_id: string }[] }),
+    // How many questions each sitting has answered, and how many of those are
+    // right. Marked on the server: the key is not readable by the teacher's
+    // client. The sittings were read under RLS above, so these are theirs.
+    progressOf(id, sessionIds),
   ]);
-
-  const answeredBySession: Record<string, number> = {};
-  for (const a of (given ?? []) as { session_id: string }[]) {
-    answeredBySession[a.session_id] = (answeredBySession[a.session_id] ?? 0) + 1;
-  }
 
   // Which sittings have a screen recording to watch. Read through the caller's
   // own client: the table's policy already limits it to exams they manage.
@@ -275,7 +269,7 @@ export default async function MonitorPage({
           studentClasses={studentClasses}
           classOptions={classOptions}
           questionLabels={questionLabels}
-          answeredBySession={answeredBySession}
+          initialProgress={progress}
           askedCount={(questions ?? []).length}
           recordsScreens={parseLockdown(exam.lockdown_config).recordScreen}
           recordedSessions={[...new Set((recorded ?? []).map((r) => r.session_id))]}

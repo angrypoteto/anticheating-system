@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth";
-import { gradeAndClose, rescoreSession } from "@/lib/grade-session";
+import { gradeAndClose, progressOf, rescoreSession, type Progress } from "@/lib/grade-session";
 import { auditServerAction } from "@/lib/audit";
 
 export type MonitorState = { error?: string; success?: string };
@@ -272,6 +272,22 @@ export async function voidAllFlags(
       ? `${data.length} flag${data.length === 1 ? "" : "s"} voided.`
       : "There was nothing left to void.",
   };
+}
+
+/**
+ * Every sitting's answers so far and how many are right, for the live monitor.
+ *
+ * The sittings are read under RLS first, so only an exam this person manages
+ * gets as far as the service-role marking.
+ */
+export async function liveProgress(examId: string): Promise<Record<string, Progress>> {
+  await requireRole("INSTRUCTOR", "ADMIN");
+  const supabase = await createClient();
+  const { data: sittings } = await supabase
+    .from("exam_sessions")
+    .select("id")
+    .eq("exam_id", examId);
+  return progressOf(examId, (sittings ?? []).map((s) => s.id));
 }
 
 /**

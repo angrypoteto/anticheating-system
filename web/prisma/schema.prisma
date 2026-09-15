@@ -224,6 +224,9 @@ model ExamSession {
   /// While this is in the future, this one sitting may be answered even though
   /// the exam's own window has closed — an allowance made for one student.
   reopenedUntil   DateTime?     @map("reopened_until") @db.Timestamptz(3)
+  /// Where the student is, reported as they move: 1-based, 0 once they are
+  /// checking their answers at the end, null until first reported.
+  currentQuestion Int?          @map("current_question")
   score           Float?
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 

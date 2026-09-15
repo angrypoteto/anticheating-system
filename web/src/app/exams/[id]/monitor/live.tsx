@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Progress } from "@/lib/grade-session";
 import {
   allowRetake,
   extendSitting,
   forceSubmit,
+  liveProgress,
   voidAllFlags,
   voidFlag,
   type MonitorState,
@@ -21,6 +23,8 @@ export type SessionRow = {
   score: number | null;
   /** While this is in the future, this student may answer a closed exam. */
   reopened_until: string | null;
+  /** The question on the student's screen, 1-based; 0 while checking answers at the end. */
+  current_question?: number | null;
 };
 
 export type FlagRow = {
@@ -68,7 +72,7 @@ export function LiveMonitor({
   studentClasses,
   classOptions,
   questionLabels,
-  answeredBySession,
+  initialProgress,
   askedCount,
   recordsScreens = false,
   recordedSessions = [],
@@ -82,8 +86,8 @@ export function LiveMonitor({
   /** Classes somebody sitting this exam is actually in. Empty when classes are off. */
   classOptions: { id: string; label: string }[];
   questionLabels: Record<string, string>;
-  /** Answers recorded per sitting, so a live row can say how far through it is. */
-  answeredBySession: Record<string, number>;
+  /** Answers per sitting and how many are right, so a row can say how it is going. */
+  initialProgress: Record<string, Progress>;
   askedCount: number;
   /** The exam asks students to share their screen. */
   recordsScreens?: boolean;
@@ -97,11 +101,25 @@ export function LiveMonitor({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterId>("all");
   const [klass, setKlass] = useState("all");
+  const [progress, setProgress] = useState(initialProgress);
   const supabase = useRef(createClient());
 
   useEffect(() => {
     const client = supabase.current;
     const known = new Set(initialSessions.map((s) => s.id));
+
+    // Answers are not on the live stream, but a student moving to the next
+    // question is — and the runner saves the answer before it moves. So a
+    // sitting that changes is the cue to re-mark, gathered up so a class all
+    // clicking Next at once is one request rather than forty.
+    let progressTimer: ReturnType<typeof setTimeout> | null = null;
+    const refreshProgress = () => {
+      if (progressTimer) return;
+      progressTimer = setTimeout(() => {
+        progressTimer = null;
+        liveProgress(examId).then(setProgress, () => {});
+      }, 1500);
+    };
 
     // RLS applies to Realtime too, so this only ever delivers rows for sessions
     // in this instructor's own sections.
@@ -134,6 +152,7 @@ export function LiveMonitor({
           const row = payload.new as SessionRow;
           if (!row?.id) return;
           known.add(row.id);
+          refreshProgress();
           setSessions((prev) => {
             const i = prev.findIndex((s) => s.id === row.id);
             if (i === -1) return [...prev, row];
@@ -154,13 +173,14 @@ export function LiveMonitor({
     async function reconcile() {
       const { data: freshSessions } = await client
         .from("exam_sessions")
-        .select("id, student_id, status, started_at, submitted_at, score, reopened_until")
+        .select("id, student_id, status, started_at, submitted_at, score, reopened_until, current_question")
         .eq("exam_id", examId)
         .order("started_at");
       if (!freshSessions) return;
 
       for (const s of freshSessions) known.add(s.id);
       setSessions(freshSessions as SessionRow[]);
+      refreshProgress();
 
       const ids = freshSessions.map((s) => s.id);
       if (!ids.length) return;
@@ -185,6 +205,7 @@ export function LiveMonitor({
 
     return () => {
       clearInterval(safetyNet);
+      if (progressTimer) clearTimeout(progressTimer);
       client.removeChannel(channel);
     };
   }, [examId, initialSessions, studentNames]);
@@ -391,7 +412,7 @@ export function LiveMonitor({
                   .filter((l): l is string => Boolean(l))}
                 flags={flagsBySession.get(s.id) ?? []}
                 questionLabels={questionLabels}
-                answered={answeredBySession[s.id] ?? 0}
+                progress={progress[s.id]}
                 asked={askedCount}
                 recorded={recordsScreens || recordedSessions.includes(s.id)}
               />
@@ -444,7 +465,7 @@ function StudentRow({
   classes,
   flags,
   questionLabels,
-  answered,
+  progress,
   asked,
   recorded,
 }: {
@@ -454,7 +475,7 @@ function StudentRow({
   classes: string[];
   flags: FlagRow[];
   questionLabels: Record<string, string>;
-  answered: number;
+  progress?: Progress;
   asked: number;
   /** There is (or will be) a screen recording to watch for this sitting. */
   recorded: boolean;
@@ -520,6 +541,19 @@ function StudentRow({
 
   const minutes = live ? sinceStart : elapsed;
 
+  const total = progress?.total ?? asked;
+  const answered = Math.min(progress?.answered ?? 0, total);
+  const correct = progress?.correct ?? 0;
+  const left = Math.max(0, total - answered);
+  const position = session.current_question ?? null;
+  // A handed-in paper shows its recorded score, which carries any teacher's
+  // marks; an open one shows what it would score if handed in now.
+  const score = live
+    ? total
+      ? Math.round((correct / total) * 10000) / 100 // as scorePercentage() rounds
+      : null
+    : session.score;
+
   return (
     <li className="border-b border-gray-100 last:border-0 dark:border-gray-800">
       <div className="flex flex-wrap items-center justify-between gap-5 px-6 py-4">
@@ -537,10 +571,56 @@ function StudentRow({
           ) : null}
           <p className="mt-[3px] text-[13px] tabular-nums text-gray-500">
             {live ? "in progress" : session.status.toLowerCase().replace("_", " ")}
-            {session.score != null ? `, ${session.score}%` : ""}
             {minutes != null ? `, ${Math.round(minutes / 60000)} min` : ""}
-            {live && asked ? `, ${answered} of ${asked} answered` : ""}
           </p>
+          {total ? (
+            <div className="mt-2 flex max-w-md flex-col gap-1.5">
+              <div
+                aria-hidden
+                className="h-1 overflow-hidden rounded-full bg-gray-100"
+              >
+                <div
+                  className={`h-full rounded-full ${live ? "bg-gray-900" : "bg-gray-400"}`}
+                  style={{ width: `${Math.round((answered / total) * 100)}%` }}
+                />
+              </div>
+              <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px] tabular-nums text-gray-500">
+                {live ? (
+                  <span className="font-medium text-gray-900">
+                    {position === 0
+                      ? "Checking answers"
+                      : position
+                        ? `On question ${position} of ${total}`
+                        : `${answered} of ${total} answered`}
+                  </span>
+                ) : null}
+                {live ? (
+                  <span>{left === 0 ? "none left" : `${left} left`}</span>
+                ) : (
+                  <span>
+                    {answered} of {total} answered
+                  </span>
+                )}
+                <span>
+                  {correct} correct{live ? " so far" : ""}
+                </span>
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        {/* The score, big enough to read down a column of forty. While the
+            paper is open it is the share of the whole paper right so far, so
+            it climbs toward the final mark rather than jumping around. */}
+        <div className="w-16 shrink-0 text-right">
+          <p
+            className={`text-[19px] leading-none font-semibold tracking-tight tabular-nums ${
+              score == null ? "text-gray-300" : live ? "text-gray-500" : "text-gray-900"
+            }`}
+          >
+            {score == null ? "—" : `${score}%`}
+          </p>
+          <p className="mt-1 text-[11.5px] text-gray-400">{live ? "so far" : "score"}</p>
         </div>
 
         <div className="flex items-center gap-4">

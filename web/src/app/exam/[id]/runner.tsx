@@ -202,6 +202,17 @@ export function ExamRunner({
     answersRef.current = answers;
   }, [answers]);
 
+  // Tell the teacher's monitor where this student is: the question on screen,
+  // or 0 once they are back over their answers at the end. Best effort — a
+  // position that fails to send costs the student nothing, so nothing waits on it.
+  useEffect(() => {
+    if (demo || !started || done || superseded || !questions.length) return;
+    void supabase.current.rpc("report_position", {
+      p_session_id: sessionId,
+      p_number: reviewing ? 0 : index + 1,
+    });
+  }, [demo, started, done, superseded, reviewing, index, questions.length, sessionId]);
+
   const recordFlag = useCallback(
     async (type: FlagType, questionId?: string, detail?: string) => {
       if (endedRef.current || !started || superseded) return;

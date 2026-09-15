@@ -125,6 +125,52 @@ function tally(questions: QuestionRow[], answers: AnswerRow[]) {
   return { correct, total: questions.length, score: scorePercentage(correct, questions.length) };
 }
 
+export type Progress = { answered: number; correct: number; total: number };
+
+/**
+ * How far each sitting has got, and how many of its answers are right so far.
+ *
+ * For the live monitor, so a teacher can see a score build while the paper is
+ * still being sat. Marked by the same tally a submission uses, so the running
+ * figure lands exactly on the final one. Service role, because the key is not
+ * readable by anyone's own client: callers must already have shown, under RLS,
+ * that these sittings belong to an exam the caller manages.
+ */
+export async function progressOf(
+  examId: string,
+  sessionIds: string[],
+): Promise<Record<string, Progress>> {
+  if (!sessionIds.length) return {};
+  const admin = createAdminClient();
+  const [{ data: questions }, { data: answers }] = await Promise.all([
+    admin
+      .from("questions")
+      .select("id, type, question_answers(correct_answer)")
+      .eq("exam_id", examId),
+    admin
+      .from("answers")
+      .select("session_id, question_id, response, marked_correct")
+      .in("session_id", sessionIds),
+  ]);
+
+  const bySession = new Map<string, AnswerRow[]>();
+  for (const a of answers ?? []) {
+    // A blank saved while typing and cleared again is not an answer.
+    if (typeof a.response === "string" && a.response.trim() === "") continue;
+    const list = bySession.get(a.session_id) ?? [];
+    list.push(a);
+    bySession.set(a.session_id, list);
+  }
+
+  const out: Record<string, Progress> = {};
+  for (const id of sessionIds) {
+    const given = bySession.get(id) ?? [];
+    const { correct, total } = tally(questions ?? [], given);
+    out[id] = { answered: given.length, correct, total };
+  }
+  return out;
+}
+
 /**
  * Score a handed-in paper again, after a teacher changes a mark.
  *

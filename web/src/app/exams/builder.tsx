@@ -56,4 +56,4 @@ export async function ExamBuilder() {
 // Deliberately says nothing about classes: they can be switched off, and this
 // same line is shown either way.
 export const BUILDER_BLURB =
-  "Name it and give it a subject to start. On the next screen you can write the questions yourself or have the AI draft them from a lesson file, then set the timer, the lockdown rules and when it opens.";
+  "Give it a name to start. Next you write the questions, or let the AI draft them from a lesson file, then choose the time limit and when students can take it.";

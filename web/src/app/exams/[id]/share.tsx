@@ -36,21 +36,21 @@ export function ShareLink({
 
   return (
     <section
-      className={`rounded-lg border p-6 ${
+      className={`rounded-xl border p-5 ${
         live
-          ? "border-teal-300 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/50"
-          : "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900"
+          ? "border-green-200 bg-green-50/60"
+          : "border-gray-200 bg-white"
       }`}
     >
       <h2 className="text-[15px] font-semibold text-gray-900">
-        {live ? "Send this to your students" : "Link to this exam"}
+        {live ? "Send this to your students" : "The link for students"}
       </h2>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
         {live
           ? linkOnly
             ? "This link is the only way in: a student who opens it and signs in can sit this exam, and nobody else sees it at all."
             : "Anyone who opens this link and signs in can sit this exam — they do not need to be in the class."
-          : "This link works as soon as you publish. Until then it tells students the exam is not open yet."}
+          : "It starts working once you publish. Until then, students who open it are told the exam is not open yet."}
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

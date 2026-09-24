@@ -61,7 +61,7 @@ export function ExamWindow({
   const over = closesAt && new Date(closesAt).getTime() <= now;
 
   const status = !published
-    ? { label: "Draft", tone: "muted", note: "Publish it before any of this applies." }
+    ? { label: "Draft", tone: "muted", note: "Nobody can take it until you publish it. You can set the times now." }
     : over
       ? { label: "Closed", tone: "bad", note: `Closed ${shown(closesAt)}. Nobody can start or submit.` }
       : notYet
@@ -69,7 +69,7 @@ export function ExamWindow({
         : {
             label: "Open",
             tone: "good",
-            note: closesAt ? `Closes ${shown(closesAt)}.` : "Open until you close it.",
+            note: closesAt ? `Students can take it until ${shown(closesAt)}.` : "Students can take it until you close it.",
           };
 
   const tone = {
@@ -84,7 +84,7 @@ export function ExamWindow({
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[15px] font-semibold text-gray-900">Availability</h2>
+        <h2 className="text-[15px] font-semibold text-gray-900">When students can take it</h2>
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ${tone}`}>
           {status.label}
         </span>
@@ -92,36 +92,38 @@ export function ExamWindow({
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{status.note}</p>
 
       {/* Open and close by hand. Both are just the window, set to now. */}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <form action={action}>
-          <input type="hidden" name="examId" value={examId} />
-          <input type="hidden" name="mode" value={isOpen ? "close" : "open"} />
-          <button
-            type="submit"
-            disabled={pending || !published}
-            className={`rounded-lg px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
-              isOpen
-                ? "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
-                : "bg-teal-700 hover:bg-teal-800"
-            }`}
-          >
-            {pending ? "…" : isOpen ? "Close now" : "Open now"}
-          </button>
-        </form>
-      </div>
+      {published ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <form action={action}>
+            <input type="hidden" name="examId" value={examId} />
+            <input type="hidden" name="mode" value={isOpen ? "close" : "open"} />
+            <button
+              type="submit"
+              disabled={pending || !published}
+              className={`rounded-lg px-3 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
+                isOpen
+                  ? "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500"
+                  : "bg-gray-900 hover:bg-gray-700"
+              }`}
+            >
+              {pending ? "…" : isOpen ? "Close now" : "Open now"}
+            </button>
+          </form>
+        </div>
+      ) : null}
 
       <form action={action} className="mt-6 space-y-4 border-t border-gray-100 pt-4 dark:border-gray-800">
         <input type="hidden" name="examId" value={examId} />
         <input type="hidden" name="mode" value="schedule" />
 
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Or set the window in advance. Pick a date and time from the calendar —
-          leave either side unset to leave it unbounded.
+        <p className="text-sm text-gray-600">
+          Or set it to open and close by itself. Leave a side empty for no limit
+          on that side.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <span className={label}>Opens</span>
+            <span className={label}>Opens at</span>
             <DateTimePicker
               name="opensAt"
               label="When the exam opens"
@@ -129,7 +131,7 @@ export function ExamWindow({
             />
           </div>
           <div>
-            <span className={label}>Closes</span>
+            <span className={label}>Closes at</span>
             <DateTimePicker
               name="closesAt"
               label="When the exam closes"
@@ -145,7 +147,7 @@ export function ExamWindow({
           disabled={pending}
           className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
         >
-          {pending ? "Saving…" : "Save schedule"}
+          {pending ? "Saving…" : "Save these times"}
         </button>
       </form>
     </section>

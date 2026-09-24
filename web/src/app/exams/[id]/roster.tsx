@@ -47,14 +47,14 @@ export function Roster({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[15px] font-semibold text-gray-900">Who it is for</h2>
         <span className="text-sm text-gray-500 dark:text-gray-400">
-          {assigned.length} assigned
-          {assigned.length ? `, ${missing.length} yet to sit it` : ""}
+          {assigned.length} added
+          {assigned.length ? `, ${missing.length} not done yet` : ""}
         </span>
       </div>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
         {linkOnly
-          ? "Anyone you add here can sit it, and shows as missing until they do. Opening the share link adds a student automatically — assign them here first if you want to know who has not turned up."
-          : "Anyone here can sit it on top of the classes it is set for. Opening the share link adds a student automatically."}
+          ? "Add the students who should take it, so you can see who has not done it yet. Anyone who opens the link is added by themselves."
+          : "Students added here can take it as well as the classes above. Anyone who opens the link is added by themselves."}
       </p>
 
       <label htmlFor="roster-search" className="sr-only">
@@ -86,7 +86,7 @@ export function Roster({
                 <button
                   type="submit"
                   disabled={pending}
-                  title={p.sat ? "Has sat it. Remove from the roster" : "Remove from the roster"}
+                  title={p.sat ? "Has taken it. Click to remove" : "Has not taken it yet. Click to remove"}
                   className={`rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-50 ${
                     p.sat
                       ? "border-green-300 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/60 dark:text-green-300"
@@ -102,14 +102,14 @@ export function Roster({
         </ul>
       ) : (
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          Nobody assigned yet.
+          Nobody added yet.
         </p>
       )}
 
       {off.length ? (
         <details className="mt-4 border-t border-gray-100 pt-4 dark:border-gray-800">
           <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400">
-            Add students ({off.length} not on the roster)
+            Add students ({off.length})
           </summary>
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {off.slice(0, 60).map((p) => (

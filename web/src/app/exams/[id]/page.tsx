@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseLockdown, parseTimer } from "@/lib/exam-config";
-import { QuestionForm, QuestionRow, SettingsForm } from "./editor";
+import { ConsoleShell } from "@/components/console-shell";
+import { AddQuestion, QuestionCard, SettingsForm } from "./editor";
 import { ExamPreview } from "./preview";
 import { ClassTargets, PublishControls } from "./publish";
 import { ShareLink } from "./share";
@@ -40,13 +41,41 @@ export async function generateMetadata({
   return { title: data?.title ? `${data.title}` : "Exam" };
 }
 
+const TABS = [
+  { id: "questions", label: "Questions" },
+  { id: "settings", label: "Settings" },
+  { id: "students", label: "Students & schedule" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
+
+const minutesText = (m: number) =>
+  !m ? "no time limit" : m < 60 ? `${m} minutes` : m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m / 60} hour${m === 60 ? "" : "s"}`;
+
+/**
+ * One exam, from writing it to handing it out.
+ *
+ * This was a single page eight panels long — the link, the roster, the
+ * schedule, the questions, a form to add one, every setting and a preview —
+ * all open at once, in an order that had the link to send students above the
+ * questions it would send them. A teacher opening it for the first time met
+ * everything they might ever need and no hint of where to start.
+ *
+ * Now it is three tabs in the order the work is done: write the questions,
+ * decide how it is sat, then decide who sits it and when. The header keeps the
+ * one action that matters at every stage — publish — and a short checklist on
+ * the questions tab says what is left.
+ */
 export default async function ExamEditorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const me = await requireRole("INSTRUCTOR", "ADMIN");
   const { id } = await params;
+  const asked = (await searchParams).tab;
+  const tab: Tab = TABS.some((t) => t.id === asked) ? (asked as Tab) : "questions";
   const supabase = await createClient();
 
   const { data: exam } = await supabase
@@ -57,18 +86,21 @@ export default async function ExamEditorPage({
 
   if (!exam) notFound();
 
-  const [{ data: questions }, { data: targets }, { data: myClasses }] = await Promise.all([
-    supabase
-      .from("questions")
-      .select("id, type, prompt, choices, question_answers(correct_answer)")
-      .eq("exam_id", id)
-      .order("order"),
-    supabase.from("exam_sections").select("section_id").eq("exam_id", id),
-    // Admins can deliver to any class; an instructor only to their own.
-    me.role === "ADMIN"
-      ? supabase.from("sections").select("id, name, subject").order("subject").order("name")
-      : supabase.from("sections").select("id, name, subject").eq("instructor_id", me.id).order("subject").order("name"),
-  ]);
+  const [{ data: questions }, { data: targets }, { data: myClasses }, { data: subjects }, useClasses] =
+    await Promise.all([
+      supabase
+        .from("questions")
+        .select("id, type, prompt, choices, question_answers(correct_answer)")
+        .eq("exam_id", id)
+        .order("order"),
+      supabase.from("exam_sections").select("section_id").eq("exam_id", id),
+      // Admins can deliver to any class; an instructor only to their own.
+      me.role === "ADMIN"
+        ? supabase.from("sections").select("id, name, subject").order("subject").order("name")
+        : supabase.from("sections").select("id, name, subject").eq("instructor_id", me.id).order("subject").order("name"),
+      supabase.from("subjects").select("id, name").order("name"),
+      classesEnabled(),
+    ]);
 
   const timer = parseTimer(exam.timer_config);
   const lockdown = parseLockdown(exam.lockdown_config);
@@ -78,13 +110,10 @@ export default async function ExamEditorPage({
   // The same rule the database enforces, so the badge cannot claim the exam is
   // open while a student is being turned away.
   const nowMs = Date.now();
-  const examIsOpen =
-    published &&
-    (!exam.opens_at || new Date(exam.opens_at).getTime() <= nowMs) &&
-    (!exam.closes_at || new Date(exam.closes_at).getTime() > nowMs);
+  const notYet = Boolean(exam.opens_at && new Date(exam.opens_at).getTime() > nowMs);
+  const over = Boolean(exam.closes_at && new Date(exam.closes_at).getTime() <= nowMs);
+  const examIsOpen = published && !notYet && !over;
   const selectedClasses = (targets ?? []).map((t) => t.section_id);
-  const useClasses = await classesEnabled();
-  const { data: subjects } = await supabase.from("subjects").select("id, name").order("name");
 
   // PostgREST types a to-one embed as an array; accept either.
   const subjectEmbed = exam.subjects as { name: string } | { name: string }[] | null;
@@ -114,187 +143,322 @@ export default async function ExamEditorPage({
     .sort((a, b) => a.name.localeCompare(b.name));
   const qs = questions ?? [];
 
+  const status =
+    exam.status === "ARCHIVED"
+      ? { word: "Archived", tone: "border-gray-200 bg-gray-100 text-gray-700" }
+      : !published
+        ? { word: "Draft", tone: "border-gray-200 bg-white text-gray-700" }
+        : over
+          ? { word: "Closed", tone: "border-gray-200 bg-gray-100 text-gray-700" }
+          : notYet
+            ? { word: "Scheduled", tone: "border-amber-200 bg-amber-50 text-amber-900" }
+            : { word: "Open to students", tone: "border-green-200 bg-green-50 text-green-800" };
+
+  const tabHref = (t: Tab) => (t === "questions" ? `/exams/${exam.id}` : `/exams/${exam.id}?tab=${t}`);
+
+  // What is left before students can sit it, in the order it is done.
+  const steps = [
+    { done: qs.length > 0, label: qs.length ? `${qs.length} question${qs.length === 1 ? "" : "s"} written` : "Write the questions" },
+    {
+      done: true,
+      label: `Time limit: ${minutesText(timer.totalMinutes)}`,
+      href: tabHref("settings"),
+      action: "Change",
+    },
+    { done: published, label: published ? "Published" : "Publish it, using the button at the top" },
+    {
+      // Nothing can see a link being sent; somebody having started is the proof.
+      done: submitted + inProgress > 0,
+      label: submitted + inProgress > 0 ? "Students have started" : "Send students the link",
+      href: tabHref("students"),
+      action: "Get the link",
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-gray-50 p-6 lg:p-8 dark:bg-gray-950">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="border-b border-gray-200 pb-4 dark:border-gray-800">
+    <ConsoleShell role={me.role as string} email={me.email}>
+      <div className="space-y-6">
+        <div>
           <Link
             href={me.role === "ADMIN" ? "/admin/exams" : "/teacher/exams"}
-            className="text-sm text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            className="text-[13px] text-gray-500 hover:text-gray-900"
           >
             ← All exams &amp; quizzes
           </Link>
-          <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              {subjectName ? (
-                <p className="text-sm font-medium text-accent dark:text-[#5FBDB6]">
-                  {subjectName}
-                </p>
-              ) : null}
-              <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900 dark:text-gray-50">
-                {exam.title}
-              </h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {qs.length} question{qs.length === 1 ? "" : "s"},{" "}
-                {selectedClasses.length} class{selectedClasses.length === 1 ? "" : "es"},{" "}
-                {exam.status.toLowerCase()}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href={`/exams/${exam.id}/generate`}
-                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+        </div>
+
+        <header className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0">
+            {subjectName ? (
+              <span className="mb-1.5 block text-[12.5px] font-medium text-accent">{subjectName}</span>
+            ) : null}
+            <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] text-gray-900">
+              {exam.title}
+            </h1>
+            <p className="mt-2 flex flex-wrap items-center gap-2.5 text-sm text-gray-500">
+              <span
+                className={`inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-[12.5px] font-medium ${status.tone}`}
               >
-                Generate with AI
+                {status.word === "Open to students" ? (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                ) : null}
+                {status.word}
+              </span>
+              <span>
+                {qs.length} question{qs.length === 1 ? "" : "s"}, {minutesText(timer.totalMinutes)}
+                {useClasses ? `, ${selectedClasses.length} class${selectedClasses.length === 1 ? "" : "es"}` : ""}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {qs.length ? (
+              // Its own tab: the demo goes fullscreen and asks for the screen,
+              // and the editor should still be here afterwards.
+              <Link
+                href={`/exams/${exam.id}/demo`}
+                target="_blank"
+                className="inline-flex h-[38px] items-center rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-medium text-gray-700 hover:border-gray-400 hover:text-gray-900"
+              >
+                Try it as a student
               </Link>
+            ) : null}
+            {published || submitted || inProgress ? (
               <Link
                 href={`/exams/${exam.id}/monitor`}
-                className="text-sm text-gray-600 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                className="inline-flex h-[38px] items-center rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-medium text-gray-700 hover:border-gray-400 hover:text-gray-900"
               >
-                Monitor &amp; results
+                Watch live &amp; results
               </Link>
-              {qs.length ? (
-                // Opens in its own tab: the demo goes fullscreen and asks for the
-                // screen, and the editor should still be there afterwards.
-                <Link
-                  href={`/exams/${exam.id}/demo`}
-                  target="_blank"
-                  className="text-sm font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
-                >
-                  Try as a student
-                </Link>
-              ) : null}
-              <PublishControls
-                examId={exam.id}
-                status={exam.status}
-                questionCount={qs.length}
-                classCount={selectedClasses.length}
-                submitted={submitted}
-                inProgress={inProgress}
-              />
-            </div>
+            ) : null}
+            <PublishControls
+              examId={exam.id}
+              status={exam.status}
+              questionCount={qs.length}
+              classCount={selectedClasses.length}
+              submitted={submitted}
+              inProgress={inProgress}
+            />
           </div>
         </header>
 
-        {published ? (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            This exam is published, so its questions and answer keys are frozen. To
-            change them, press Edit: it goes back to draft, hidden from students,
-            until you publish it again.
-          </div>
-        ) : submitted ? (
-          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
-            {submitted === 1 ? "One student has" : `${submitted} students have`} already sat
-            this exam and keep the score they were given. Questions they answered can be
-            edited, but not removed. {exam.status === "ARCHIVED" ? "Students cannot see it while it is archived." : "Students cannot see it until you publish it again."}
+        <nav aria-label="Exam sections" className="-mx-1 overflow-x-auto border-b border-gray-200">
+          <ul className="flex min-w-max gap-1 px-1">
+            {TABS.map((t) => {
+              const on = t.id === tab;
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={tabHref(t.id)}
+                    aria-current={on ? "page" : undefined}
+                    className={`-mb-px flex h-11 items-center gap-2 border-b-2 px-3 text-sm whitespace-nowrap ${
+                      on
+                        ? "border-gray-900 font-semibold text-gray-900"
+                        : "border-transparent text-gray-500 hover:text-gray-900"
+                    }`}
+                  >
+                    {t.label}
+                    {t.id === "questions" ? (
+                      <span className="rounded-full bg-gray-100 px-1.75 text-[12px] font-medium tabular-nums text-gray-600">
+                        {qs.length}
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {tab === "questions" ? (
+          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="space-y-4">
+              {published ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  Students can see this exam, so its questions are locked. To change them, press{" "}
+                  <strong className="font-semibold">Edit questions</strong> at the top: it goes back to a draft until you
+                  publish it again.
+                </p>
+              ) : submitted ? (
+                <p className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
+                  {submitted === 1 ? "One student has" : `${submitted} students have`} already taken this exam
+                  and keep their score. You can edit the questions they answered, but not delete them.
+                </p>
+              ) : null}
+
+              <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-3.5">
+                  <h2 className="text-[15px] font-semibold text-gray-900">Questions</h2>
+                  {!published ? (
+                    <Link
+                      href={`/exams/${exam.id}/generate`}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <path
+                          d="M12 3v3m0 12v3M3 12h3m12 0h3M6.3 6.3l2.1 2.1m7.2 7.2 2.1 2.1m0-11.4-2.1 2.1m-7.2 7.2-2.1 2.1"
+                          stroke="currentColor"
+                          strokeWidth="1.7"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      Generate with AI
+                    </Link>
+                  ) : null}
+                </div>
+
+                {qs.length ? (
+                  <ul>
+                    {qs.map((q, i) => (
+                      <QuestionCard
+                        key={q.id}
+                        examId={exam.id}
+                        index={i}
+                        locked={published}
+                        question={{
+                          id: q.id,
+                          type: q.type,
+                          prompt: q.prompt,
+                          choices: q.choices as string[] | null,
+                          correct_answer: readAnswerKey(q.question_answers),
+                        }}
+                      />
+                    ))}
+                  </ul>
+                ) : !published ? (
+                  <div className="px-5 pt-6 pb-2 text-center">
+                    <p className="text-[15px] font-medium text-gray-900">No questions yet</p>
+                    <p className="mx-auto mt-1 max-w-md text-sm text-gray-500">
+                      Write them one at a time below, or{" "}
+                      <Link
+                        href={`/exams/${exam.id}/generate`}
+                        className="font-medium text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+                      >
+                        let the AI draft them from a lesson file
+                      </Link>{" "}
+                      and check them over.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="p-6 text-sm text-gray-500">No questions.</p>
+                )}
+
+                {!published ? (
+                  <div className={qs.length ? "border-t border-gray-100" : ""}>
+                    <AddQuestion examId={exam.id} first={!qs.length} />
+                  </div>
+                ) : null}
+              </section>
+            </div>
+
+            <div className="space-y-5 lg:sticky lg:top-8">
+              {exam.status !== "ARCHIVED" ? (
+                <section className="rounded-xl border border-gray-200 bg-white">
+                  <h2 className="border-b border-gray-100 px-5 py-3.5 text-[15px] font-semibold text-gray-900">
+                    Getting it ready
+                  </h2>
+                  <ol className="space-y-3 px-5 py-4">
+                    {steps.map((s, i) => (
+                      <li key={s.label} className="flex items-start gap-3 text-sm">
+                        <span
+                          aria-hidden
+                          className={`mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                            s.done ? "bg-green-700 text-white" : "border border-gray-300 text-gray-500"
+                          }`}
+                        >
+                          {s.done ? (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                              <path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            i + 1
+                          )}
+                        </span>
+                        <span className={`min-w-0 flex-1 ${s.done ? "text-gray-500" : "text-gray-900"}`}>
+                          <span className="sr-only">{s.done ? "Done: " : "To do: "}</span>
+                          {s.label}
+                          {s.href ? (
+                            <>
+                              {" "}
+                              <Link
+                                href={s.href}
+                                className="font-medium whitespace-nowrap text-gray-900 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900"
+                              >
+                                {s.action}
+                              </Link>
+                            </>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ) : null}
+
+              <section className="rounded-xl border border-gray-200 bg-white p-5">
+                <h2 className="text-[15px] font-semibold text-gray-900">What students see</h2>
+                <p className="mt-0.5 mb-4 text-[12.5px] text-gray-500">
+                  One question at a time, in a different order for each student.
+                </p>
+                <ExamPreview
+                  questions={qs.map((q) => ({
+                    id: q.id,
+                    type: q.type,
+                    prompt: q.prompt,
+                    choices: q.choices as string[] | null,
+                  }))}
+                  timer={timer}
+                  lockdown={lockdown}
+                />
+              </section>
+            </div>
           </div>
         ) : null}
 
-        <ShareLink url={shareUrl} live={published} linkOnly={!useClasses} />
+        {tab === "settings" ? (
+          <div className="max-w-3xl">
+            <SettingsForm
+              examId={exam.id}
+              title={exam.title}
+              subjects={subjects ?? []}
+              subjectId={exam.subject_id}
+              timer={timer}
+              lockdown={lockdown}
+            />
+          </div>
+        ) : null}
 
-        <Roster examId={exam.id} people={people} linkOnly={!useClasses} />
+        {tab === "students" ? (
+          <div className="max-w-3xl space-y-5">
+            <ShareLink url={shareUrl} live={published} linkOnly={!useClasses} />
 
-        <ExamWindow
-          examId={exam.id}
-          opensAt={exam.opens_at}
-          closesAt={exam.closes_at}
-          isOpen={examIsOpen}
-          published={published}
-        />
+            <ExamWindow
+              examId={exam.id}
+              opensAt={exam.opens_at}
+              closesAt={exam.closes_at}
+              isOpen={examIsOpen}
+              published={published}
+            />
 
-        {/* Editor on the left, the student's view on the right. */}
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
-          <div className="space-y-6">
-            <section className="rounded-xl border border-gray-200 bg-white">
-              <div className="border-b border-gray-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-gray-900">Questions</h2>
-              </div>
-              {qs.length ? (
-                <ul>
-                  {qs.map((q, i) => (
-                    <QuestionRow
-                      key={q.id}
-                      examId={exam.id}
-                      index={i}
-                      locked={published}
-                      question={{
-                        id: q.id,
-                        type: q.type,
-                        prompt: q.prompt,
-                        choices: q.choices as string[] | null,
-                        correct_answer: readAnswerKey(q.question_answers),
-                      }}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <p className="p-6 text-sm text-gray-500 dark:text-gray-400">No questions yet.</p>
-              )}
-            </section>
-
-            {!published ? (
+            {useClasses ? (
               <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="mb-4 text-[15px] font-semibold text-gray-900">
-                  Add question
-                </h2>
-                <QuestionForm examId={exam.id} />
+                <h2 className="text-[15px] font-semibold text-gray-900">Classes</h2>
+                <p className="mt-1 mb-4 text-sm text-gray-500">
+                  Everyone in the classes you tick can take it. One exam can go to several classes.
+                </p>
+                <ClassTargets
+                  examId={exam.id}
+                  allClasses={myClasses ?? []}
+                  selected={selectedClasses}
+                  locked={published}
+                />
               </section>
             ) : null}
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-4 text-[15px] font-semibold text-gray-900">Settings</h2>
-              <SettingsForm
-                examId={exam.id}
-                title={exam.title}
-                subjects={subjects ?? []}
-                subjectId={exam.subject_id}
-                timer={timer}
-                lockdown={lockdown}
-              />
-            </section>
+            <Roster examId={exam.id} people={people} linkOnly={!useClasses} />
           </div>
-
-          {/* Sticky so it stays beside the questions while they scroll. */}
-          <div className="space-y-6 lg:sticky lg:top-8 lg:self-start">
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-1 text-[15px] font-semibold text-gray-900">
-                Student preview
-              </h2>
-              <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-                Exactly what a student meets, shuffled.
-              </p>
-              <ExamPreview
-                title={exam.title}
-                questions={qs.map((q) => ({
-                  id: q.id,
-                  type: q.type,
-                  prompt: q.prompt,
-                  choices: q.choices as string[] | null,
-                }))}
-                timer={timer}
-                lockdown={lockdown}
-              />
-            </section>
-
-            {useClasses ? (
-              <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-1 text-[15px] font-semibold text-gray-900">
-                Classes
-              </h2>
-              <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-                One paper can go to every class you teach.
-              </p>
-              <ClassTargets
-                examId={exam.id}
-                allClasses={myClasses ?? []}
-                selected={selectedClasses}
-                locked={published}
-              />
-            </section>
-            ) : null}
-          </div>
-        </div>
+        ) : null}
       </div>
-    </main>
+    </ConsoleShell>
   );
 }

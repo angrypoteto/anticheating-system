@@ -20,12 +20,10 @@ export function ExamPreview({
   questions,
   timer,
   lockdown,
-  title,
 }: {
   questions: PreviewQuestion[];
   timer: TimerConfig;
   lockdown: LockdownConfig;
-  title: string;
 }) {
   const [seed, setSeed] = useState("preview-session-1");
   const [index, setIndex] = useState(0);
@@ -72,7 +70,7 @@ export function ExamPreview({
           </div>
         ) : (
           <div className="mt-3 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-400 dark:border-gray-700 dark:bg-gray-900">
-            short answer…
+            They type their answer here
           </div>
         )}
 
@@ -81,20 +79,17 @@ export function ExamPreview({
             type="button"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
-            className="text-xs text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 disabled:opacity-40 dark:text-gray-400"
+            className="inline-flex h-8 items-center rounded-lg px-2 text-xs font-medium text-gray-600 hover:bg-white hover:text-gray-900 disabled:opacity-40"
           >
-            ← previous
+            ← Back
           </button>
-          <span className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-gray-100 dark:text-gray-900">
-            {index >= ordered.length - 1 ? "Submit exam" : "Next question"}
-          </span>
           <button
             type="button"
             onClick={() => setIndex((i) => Math.min(ordered.length - 1, i + 1))}
             disabled={index >= ordered.length - 1}
-            className="text-xs text-gray-500 underline decoration-gray-300 underline-offset-[3px] hover:decoration-gray-900 disabled:opacity-40 dark:text-gray-400"
+            className="inline-flex h-8 items-center rounded-lg bg-gray-900 px-3 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-40"
           >
-            Next
+            Next question →
           </button>
         </div>
       </div>
@@ -103,11 +98,9 @@ export function ExamPreview({
         <span>
           {[
             lockdown.fullscreenRequired ? "Fullscreen" : null,
-            lockdown.blockCopyPaste ? "No copy-paste" : null,
-            `${lockdown.maxStrikes} strikes`,
-            lockdown.honeypot ? "honeypot" : null,
+            lockdown.blockCopyPaste ? "no copy and paste" : null,
             lockdown.recordScreen ? "screen recorded" : null,
-            lockdown.detectExtensions ? "extensions flagged" : null,
+            `handed in after ${lockdown.maxStrikes} warning${lockdown.maxStrikes === 1 ? "" : "s"}`,
           ]
             .filter(Boolean)
             .join(", ")}
@@ -124,10 +117,6 @@ export function ExamPreview({
         </button>
       </div>
 
-      <p className="text-xs text-gray-400 dark:text-gray-500">
-        Preview of &ldquo;{title}&rdquo;. Every student gets their own order, so no two
-        papers match.
-      </p>
     </div>
   );
 }

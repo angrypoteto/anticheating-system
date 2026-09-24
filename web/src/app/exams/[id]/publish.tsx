@@ -58,26 +58,30 @@ export function PublishControls({
   let controls: React.ReactNode;
 
   if (status === "PUBLISHED") {
+    // The page header already says it is published, and whether it is open.
     controls = (
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="inline-flex h-6 items-center rounded-full bg-green-50 px-2.5 text-[12.5px] font-semibold text-green-800">
-          Published
-        </span>
-        <button type="button" onClick={() => setDialog("edit")} className={linkButton}>
-          Edit
+      <div className="flex flex-wrap items-center gap-2.5">
+        {statusForm(
+          "ARCHIVED",
+          "Archive",
+          "Archiving…",
+          "inline-flex h-[38px] items-center rounded-lg px-3 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50",
+        )}
+        <button
+          type="button"
+          onClick={() => setDialog("edit")}
+          className="inline-flex h-[38px] items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white hover:bg-gray-700"
+        >
+          Edit questions
         </button>
-        {statusForm("ARCHIVED", "Archive", "Archiving…")}
       </div>
     );
   } else if (status === "ARCHIVED") {
     controls = (
       <div className="flex flex-wrap items-center gap-4">
-        <span className="inline-flex h-6 items-center rounded-full bg-gray-100 px-2.5 text-[12.5px] font-semibold text-gray-600">
-          Archived
-        </span>
         {/* Students cannot see an archived exam, so there is nothing to warn
             about: straight back to draft. */}
-        {statusForm("DRAFT", "Edit", "Opening…")}
+        {statusForm("DRAFT", "Edit questions", "Opening…")}
         <button
           type="button"
           onClick={() => setDialog("publish")}
@@ -129,8 +133,8 @@ export function PublishControls({
                   <strong className="font-semibold text-gray-900">
                     the questions and answer keys are frozen while it is published
                   </strong>
-                  . To change them later, press Edit: it goes back to draft until you
-                  publish it again.
+                  . To change them later, press Edit questions: it goes back to a draft
+                  until you publish it again.
                 </p>
                 <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-600 marker:text-gray-300">
                   <li>{plural(questionCount, "question")} will be locked</li>
@@ -146,7 +150,7 @@ export function PublishControls({
             ) : (
               <>
                 <h2 id="status-dialog-title" className="text-[15px] font-semibold text-gray-900">
-                  Take this exam back to edit?
+                  Edit the questions?
                 </h2>
                 {inProgress ? (
                   <p className="mt-2 text-sm leading-relaxed text-amber-800">

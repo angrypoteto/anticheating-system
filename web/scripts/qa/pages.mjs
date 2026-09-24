@@ -165,9 +165,9 @@ try {
   t(!monitor.text.includes(alice.email), "monitor", "and does not fall back to their email address");
   t(monitor.text.includes("How each question went"), "monitor", "per-question analysis is present");
 
-  const examPage = await page(teacher, `/exams/${exam.id}`);
+  const examPage = await page(teacher, `/exams/${exam.id}?tab=students`);
   t(examPage.text.includes("Who it is for"), "roster", "the roster panel is on the exam page");
-  t(examPage.text.includes("Availability"), "window", "so is the availability panel");
+  t(examPage.text.includes("When students can take it"), "window", "so is the availability panel");
   t(examPage.text.includes("Send this to your students"), "share", "and the share link");
   // The link lives in an input's value, so it is in the markup, not the text.
   t(examPage.html.includes(exam.share_token), "share", "with the real token in it");
